@@ -1,3 +1,3 @@
-# clamav-internal-devel
+# Win32 Clam Dependencies
 
-Please keep master pristine and commit-free.
+This script exists to locate and build the Clam dependencies.
