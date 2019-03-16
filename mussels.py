@@ -10,6 +10,7 @@ A tool to download and build source archives and assemble the %CLAM_DEPENDENCIES
 
 import argparse
 import datetime
+from distutils import dir_util
 import logging
 import os
 import requests
@@ -251,54 +252,52 @@ class Builder(object):
 
     def install(self, install="install"):
         '''
-        Copy the headers and libs to a clamav_dependencies directory in the format expected by ClamAV.
+        Copy the headers and libs to an install directory in the format expected by ClamAV.
         '''
         install_path = os.path.join(self.tempdir, install)
 
         self.logger.error(f"Copying required files into install directory.")
 
-        for build in self.build_cmds:
-            install_arch = build
-            if build == "x86":
-                install_arch = "Win32"
+        for target_type in self.install_paths:
+            
+            for build in self.build_cmds:
+                install_arch = build
+                if build == "x86":
+                    install_arch = "Win32"
 
-            # Create the install paths, if they don't already exist.
-            os.makedirs(os.path.join(install_path, install_arch, "include"), exist_ok=True)
-            os.makedirs(os.path.join(install_path, install_arch, "lib"), exist_ok=True)
+                for target in self.install_paths[target_type][build]:
+                    src_path = os.path.join(self.builds[build], target)
+                    dst_path = os.path.join(install_path, install_arch, target_type, os.path.basename(target))
 
-            # Copy the headers.
-            if self.install_paths["include"][build] != "":
-                header_path = os.path.join(self.builds[build], self.install_paths["include"][build])
-                if not os.path.exists(header_path):
-                    self.logger.error(f"Required header files do not exist:\n\t{header_path}")
-                    return False
+                    # Create the target install paths, if it doesn't already exist.
+                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
 
-                # Remove prior installation, if exists
-                if os.path.exists(os.path.join(install_path, install_arch, "include", self.name)):
-                    shutil.rmtree(os.path.join(install_path, install_arch, "include", self.name))
+                    # Make sure it actually exists.
+                    if not os.path.exists(src_path):
+                        self.logger.error(f"Required target files for installation do not exist:\n\t{src_path}")
+                        return False
 
-                shutil.copytree(
-                    header_path,
-                    os.path.join(install_path, install_arch, "include", self.name))
+                    # Remove prior installation, if exists.
+                    if os.path.exists(dst_path):
+                        shutil.rmtree(dst_path)
 
-            # Copy the DLLs.
-            for dll in self.install_paths["lib"][build]:
-                dll_path = os.path.join(self.builds[build], dll)
-                if not os.path.exists(header_path):
-                    self.logger.error(f"Required lib files do not exist:\n\t{header_path}")
-                    return False
-
-                shutil.copyfile(
-                    dll_path,
-                    os.path.join(install_path, install_arch, "lib", dll))
+                    # Now copy the file or directory.
+                    if os.path.isdir(src_path):
+                        dir_util.copy_tree(src_path, dst_path)
+                    else:
+                        shutil.copyfile(src_path, dst_path)
 
 class OpenSSL(Builder):
     name = "openssl"
     url = "https://www.openssl.org/source/openssl-1.1.0j.tar.gz"
     install_paths = {
         "include" : {
-            "x86" : os.path.join("include", "openssl"),
-            "x64" : os.path.join("include", "openssl"),
+            "x86" : [
+                os.path.join("include", "openssl"),
+            ],
+            "x64" : [
+                os.path.join("include", "openssl"),
+            ],
         },
         "lib" : {
             "x86" : [
