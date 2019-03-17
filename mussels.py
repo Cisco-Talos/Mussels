@@ -55,6 +55,7 @@ for loader, module_name, is_pkg in pkgutil.walk_packages([recipe_path]):
 for recipe in RECIPES:
     versions_list = list(RECIPES[recipe].keys())
     versions_list.sort(key=lambda s: [str(u) for u in s.split('.')])
+    versions_list.reverse()
     for idx,version in enumerate(versions_list):
         SORTED_RECIPES[recipe].append(version)
 
