@@ -27,8 +27,8 @@ class Recipe(Builder):
     url = "https://curl.haxx.se/download/curl-7.64.0.zip"
     install_paths = {
         "include" : {
-            "x86" : "include",
-            "x64" : "include",
+            "x86" : ["include"],
+            "x64" : ["include"],
         },
         "lib" : {
             "x86" : [os.path.join("win32", "libcurl.dll"),],

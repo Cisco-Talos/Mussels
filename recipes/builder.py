@@ -172,7 +172,7 @@ class Builder(object):
            This is a hack, needed only because vcvarsall.bat doesn't
            set the rc.exe path location for you. vs2017 does.
         '''
-        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC"
+        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC"
 
         if not os.path.isfile(os.path.join(vcvars_path, "vcvarsall.bat")):
             self.logger.warning("Failed to find vcvarsall.bat")
@@ -214,6 +214,22 @@ class Builder(object):
 
         return True
 
+    def __detect_vs2017(self) -> bool:
+        '''
+        Identify:
+         - The full path of vcvarsall.bat for vs2017.
+        '''
+        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build"
+
+        if not os.path.isfile(os.path.join(vcvars_path, "vcvarsall.bat")):
+            self.logger.warning("Failed to find vcvarsall.bat")
+            return False
+
+        self.logger.debug(f"vcvarsall.bat detected at: {vcvars_path}")
+        os.environ["PATH"] += os.pathsep + vcvars_path
+
+        return True
+
     def __detect_nasm(self) -> bool:
         '''
         Identify:
@@ -238,11 +254,27 @@ class Builder(object):
         perl_path = "C:\\Perl64\\bin"
 
         if not os.path.isfile(os.path.join(perl_path, "perl.exe")):
-            self.logger.warning("Failed to find nasm.exe")
+            self.logger.warning("Failed to find perl.exe")
             return False
 
         self.logger.debug(f"perl.exe detected at: {perl_path}")
         os.environ["PATH"] += os.pathsep + perl_path
+
+        return True
+
+    def __detect_cmake(self) -> bool:
+        '''
+        Identify:
+         - The location of perl.exe.
+        '''
+        cmake_path = "C:\\Program Files\\CMake\\bin"
+
+        if not os.path.isfile(os.path.join(cmake_path, "cmake.exe")):
+            self.logger.warning("Failed to find cmake.exe")
+            return False
+
+        self.logger.debug(f"cmake.exe detected at: {cmake_path}")
+        os.environ["PATH"] += os.pathsep + cmake_path
 
         return True
 
@@ -265,6 +297,13 @@ class Builder(object):
                 else:
                     self.logger.info("Detected vs2015")
 
+            if "vs2017" == tool:
+                if False == self.__detect_vs2017():
+                    self.logger.error("Failed to detect vs2017")
+                    return False
+                else:
+                    self.logger.info("Detected vs2017")
+
             elif "nasm" == tool:
                 if False == self.__detect_nasm():
                     self.logger.error("Failed to detect nasm")
@@ -279,15 +318,14 @@ class Builder(object):
                 else:
                     self.logger.info("Detected perl")
 
-        return True
+            elif "cmake" == tool:
+                if False == self.__detect_cmake():
+                    self.logger.error("Failed to detect cmake")
+                    return False
+                else:
+                    self.logger.info("Detected cmake")
 
-    def cmake_build(self) -> bool:
-        '''
-        Compile a project using standard CMake calls.
-        '''
-        self.logger.info(f"Attempting CMake build in: \"{self.build_path}\"...")
-        
-        return False
+        return True
 
     def build(self) -> bool:
         '''
@@ -321,7 +359,10 @@ class Builder(object):
             os.chdir(self.builds[build])
 
             # Hack to make openssl build work with vs2015
-            os.environ["PATH"] += os.pathsep + self.rc_path + os.path.sep + build
+            try:
+                os.environ["PATH"] += os.pathsep + self.rc_path + os.path.sep + build
+            except:
+                pass
 
             # Create a build script.
             with open(os.path.join(os.getcwd(), "build.bat"), 'w') as fd:

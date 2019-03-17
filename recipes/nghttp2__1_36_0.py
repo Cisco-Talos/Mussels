@@ -28,8 +28,8 @@ class Recipe(Builder):
     archive_name_change = ("v", "nghttp2-")
     install_paths = {
         "include" : {
-            "x86" : "include",
-            "x64" : "include",
+            "x86" : ["include"],
+            "x64" : ["include"],
         },
         "lib" : {
             "x86" : [os.path.join("win32", "libnghttp2.dll"),],

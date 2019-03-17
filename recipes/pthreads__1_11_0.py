@@ -27,8 +27,8 @@ class Recipe(Builder):
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-1-11-0-release.tar.gz"
     install_paths = {
         "include" : {
-            "x86" : "include",
-            "x64" : "include",
+            "x86" : ["include"],
+            "x64" : ["include"],
         },
         "lib" : {
             "x86" : [os.path.join("win32", "pthreads.dll"),],

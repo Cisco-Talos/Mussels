@@ -27,13 +27,24 @@ class Recipe(Builder):
     url = "https://www.zlib.net/zlib-1.2.11.tar.gz"
     install_paths = {
         "include" : {
-            "x86" : "include",
-            "x64" : "include",
+            "x86" : ["zlib.h"],
+            "x64" : ["zlib.h"],
         },
         "lib" : {
-            "x86" : [os.path.join("win32", "libz.dll"),],
-            "x64" : [os.path.join("x64" ,"libz.dll"),],
+            "x86" : [os.path.join("Release", "zlib.dll"),],
+            "x64" : [os.path.join("Release" ,"zlib.dll"),],
         },
     }
     dependencies = []
+    toolchain = ["cmake", "vs2017"]
+    build_cmds = {
+        'x86' : [
+            f'cmake.exe -G "Visual Studio 15 2017"',
+            f'cmake.exe --build . --config Release',
+        ],
+        'x64' : [
+            f'cmake.exe -G "Visual Studio 15 2017 Win64"',
+            f'cmake.exe --build . --config Release',
+        ]
+    }
 
