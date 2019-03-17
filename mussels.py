@@ -101,7 +101,8 @@ def cli():
 
 @cli.command()
 @click.option('--recipe', '-r', required=False, 
-              type=click.Choice(list(RECIPES.keys())),
+              type=click.Choice(list(RECIPES.keys()) + ["all"]),
+              default="all",
               help='Recipe to build.')
 @click.option('--version', '-v', default="",
               help='Version of recipe to build. [optional]')
@@ -113,11 +114,11 @@ def build(recipe: str, version: str, tempdir: str):
     '''
     if tempdir == "":
         # Create a temporary directory to work in.
-        tempdir = os.path.join(os.getcwd(), "clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-'))
+        tempdir = os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-'))
         os.mkdir(tempdir)
     else:
         # Use the current working directory.
-        tempdir = os.path.join(os.getcwd(), tempdir)
+        tempdir = os.path.join(tempdir)
 
     if recipe == "all":
         results = [build_recipe(key, version, tempdir) for key in RECIPES.keys()]
