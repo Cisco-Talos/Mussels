@@ -43,7 +43,7 @@ class Builder(object):
         }
     }
     dependencies = []   # Dependencies on other Mussels builds.
-    toolchain = {}      # Dictionary of files and directories required by the build commands.
+    toolchain = []      # List of tools required by the build commands.
     build_cmds = {}     # Dictionary containing build command lists.
     builds = {}         # Dictionary of build paths.
 
@@ -61,7 +61,7 @@ class Builder(object):
         self.__init_logging()
 
         # Detect required toolchain.
-        if self.__detect_toolchain() == False:
+        if self.detect_toolchain() == False:
             raise(Exception(f"Failed to detect toolchain required to build {self.name}-{self.version}"))
 
         # Download if necessary.
@@ -151,20 +151,29 @@ class Builder(object):
 
         return True
 
-    def __detect_toolchain(self) -> bool:
+    def __detect_vs2015(self) -> bool:
         '''
-        Detect filepaths needed for the build.
+        Identify:
+         - The full path of vcvarsall.bat for vs2015.
+         - The location of rc.exe (check x86 and x64 locations).
+           This is a hack, needed only because vcvarsall.bat doesn't
+           set the rc.exe path location for you. vs2017 does.
+        '''
+        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC"
 
-        This base object implementation detects:
-         - "rcpath" : The location of rc.exe
-         - "vcvars" : The full path of vcvarsall.bat
-        '''
-        rcpath = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\"
-        vcvars = "C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC"
+        if not os.path.isfile(os.path.join(vcvars_path, "vcvarsall.bat")):
+            self.logger.warning("Failed to find vcvarsall.bat")
+            return False
+
+        self.logger.debug(f"vcvarsall.bat detected at: {vcvars_path}")
+        os.environ["PATH"] += os.pathsep + vcvars_path
+
+        # rc.exe Hack to make openssl build with vs2015
+        rc_path = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\"
 
         bin_ver = 0
         bin_file = ''
-        for filename in os.listdir(rcpath):
+        for filename in os.listdir(rc_path):
             if filename.startswith("10.0."):
                 ver = int(filename.split('.')[2])
                 if (ver > bin_ver):
@@ -174,24 +183,90 @@ class Builder(object):
             self.logger.warning("Failed to find rc.exe path")
             return False
 
-        rcpath = os.path.join(rcpath, bin_file)
+        rc_path = os.path.join(rc_path, bin_file)
 
-        if not os.path.isfile(os.path.join(rcpath, "x86", "rc.exe")):
-            self.logger.warning(f"Failed to find: {os.path.join(rcpath, 'x86', 'rc.exe')}")
+        if not os.path.isfile(os.path.join(rc_path, "x86", "rc.exe")):
+            self.logger.warning(f"Failed to find: {os.path.join(rc_path, 'x86', 'rc.exe')}")
             return False
 
-        if not os.path.isfile(os.path.join(rcpath, "x64", "rc.exe")):
-            self.logger.warning(f"Failed to find: {os.path.join(rcpath, 'x64', 'rc.exe')}")
+        if not os.path.isfile(os.path.join(rc_path, "x64", "rc.exe")):
+            self.logger.warning(f"Failed to find: {os.path.join(rc_path, 'x64', 'rc.exe')}")
             return False
 
-        if not os.path.isfile(os.path.join(vcvars, "vcvarsall.bat")):
-            self.logger.warning("Failed to find vcvarsall.bat")
+        self.logger.debug(f"rc.exe detected at:")
+        self.logger.debug(f"\t{os.path.join(rc_path, 'x86')}")
+        self.logger.debug(f"\t{os.path.join(rc_path, 'x64')}")
+
+        self.rc_path = rc_path
+
+        return True
+
+    def __detect_nasm(self) -> bool:
+        '''
+        Identify:
+         - The location of nasm.exe.
+        '''
+        nasm_path = "C:\\Program Files\\NASM"
+
+        if not os.path.isfile(os.path.join(nasm_path, "nasm.exe")):
+            self.logger.warning("Failed to find nasm.exe")
             return False
 
-        os.environ["PATH"] += os.pathsep + vcvars
-        print(f"Setting path to: {os.environ['PATH']}")
-        self.toolchain['rcpath'] = rcpath
-        self.toolchain['vcvars'] = vcvars
+        self.logger.debug(f"nasm.exe detected at: {nasm_path}")
+        os.environ["PATH"] += os.pathsep + nasm_path
+
+        return True
+
+    def __detect_perl(self) -> bool:
+        '''
+        Identify:
+         - The location of perl.exe.
+        '''
+        perl_path = "C:\\Perl64\\bin"
+
+        if not os.path.isfile(os.path.join(perl_path, "perl.exe")):
+            self.logger.warning("Failed to find nasm.exe")
+            return False
+
+        self.logger.debug(f"perl.exe detected at: {perl_path}")
+        os.environ["PATH"] += os.pathsep + perl_path
+
+        return True
+
+    def detect_toolchain(self) -> bool:
+        '''
+        Detect existence of toolchain filepaths needed for the build.
+
+        This base object implementation detects:
+         - "vs2015" : Adds paths to path needed to use Visual Studio for builds.
+         - "nmake" : Add NMake to the path.
+
+        You can extend this functionality by overriding it to detect
+        new tools to add to the path.
+        '''
+        for tool in self.toolchain:
+            if "vs2015" == tool:
+                if False == self.__detect_vs2015():
+                    self.logger.error("Failed to detect vs2015")
+                    return False
+                else:
+                    self.logger.info("Detected vs2015")
+
+            elif "nasm" == tool:
+                if False == self.__detect_nasm():
+                    self.logger.error("Failed to detect nasm")
+                    return False
+                else:
+                    self.logger.info("Detected nasm")
+
+            elif "perl" == tool:
+                if False == self.__detect_perl():
+                    self.logger.error("Failed to detect perl")
+                    return False
+                else:
+                    self.logger.info("Detected perl")
+
+        return True
 
     def cmake_build(self) -> bool:
         '''
@@ -232,8 +307,8 @@ class Builder(object):
             cwd = os.getcwd()
             os.chdir(self.builds[build])
 
-            # Hack to make rc.exe work for openssl 1.1.0
-            os.environ["PATH"] += os.pathsep + self.toolchain['rcpath'] + os.path.sep + build
+            # Hack to make openssl build work with vs2015
+            os.environ["PATH"] += os.pathsep + self.rc_path + os.path.sep + build
 
             # Create a build script.
             with open(os.path.join(os.getcwd(), "build.bat"), 'w') as fd:

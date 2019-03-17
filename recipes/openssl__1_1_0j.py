@@ -46,6 +46,7 @@ class Recipe(Builder):
         },
     }
     dependencies = []
+    toolchain = ["nasm", "perl", "vs2015"]
     build_cmds = {
         'x86' : [
             f'vcvarsall.bat x86',
