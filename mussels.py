@@ -12,6 +12,8 @@ Copyright (C)2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved
 '''
 
 '''
+Author: Micah Snyder
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,15 +29,19 @@ limitations under the License.
 
 from collections import defaultdict
 import datetime
+import json
 import logging
 import os
 import pkgutil
 import sys
+import time
 
 import click
+import coloredlogs
 
 logging.basicConfig()
 module_logger = logging.getLogger('mussels')
+coloredlogs.install(level='DEBUG')
 module_logger.setLevel(logging.DEBUG)
 
 RECIPES = defaultdict(dict)
@@ -59,35 +65,218 @@ for recipe in RECIPES:
     for idx,version in enumerate(versions_list):
         SORTED_RECIPES[recipe].append(version)
 
-def build_recipe(recipe: str, version: str, tempdir: str):
+def build_recipe(recipe: str, version: str, tempdir: str) -> dict:
     '''
     Build a specific recipe.
     '''
+    result = {
+        'name' : recipe,
+        'version' : version,
+        'success' : False
+    }
+
+    start = time.time()
+
     module_logger.info(f"Attempting to build {recipe}...")
 
     if version == "":
         # Use the default (highest) version
-        version = SORTED_RECIPES[recipe][0]
+        try:
+            version = SORTED_RECIPES[recipe][0]
+        except KeyError:
+            module_logger.error(f"FAILED to find recipe: {recipe}!")
+            result['time elapsed'] = time.time() - start
+            return result
 
     try:
         builder = RECIPES[recipe][version](tempdir)
     except KeyError:
-        module_logger.error(f" !! Failed to find recipe for: {recipe} @ {version}")
-        return None
+        module_logger.error(f"FAILED to find recipe: {recipe}-{version}!")
+        result['time elapsed'] = time.time() - start
+        return result
 
     if builder.build() == False:
-        module_logger.error(f" !! {recipe} build Failed !!\n")
+        module_logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
     else:
-        module_logger.info(f" :) {recipe} build Succeeded (:\n")
-        builder.install()
+        module_logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
+        if builder.install() == False:
+            module_logger.error(f"FAILURE: {recipe}-{version} install failed!\n")
+        else:
+            module_logger.info(f"Success: {recipe}-{version} install succeeded. :)\n")
+            result['success'] = True
 
-    return builder
+    result['time elapsed'] = time.time() - start
+
+    return result
+
+def compare_versions(version_a: str, version_b: str) -> int:
+    '''
+    Evaluate version strings of two versions.
+    Compare if version A against version B.
+    :return: -1  if A < B
+    :return: 0   if A == B
+    :return: 1   if A > B 
+    '''
+    if version_a == version_b:
+        return 0
+
+    versions_list = [version_a, version_b]
+    versions_list.sort(key=lambda s: [str(u) for u in s.split('.')])
+
+    if versions_list[0] == version_a:
+        return -1
+    else:
+        return 1
+
+def get_recipe_version(recipe: str) -> tuple:
+    '''
+    Convert a recipe name in the format to a (recipe, version) tuple:
+
+        recipe[ >=, <=, >, <, (==|=|@) version ]
+
+    Examples:
+        - meepioux
+        - blarghus>=1.2.3
+        - wheeple@0.2.0
+        - pyplo==5.1.0g
+
+    The highest available version will be selected if one is not specified.
+    Version requirements will whittle down the list of available versions
+    in the global SORTED_RECIPES list.
+
+    If a specific version is specified, all other versions will be disqualified.
+
+    If no versions remain that satisfy build qualifications, an exception will be raised.
+
+    :return: tuple of the recipe (name,version) with the highest qualified version.
+    '''
+    if ">=" in recipe:
+        # GTE requirement found.
+        name, version = recipe.split(">=")
+        for i,ver in enumerate(SORTED_RECIPES[name]):
+            cmp = compare_versions(ver, version)
+            if (cmp < 0):
+                # Version is too low. Remove it, and subsequent versions.
+                SORTED_RECIPES[name] = SORTED_RECIPES[name][:i]
+                break
+
+    elif ">" in recipe:
+        # GT requirement found.
+        name, version = recipe.split(">")
+        for i,ver in enumerate(SORTED_RECIPES[name]):
+            cmp = compare_versions(ver, version)
+            if (cmp <= 0):
+                # Version is too low. Remove it, and subsequent versions.
+                SORTED_RECIPES[name] = SORTED_RECIPES[name][:i]
+                break
+
+    elif "<=" in recipe:
+        # LTE requirement found.
+        name, version = recipe.split("<=")
+        try:
+            first = SORTED_RECIPES[name][0]
+        except:
+            raise Exception(f"No versions available to satisfy requirement for {recipe}")
+        while compare_versions(first, version) > 0:
+            # Remove a version from the SORTED_RECIPES.
+            SORTED_RECIPES[name].remove(version)
+
+            try:
+                first = SORTED_RECIPES[name][0]
+            except:
+                raise Exception(f"No versions available to satisfy requirement for {recipe}")
+
+    elif "<" in recipe:
+        # LT requirement found.
+        name, version = recipe.split("<")
+        try:
+            first = SORTED_RECIPES[name][0]
+        except:
+            raise Exception(f"No versions available to satisfy requirement for {recipe}")
+        while compare_versions(first, version) >= 0:
+            # Remove a version from the SORTED_RECIPES.
+            SORTED_RECIPES[name].remove(version)
+
+            try:
+                first = SORTED_RECIPES[name][0]
+            except:
+                raise Exception(f"No versions available to satisfy requirement for {recipe}")
+    else:
+        eq_cond = False
+        if ("==" in recipe):
+            name, version = recipe.split("==")
+            eq_cond = True
+        elif ("=" in recipe):
+            name, version = recipe.split("=")
+            eq_cond = True
+        elif ("@" in recipe):
+            name, version = recipe.split("@")
+            eq_cond = True
+            
+        if eq_cond == True:
+            # EQ requirement found.
+            # Try to find the specific version, and remove all others.
+            if not version in  SORTED_RECIPES[name]:
+                raise Exception(f"No versions available to satisfy requirement for {recipe}")
+            SORTED_RECIPES[name] = [version]
+
+        else:
+            # No version requirement found.
+            name = recipe
+
+    try:
+        selected_version = SORTED_RECIPES[name][0]
+    except:
+        raise Exception(f"No versions available to satisfy requirement for {recipe}")
+
+    return (name, selected_version)
+
+def get_build_batches(recipes: list) -> list:
+    '''
+    Get list of build batches that can be built concurrently. 
+    '''
+    # Build a map of recipes (name,version) tuples to sets of dependency (name,version) tuples
+    name_to_deps = {}
+    for recipe in recipes:
+        name, version = get_recipe_version(recipe)
+        dependencies = RECIPES[name][version].dependencies
+        name_to_deps[name] = set([get_recipe_version(recipe)[0] for recipe in dependencies])
+
+    batches = []
+
+    # While there are dependencies to solve...
+    while name_to_deps:
+
+        # Get all recipes with no dependencies
+        ready = {recipe for recipe, deps in name_to_deps.items() if not deps}
+
+        # If there aren't any, we have a loop in the graph
+        if not ready:
+            msg  = "Circular dependencies found!\n"
+            msg += json.dumps(name_to_deps, indent=4)
+            raise ValueError(msg)
+
+        # Remove them from the dependency graph
+        for recipe in ready:
+            del name_to_deps[recipe]
+        for deps in name_to_deps.values():
+            deps.difference_update(ready)
+
+        # Add the batch to the list
+        batches.append( ready )
+
+    # Return the list of batches
+    return batches
 
 def print_results(results: list):
     '''
     Print the build results in a pretty way.
     '''
-    pass
+    for result in results:
+        if result["success"] == True:
+            module_logger.info(f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}.")
+        else:
+            module_logger.error(f"Failure building {result['name']-result['version']}, teminrated after {datetime.timedelta(0, result['time elapsed'])}")
 
 class SpecialEpilog(click.Group):
     def format_epilog(self, ctx, formatter):
@@ -103,29 +292,55 @@ def cli():
 @click.option('--recipe', '-r', required=False, 
               type=click.Choice(list(RECIPES.keys()) + ["all"]),
               default="all",
-              help='Recipe to build.')
+              help='Recipe to build. Format: recipe[@version]')
 @click.option('--version', '-v', default="",
-              help='Version of recipe to build. [optional]')
+              help='Version of recipe to build. May not be combined with @version in recipe name. [optional]')
 @click.option('--tempdir', '-t', default="",
               help='Build in a specific directory instead of a temp directory. [optional]')
-def build(recipe: str, version: str, tempdir: str):
+@click.option('--dryrun', '-d', is_flag=True,
+              help='Print out the version dependency graph without actually doing a build. [optional]')
+def build(recipe: str, version: str, tempdir: str, dryrun: bool):
     '''
     Download, extract, build, and install the recipe.
     '''
-    if tempdir == "":
-        # Create a temporary directory to work in.
-        tempdir = os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-'))
-        os.mkdir(tempdir)
-    else:
-        # Use the current working directory.
-        tempdir = os.path.join(tempdir)
+    if not dryrun:
+        # Only need a temp directory for a real build.
+        if tempdir == "":
+            # Create a temporary directory to work in.
+            tempdir = os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-'))
+            os.mkdir(tempdir)
+        else:
+            # Use the current working directory.
+            tempdir = os.path.join(tempdir)
+
+    batches = []
+    results = []
 
     if recipe == "all":
-        results = [build_recipe(key, version, tempdir) for key in RECIPES.keys()]
+        batches = get_build_batches(RECIPES.keys())
     else:
-        results = [build_recipe(recipe, version, tempdir),]
+        if version == "":
+            batches = get_build_batches([recipe])
+        else:
+            batches = get_build_batches([f"{recipe}=={version}"])
 
-    print_results(results)
+    if dryrun:
+        module_logger.info("Dry-run: Build-order of requested recipes:")
+
+    idx = 0
+    for i, bundle in enumerate(batches):
+        for j, recipe in enumerate(bundle):
+            idx += 1
+
+            if dryrun:
+                module_logger.info(f"   {idx:2} [{i}:{j:2}]: {recipe}-{SORTED_RECIPES[recipe][0]}")
+                continue
+
+            result = build_recipe(recipe, SORTED_RECIPES[recipe][0], tempdir)
+            results.append(result)
+
+    if not dryrun:
+        print_results(results)
 
 @cli.command()
 def ls():
@@ -133,16 +348,16 @@ def ls():
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
     '''
-    print("Recipes:")
+    module_logger.info("Recipes:")
     for recipe in SORTED_RECIPES:
-        outline = f"\t{recipe} ["
+        outline = f"    {recipe:10} ["
         for i,version in enumerate(SORTED_RECIPES[recipe]):
             if i == 0:
                 outline += f" {version}*"
             else:
                 outline += f", {version}"
         outline += " ]"
-        print(outline)
+        module_logger.info(outline)
 
 if __name__ == '__main__':
     cli(sys.argv[1:])

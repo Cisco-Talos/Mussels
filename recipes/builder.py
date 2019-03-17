@@ -29,22 +29,35 @@ class Builder(object):
     Base class for Mussels recipe.
     '''
     name = "sample"
+
     version = "1.2.3"
+
     url = "https://sample.com/sample.tar.gz"
+
     archive_name_change = ("","") # Tuple of strings to replace: Eg. ("v", "nghttp2-")
+                                  # This hack is necessary because archives with changed
+                                  # will extract to their original directory name.
+
     install_paths = {
         "include" : {
-            "x86" : "", # Include directory for x86: "<relative path to headers>",
-            "x64" : "", # Include directory for x64: "<relative path to headers>",
+            "x86" : [], # List of include directories for x86: ["<relative path to headers>"],
+            "x64" : [], # List of include directories for x64: ["<relative path to headers>"],
         },
         "lib" : {
             "x86" : [], # List of built x86 libraries: ["<relative path to DLL>",],
             "x64" : [], # List of built x64 libraries: ["<relative path to DLL>",],
         }
     }
+
     dependencies = []   # Dependencies on other Mussels builds.
+                        # str format:  name@version.
+                        #    "@version" is optional.
+                        #    If version is omitted, the default (highest) will be selected.
+
     toolchain = []      # List of tools required by the build commands.
+
     build_cmds = {}     # Dictionary containing build command lists.
+
     builds = {}         # Dictionary of build paths.
 
     def __init__(self, tempdir=None):
@@ -76,14 +89,14 @@ class Builder(object):
         '''
         Initializes the logging parameters
         '''
-        self.logger = logging.getLogger(f'mussels.{self.name}-{self.version}')
+        self.logger = logging.getLogger(f'{self.name}-{self.version}')
         self.logger.setLevel(os.environ.get('LOG_LEVEL', logging.DEBUG))
 
         formatter = logging.Formatter(
             fmt='%(asctime)s - %(levelname)s:  %(message)s',
             datefmt='%m/%d/%Y %I:%M:%S %p')
 
-        self.log_file = os.path.join(self.tempdir, f"mussels.{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(':', '_'))
+        self.log_file = os.path.join(self.tempdir, f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(':', '_'))
         filehandler = logging.FileHandler(filename=self.log_file)
         filehandler.setLevel(logging.DEBUG)
         filehandler.setFormatter(formatter)
