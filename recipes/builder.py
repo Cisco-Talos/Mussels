@@ -366,7 +366,7 @@ class Builder(object):
 
             # Create a build script.
             with open(os.path.join(os.getcwd(), "build.bat"), 'w') as fd:
-                fd.write(' && ping 127.0.0.1 -n 10 > nul && '.join(self.build_cmds[build]))
+                fd.write(' && '.join(self.build_cmds[build]))
 
             # Run the build script.
             completed_process = subprocess.Popen(os.path.join(os.getcwd(), "build.bat"), shell=True)

@@ -276,7 +276,7 @@ def print_results(results: list):
         if result["success"] == True:
             module_logger.info(f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}.")
         else:
-            module_logger.error(f"Failure building {result['name']-result['version']}, teminrated after {datetime.timedelta(0, result['time elapsed'])}")
+            module_logger.error(f"Failure building {result['name']}-{result['version']}, teminrated after {datetime.timedelta(0, result['time elapsed'])}")
 
 class SpecialEpilog(click.Group):
     def format_epilog(self, ctx, formatter):

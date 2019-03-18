@@ -15,6 +15,7 @@ limitations under the License.
 '''
 
 import os
+import shutil
 
 from recipes.builder import Builder
 
@@ -27,12 +28,42 @@ class Recipe(Builder):
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-1-11-0-release.tar.gz"
     install_paths = {
         "include" : {
-            "x86" : ["include"],
-            "x64" : ["include"],
+            "x86" : ["pthread.h"],
+            "x64" : ["pthread.h"],
         },
         "lib" : {
-            "x86" : [os.path.join("win32", "pthreads.dll"),],
-            "x64" : [os.path.join("x64", "pthreads.dll"),],
+            "x86" : ["pthreadVC1.dll"],
+            "x64" : ["pthreadVC1.dll"],
         },
     }
     dependencies = []
+    toolchain = ["vs2015"]
+    build_cmds = {
+        'x86' : [
+            'vcvarsall.bat x86',
+            'nmake clean VC'
+        ],
+        'x64' : [
+            'vcvarsall.bat amd64',
+            'nmake clean VC'
+        ]
+    }
+
+    def build(self) -> bool:
+        '''
+        Override the original build() function to replace some text in pthread.h
+        because it is a buggy peice of crap.
+        '''
+        cwd = os.getcwd()
+        os.chdir(self.build_path)
+
+        shutil.copyfile("pthread.h", "pthread.h.bak")
+        with open("pthread.h.bak", "r") as pthread_h_bak:
+            with open("pthread.h", "w") as pthread_h:
+                for line in pthread_h_bak:
+                    if "#include <time.h>" in line:
+                        pthread_h.write("#define HAVE_STRUCT_TIMESPEC\n")
+                    pthread_h.write(line)
+        
+        os.chdir(cwd)
+        return super().build()
