@@ -27,14 +27,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-## Usage
+## Example Usage
 
-usage: mussels.py [-h] [--build {all,curl,nghttp2,openssl,pthreads,zlib}]
-                  [--notemp]
+View all available recipes:
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --build {all,curl,nghttp2,openssl,pthreads,zlib}
-                        Choose a specific target you wish to build.
-  --notemp              Uses the current working directory instead of a temp
-                        directory.
+> `python mussels.py ls`
+
+Perform a dry-run to view order in which dependency graph will be build all recipes:
+
+> `python mussels.py build -d`
+
+Perform a dry-run to view order in which dependency graph will be build a specific recipe:
+
+> `python mussels.py build -r openssl -d`
+
+Build a specific version of a recipe:
+
+> `python mussels.py build -r openssl -v 1.1.0j`
