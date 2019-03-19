@@ -407,9 +407,10 @@ class Builder(object):
         for build in self.install_paths:
             if build == "x86":
                 install_arch = "Win32"
-            install_arch = build
+            else:
+                install_arch = build
 
-            for install_path in self.install_paths:
+            for install_path in self.install_paths[build]:
 
                 for install_item in self.install_paths[build][install_path]:
                     src_path = os.path.join(self.builds[build], install_item)
