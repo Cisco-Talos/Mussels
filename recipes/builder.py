@@ -39,13 +39,18 @@ class Builder(object):
                                   # will extract to their original directory name.
 
     install_paths = {
-        "include" : {
-            "x86" : [], # List of include directories for x86: ["<relative path to headers>"],
-            "x64" : [], # List of include directories for x64: ["<relative path to headers>"],
+        "x86" : {
+           # "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
+           # "lib" : [],          # Will copy source item to destination directory,
         },
-        "lib" : {
-            "x86" : [], # List of built x86 libraries: ["<relative path to DLL>",],
-            "x64" : [], # List of built x64 libraries: ["<relative path to DLL>",],
+        "x64" : {
+           # "include" : [        # Examples:
+           #     "blarghus.h",    #  1. Copy file to x64\\include\\blarghus.h
+           #     "iface/blarghus" #  2. Copy directory to x64\\include\\blarghus
+           # ],
+           # "lib" : [
+           #     "Win32/blah.dll" #  3. Copy DLL to x64\\lib\\blah.dll
+           # ],
         }
     }
 
@@ -117,7 +122,7 @@ class Builder(object):
         if (os.path.exists(self.download_path)):
             self.logger.debug(f"Archive already downloaded.")
             return True
-        
+
         self.logger.info(f"Downloading {self.url} to {self.download_path}...")
 
         try:
@@ -136,24 +141,24 @@ class Builder(object):
         '''
         if self.download_path.endswith(".tar.gz"):
             # Un-tar
-            self.build_path = os.path.join(self.tempdir, self.archive[:-7])
-            if (os.path.exists(self.build_path)):
+            self.extracted_source_path = os.path.join(self.tempdir, self.archive[:-7])
+            if (os.path.exists(self.extracted_source_path)):
                 self.logger.debug(f"Archive already extracted.")
                 return True
 
-            self.logger.info(f"Extracting Tarball {self.archive} to {self.build_path}...")
+            self.logger.info(f"Extracting Tarball {self.archive} to {self.extracted_source_path}...")
 
             tar = tarfile.open(self.download_path, "r:gz")
             tar.extractall(self.tempdir)
             tar.close()
         elif self.download_path.endswith(".zip"):
             # Un-zip
-            self.build_path = os.path.join(self.tempdir, self.archive[:-4])
-            if (os.path.exists(self.build_path)):
+            self.extracted_source_path = os.path.join(self.tempdir, self.archive[:-4])
+            if (os.path.exists(self.extracted_source_path)):
                 self.logger.debug(f"Archive already extracted.")
                 return True
 
-            self.logger.info(f"Extracting Zip {self.archive} to {self.build_path}...")
+            self.logger.info(f"Extracting Zip {self.archive} to {self.extracted_source_path}...")
 
             zip_ref = zipfile.ZipFile(self.download_path, 'r')
             zip_ref.extractall(self.tempdir)
@@ -336,23 +341,31 @@ class Builder(object):
 
             # Check for prior completed build output.
             self.logger.info(f"Attempting to build {self.name}-{self.version} for {build}")
-            self.builds[build] = self.build_path + "." + build
+            self.builds[build] = self.extracted_source_path + "." + build
 
             if os.path.exists(self.builds[build]):
                 self.logger.debug("Checking for prior build output...")
-                for dll in self.install_paths["lib"][build]:
-                    self.logger.debug(f"Checking for {dll}")
+                for install_path in self.install_paths[build]:
+                    for install_item in self.install_paths[build][install_path]:
+                        self.logger.debug(f"Checking for {install_item}")
 
-                    if not os.path.exists(os.path.join(self.builds[build], dll)):
-                        self.logger.debug(f"{dll} not found.")
-                        already_built = False
-                        break
+                        if not os.path.exists(os.path.join(self.builds[build], install_item)):
+                            self.logger.debug(f"{install_item} not found.")
+                            already_built = False
+                            break
 
                 if already_built == True:
+                    # It looks like there was a successful prior build. Skip.
                     self.logger.info(f"{self.name}-{self.version} {build} build output already exists.")
                     continue
+                else:
+                    # It appears that the previous build is missing the desired build output.
+                    # Maybe the previous build failed?
+                    # Probably should delete the incomplete build directory and try again.
+                    shutil.rmtree(self.builds[build])
             else:
-                shutil.copytree(self.build_path, self.builds[build])
+                # Make our own copy of the extracted source so we don't dirty the original.
+                shutil.copytree(self.extracted_source_path, self.builds[build])
 
             # Run the build.
             cwd = os.getcwd()
@@ -375,6 +388,7 @@ class Builder(object):
                 self.logger.warning(f"{self.name}-{self.version} {build} build failed!")
                 self.logger.warning(f"Command: {' && '.join(self.build_cmds[build])}\n")
                 self.logger.warning(f"Exit code: {completed_process.returncode}")
+                os.chdir(cwd)
                 return False
 
             self.logger.info(f"{self.name}-{self.version} {build} build succeeded.")
@@ -390,16 +404,16 @@ class Builder(object):
 
         self.logger.info(f"Copying {self.name}-{self.version} install files into install directory.")
 
-        for target_type in self.install_paths:
-            
-            for build in self.build_cmds:
-                install_arch = build
-                if build == "x86":
-                    install_arch = "Win32"
+        for build in self.install_paths:
+            if build == "x86":
+                install_arch = "Win32"
+            install_arch = build
 
-                for target in self.install_paths[target_type][build]:
-                    src_path = os.path.join(self.builds[build], target)
-                    dst_path = os.path.join(install_path, install_arch, target_type, os.path.basename(target))
+            for install_path in self.install_paths:
+
+                for install_item in self.install_paths[build][install_path]:
+                    src_path = os.path.join(self.builds[build], install_item)
+                    dst_path = os.path.join(install_path, install_arch, install_path, os.path.basename(install_item))
 
                     # Create the target install paths, if it doesn't already exist.
                     os.makedirs(os.path.split(dst_path)[0], exist_ok=True)

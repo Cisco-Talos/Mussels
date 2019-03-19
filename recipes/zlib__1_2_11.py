@@ -26,13 +26,13 @@ class Recipe(Builder):
     version = "1.2.11"
     url = "https://www.zlib.net/zlib-1.2.11.tar.gz"
     install_paths = {
-        "include" : {
-            "x86" : ["zlib.h"],
-            "x64" : ["zlib.h"],
+        "x86" : {
+            "include" : ["zlib.h"],
+            "lib" : [os.path.join("Release", "zlib.dll"),],
         },
-        "lib" : {
-            "x86" : [os.path.join("Release", "zlib.dll"),],
-            "x64" : [os.path.join("Release" ,"zlib.dll"),],
+        "x64" : {
+            "include" : ["zlib.h"],
+            "lib" : [os.path.join("Release", "zlib.dll"),],
         },
     }
     dependencies = []

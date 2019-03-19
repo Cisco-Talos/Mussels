@@ -27,13 +27,13 @@ class Recipe(Builder):
     url = "https://github.com/nghttp2/nghttp2/archive/v1.36.0.zip"
     archive_name_change = ("v", "nghttp2-")
     install_paths = {
-        "include" : {
-            "x86" : ["include"],
-            "x64" : ["include"],
+        "x86" : {
+            "include" : ["include"],
+            "lib" : [os.path.join("win32", "libnghttp2.dll"),],
         },
-        "lib" : {
-            "x86" : [os.path.join("win32", "libnghttp2.dll"),],
-            "x64" : [os.path.join("x64", "libnghttp2.dll"),],
+        "x64" : {
+            "include" : ["include"],
+            "lib" : [os.path.join("x64", "libnghttp2.dll"),],
         },
     }
     dependencies = []

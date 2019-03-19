@@ -27,13 +27,13 @@ class Recipe(Builder):
     version = "1.11.0"
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-1-11-0-release.tar.gz"
     install_paths = {
-        "include" : {
-            "x86" : ["pthread.h"],
-            "x64" : ["pthread.h"],
+        "x86" : {
+            "include" : ["pthread.h"],
+            "lib" : ["pthreadVC1.dll"],
         },
-        "lib" : {
-            "x86" : ["pthreadVC1.dll"],
-            "x64" : ["pthreadVC1.dll"],
+        "x64" : {
+            "include" : ["pthread.h"],
+            "lib" : ["pthreadVC1.dll"],
         },
     }
     dependencies = []
@@ -55,7 +55,7 @@ class Recipe(Builder):
         because it is a buggy peice of crap.
         '''
         cwd = os.getcwd()
-        os.chdir(self.build_path)
+        os.chdir(self.extracted_source_path)
 
         shutil.copyfile("pthread.h", "pthread.h.bak")
         with open("pthread.h.bak", "r") as pthread_h_bak:
@@ -64,6 +64,6 @@ class Recipe(Builder):
                     if "#include <time.h>" in line:
                         pthread_h.write("#define HAVE_STRUCT_TIMESPEC\n")
                     pthread_h.write(line)
-        
+
         os.chdir(cwd)
         return super().build()

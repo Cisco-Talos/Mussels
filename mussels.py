@@ -1,9 +1,9 @@
 r'''
-  __    __     __  __     ______     ______     ______     __         ______    
- /\ "-./  \   /\ \/\ \   /\  ___\   /\  ___\   /\  ___\   /\ \       /\  ___\   
- \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \  
-  \ \_\ \ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \/\_____\ 
-   \/_/  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/ 
+  __    __     __  __     ______     ______     ______     __         ______
+ /\ "-./  \   /\ \/\ \   /\  ___\   /\  ___\   /\  ___\   /\ \       /\  ___\
+ \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \
+  \ \_\ \ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \/\_____\
+   \/_/  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/
 
 A tool to download, build, and assemble application dependencies.
                                     Brought to you by the Clam AntiVirus Team.
@@ -115,7 +115,7 @@ def compare_versions(version_a: str, version_b: str) -> int:
     Compare if version A against version B.
     :return: -1  if A < B
     :return: 0   if A == B
-    :return: 1   if A > B 
+    :return: 1   if A > B
     '''
     if version_a == version_b:
         return 0
@@ -212,7 +212,7 @@ def get_recipe_version(recipe: str) -> tuple:
         elif ("@" in recipe):
             name, version = recipe.split("@")
             eq_cond = True
-            
+
         if eq_cond == True:
             # EQ requirement found.
             # Try to find the specific version, and remove all others.
@@ -231,13 +231,45 @@ def get_recipe_version(recipe: str) -> tuple:
 
     return (name, selected_version)
 
+def get_all_recipes(recipe: str, chain: list) -> list:
+    '''
+    Identify all recipes that must be built given a specific recipe.
+    '''
+    name, version = get_recipe_version(recipe)
+
+    if name in chain:
+        raise ValueError(f"Circular dependencies found! {chain}")
+    chain.append(name)
+
+    recipes = []
+
+    recipes.append(recipe)
+
+    dependencies = RECIPES[name][version].dependencies
+    for recipe in dependencies:
+        recipes += get_all_recipes(recipe, chain)
+
+    return recipes
+
+def get_all_recipes_from_list(recipes: list) -> set:
+    '''
+    Identify all recipes that must be built given a list of recipes.
+    '''
+    all_recipes = []
+    for recipe in recipes:
+        all_recipes += get_all_recipes(recipe, [])
+
+    return set(all_recipes)
+
 def get_build_batches(recipes: list) -> list:
     '''
-    Get list of build batches that can be built concurrently. 
+    Get list of build batches that can be built concurrently.
     '''
+    all_recipes = get_all_recipes_from_list(recipes)
+
     # Build a map of recipes (name,version) tuples to sets of dependency (name,version) tuples
     name_to_deps = {}
-    for recipe in recipes:
+    for recipe in all_recipes:
         name, version = get_recipe_version(recipe)
         dependencies = RECIPES[name][version].dependencies
         name_to_deps[name] = set([get_recipe_version(recipe)[0] for recipe in dependencies])
@@ -289,7 +321,7 @@ def cli():
     print(__doc__)
 
 @cli.command()
-@click.option('--recipe', '-r', required=False, 
+@click.option('--recipe', '-r', required=False,
               type=click.Choice(list(RECIPES.keys()) + ["all"]),
               default="all",
               help='Recipe to build. Format: recipe[@version]')

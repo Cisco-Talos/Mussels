@@ -26,13 +26,13 @@ class Recipe(Builder):
     version = "7.64.0"
     url = "https://curl.haxx.se/download/curl-7.64.0.zip"
     install_paths = {
-        "include" : {
-            "x86" : ["include"],
-            "x64" : ["include"],
+        "x86" : {
+            "include" : ["include"],
+            "lib" : [os.path.join("win32", "libcurl.dll"),],
         },
-        "lib" : {
-            "x86" : [os.path.join("win32", "libcurl.dll"),],
-            "x64" : [os.path.join("x64", "libcurl.dll"),],
+        "x64" : {
+            "include" : ["include"],
+            "lib" : [os.path.join("x64", "libcurl.dll"),],
         },
     }
     dependencies = ["openssl", "nghttp2", "zlib"]

@@ -26,21 +26,17 @@ class Recipe(Builder):
     version = "1.1.1b"
     url = "https://www.openssl.org/source/openssl-1.1.1b.tar.gz"
     install_paths = {
-        "include" : {
-            "x86" : [
-                os.path.join("include", "openssl"),
-            ],
-            "x64" : [
-                os.path.join("include", "openssl"),
-            ],
-        },
-        "lib" : {
-            "x86" : [
-                os.path.join("libssl-1_1.dll"), 
+        "x86" : {
+            "include" : [os.path.join("include", "openssl")],
+            "lib" : [
+                os.path.join("libssl-1_1.dll"),
                 os.path.join("libcrypto-1_1.dll"),
             ],
-            "x64" : [
-                os.path.join("libssl-1_1-x64.dll"), 
+        },
+        "x64" : {
+            "include" : [os.path.join("include", "openssl")],
+            "lib" : [
+                os.path.join("libssl-1_1-x64.dll"),
                 os.path.join("libcrypto-1_1-x64.dll"),
             ],
         },
