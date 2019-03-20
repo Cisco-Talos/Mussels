@@ -20,7 +20,7 @@ from recipes.builder import Builder
 
 class Recipe(Builder):
     '''
-    Recipe to build libnghttp2.
+    Recipe to build nghttp2.
     '''
     name = "nghttp2"
     version = "1.36.0"
@@ -28,12 +28,23 @@ class Recipe(Builder):
     archive_name_change = ("v", "nghttp2-")
     install_paths = {
         "x86" : {
-            "include" : ["include"],
-            "lib" : [os.path.join("win32", "libnghttp2.dll"),],
+            "include" : [os.path.join("lib", "includes", "nghttp2")],
+            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
         },
         "x64" : {
-            "include" : ["include"],
-            "lib" : [os.path.join("x64", "libnghttp2.dll"),],
+            "include" : [os.path.join("lib", "includes", "nghttp2")],
+            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
         },
     }
     dependencies = []
+    toolchain = ["cmake", "vs2017"]
+    build_script = {
+        'x86' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe --build . --config Release
+        ''',
+        'x64' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe --build . --config Release
+        ''',
+    }

@@ -38,15 +38,15 @@ class Recipe(Builder):
     }
     dependencies = []
     toolchain = ["vs2015"]
-    build_cmds = {
-        'x86' : [
-            'vcvarsall.bat x86',
-            'nmake clean VC'
-        ],
-        'x64' : [
-            'vcvarsall.bat amd64',
-            'nmake clean VC'
-        ]
+    build_script = {
+        'x86' : '''
+            CALL vcvarsall.bat x86
+            CALL nmake clean VC
+        ''',
+        'x64' : '''
+            CALL vcvarsall.bat amd64
+            CALL nmake clean VC
+        ''',
     }
 
     def build(self) -> bool:

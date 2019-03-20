@@ -27,12 +27,26 @@ class Recipe(Builder):
     url = "https://curl.haxx.se/download/curl-7.64.0.zip"
     install_paths = {
         "x86" : {
-            "include" : ["include"],
-            "lib" : [os.path.join("win32", "libcurl.dll"),],
+            "include" : [os.path.join("include", "curl")],
+            "lib" : [os.path.join("curl-build", "lib", "Release", "libcurl.dll"),],
         },
         "x64" : {
-            "include" : ["include"],
-            "lib" : [os.path.join("x64", "libcurl.dll"),],
+            "include" : [os.path.join("include", "curl")],
+            "lib" : [os.path.join("curl-build", "lib", "Release", "libcurl.dll"),],
         },
     }
-    dependencies = ["openssl", "nghttp2", "zlib"]
+    dependencies = ["openssl", "nghttp2>=1.0.0", "zlib"]
+    build_script = {
+        'x86' : '''
+            CALL set CMAKE_USE_OPENSSL
+            CALL set OPENSSL_INCLUDE_DIR="{includes}"
+            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe --build . --config Release
+        ''',
+        'x64' : '''
+            CALL set CMAKE_USE_OPENSSL
+            CALL set OPENSSL_INCLUDE_DIR="{includes}"
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe --build . --config Release
+        ''',
+    }

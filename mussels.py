@@ -308,7 +308,7 @@ def print_results(results: list):
         if result["success"] == True:
             module_logger.info(f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}.")
         else:
-            module_logger.error(f"Failure building {result['name']}-{result['version']}, teminrated after {datetime.timedelta(0, result['time elapsed'])}")
+            module_logger.error(f"Failure building {result['name']}-{result['version']}, terminated after {datetime.timedelta(0, result['time elapsed'])}")
 
 class SpecialEpilog(click.Group):
     def format_epilog(self, ctx, formatter):
@@ -339,11 +339,11 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
         # Only need a temp directory for a real build.
         if tempdir == "":
             # Create a temporary directory to work in.
-            tempdir = os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-'))
+            tempdir = os.path.abspath(os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')))
             os.mkdir(tempdir)
         else:
             # Use the current working directory.
-            tempdir = os.path.join(tempdir)
+            tempdir = os.path.abspath(os.path.join(tempdir))
 
     batches = []
     results = []

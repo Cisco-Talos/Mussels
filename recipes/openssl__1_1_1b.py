@@ -43,15 +43,15 @@ class Recipe(Builder):
     }
     dependencies = []
     toolchain = ["nasm", "perl", "vs2015"]
-    build_cmds = {
-        'x86' : [
-            f'vcvarsall.bat x86',
-            f'perl Configure VC-WIN32',
-            f'nmake',
-        ],
-        'x64' : [
-            f'vcvarsall.bat amd64',
-            f'perl Configure VC-WIN64A',
-            f'nmake',
-        ]
+    build_script = {
+        'x86' : '''
+            CALL vcvarsall.bat x86
+            CALL perl Configure VC-WIN32
+            CALL nmake
+        ''',
+        'x64' : '''
+            CALL vcvarsall.bat amd64
+            CALL perl Configure VC-WIN64A
+            CALL nmake
+        ''',
     }

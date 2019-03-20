@@ -37,14 +37,14 @@ class Recipe(Builder):
     }
     dependencies = []
     toolchain = ["cmake", "vs2017"]
-    build_cmds = {
-        'x86' : [
-            f'cmake.exe -G "Visual Studio 15 2017"',
-            f'cmake.exe --build . --config Release',
-        ],
-        'x64' : [
-            f'cmake.exe -G "Visual Studio 15 2017 Win64"',
-            f'cmake.exe --build . --config Release',
-        ]
+    build_script = {
+        'x86' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe --build . --config Release
+        ''',
+        'x64' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe --build . --config Release
+        ''',
     }
 

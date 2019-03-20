@@ -16,22 +16,24 @@ limitations under the License.
 
 import datetime
 from distutils import dir_util
+import inspect
 import logging
 import os
+import platform
 import requests
 import shutil
 import subprocess
 import tarfile
 import zipfile
 
+from io import StringIO
+
 class Builder(object):
     '''
     Base class for Mussels recipe.
     '''
     name = "sample"
-
     version = "1.2.3"
-
     url = "https://sample.com/sample.tar.gz"
 
     archive_name_change = ("","") # Tuple of strings to replace: Eg. ("v", "nghttp2-")
@@ -61,20 +63,46 @@ class Builder(object):
 
     toolchain = []      # List of tools required by the build commands.
 
-    build_cmds = {}     # Dictionary containing build command lists.
+    build_script = {    # Dictionary containing build script. Example below is for generic CMake build.
+                        # Variables in "".format() syntax will be evaluated at build() time.
+                        # Variable options include:
+                        # - install:  The base install directory for build output.
+                        # - includes: The install/{build}/include directory.
+                        # - libs:     The install/{build}/lib directory.
+                        # - build:    The build directory for a given build.
+        'x86' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe --build . --config Release
+        ''',
+        'x64' : '''
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe --build . --config Release
+        ''',
+    }
 
     builds = {}         # Dictionary of build paths.
 
-    def __init__(self, tempdir=None):
+    # The following will be defined during the build and exist here for convenience
+    # when writing build_script's using the f-string `f` prefix to help remember the
+    # names of variables.
+    tempdir = ""
+    installdir = ""
+
+    def __init__(self, tempdir="", installdir=""):
         '''
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
         '''
-        if tempdir == None:
+        if tempdir == "":
             # No temp dir provided, build in the current working directory.
             self.tempdir = os.getcwd()
         else:
-            self.tempdir = tempdir
+            self.tempdir = os.path.abspath(tempdir)
+
+        if installdir == "":
+            self.installdir = os.path.join(self.tempdir, "install")
+        else:
+            self.installdir = os.path.abspath(installdir)
 
         self.__init_logging()
 
@@ -336,7 +364,7 @@ class Builder(object):
         '''
         Run the build commands if the output files don't already exist.
         '''
-        for build in self.build_cmds:
+        for build in self.build_script:
             already_built = True
 
             # Check for prior completed build output.
@@ -362,9 +390,18 @@ class Builder(object):
                     # It appears that the previous build is missing the desired build output.
                     # Maybe the previous build failed?
                     # Probably should delete the incomplete build directory and try again.
+                    self.logger.debug(f"Removing dirty old {build} build directory:")
+                    self.logger.debug(f"   {self.builds[build]}")
                     shutil.rmtree(self.builds[build])
+
+                    # Make our own copy of the extracted source so we don't dirty the original.
+                    self.logger.debug(f"Creating new {build} build directory from extracted sources:")
+                    self.logger.debug(f"   {self.builds[build]}")
+                    shutil.copytree(self.extracted_source_path, self.builds[build])
             else:
                 # Make our own copy of the extracted source so we don't dirty the original.
+                self.logger.debug(f"Creating {build} build directory from extracted sources:")
+                self.logger.debug(f"\t{self.builds[build]}")
                 shutil.copytree(self.extracted_source_path, self.builds[build])
 
             # Run the build.
@@ -378,16 +415,37 @@ class Builder(object):
                 pass
 
             # Create a build script.
-            with open(os.path.join(os.getcwd(), "build.bat"), 'w') as fd:
-                fd.write(' && '.join(self.build_cmds[build]))
+            if platform.system() == "Windows":
+                script_name = "build.bat"
+                newline = '\r\n'
+            else:
+                script_name = "build.sh"
+                newline = '\n'
+
+            with open(os.path.join(os.getcwd(), script_name), 'w', newline=newline) as fd:
+                # Evaluate "".format() syntax in the build script
+                self.build_script[build] = self.build_script[build].format(
+                    includes=os.path.join(self.installdir, build, "include"),
+                    libs=os.path.join(self.installdir, build, "lib"),
+                    install=os.path.join(self.installdir),
+                    build=os.path.join(self.builds[build]),
+                )
+
+                # Write the build commands to a file
+                build_lines = self.build_script[build].splitlines()
+                for line in build_lines:
+                    fd.write(line.strip() + '\n')
 
             # Run the build script.
-            completed_process = subprocess.Popen(os.path.join(os.getcwd(), "build.bat"), shell=True)
-            completed_process.wait()
-            if completed_process.returncode != 0:
+            process = subprocess.Popen(os.path.join(os.getcwd(), script_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            with process.stdout:
+                for line in iter(process.stdout.readline, b''):
+                    self.logger.debug(line.decode('utf-8').strip())
+            process.wait()
+            if process.returncode != 0:
                 self.logger.warning(f"{self.name}-{self.version} {build} build failed!")
-                self.logger.warning(f"Command: {' && '.join(self.build_cmds[build])}\n")
-                self.logger.warning(f"Exit code: {completed_process.returncode}")
+                self.logger.warning(f"Command: {' && '.join(self.build_script[build])}\n")
+                self.logger.warning(f"Exit code: {process.returncode}")
                 os.chdir(cwd)
                 return False
 
@@ -396,12 +454,10 @@ class Builder(object):
 
         return True
 
-    def install(self, install="install"):
+    def install(self):
         '''
         Copy the headers and libs to an install directory in the format expected by ClamAV.
         '''
-        install_path = os.path.join(self.tempdir, install)
-
         self.logger.info(f"Copying {self.name}-{self.version} install files into install directory.")
 
         for build in self.install_paths:
@@ -414,7 +470,7 @@ class Builder(object):
 
                 for install_item in self.install_paths[build][install_path]:
                     src_path = os.path.join(self.builds[build], install_item)
-                    dst_path = os.path.join(install_path, install_arch, install_path, os.path.basename(install_item))
+                    dst_path = os.path.join(self.installdir, install_arch, install_path, os.path.basename(install_item))
 
                     # Create the target install paths, if it doesn't already exist.
                     os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
