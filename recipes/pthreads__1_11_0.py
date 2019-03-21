@@ -37,7 +37,7 @@ class Recipe(Builder):
         },
     }
     dependencies = []
-    toolchain = ["vs2015"]
+    toolchain = ["vs2017"]
     build_script = {
         'x86' : '''
             CALL vcvarsall.bat x86

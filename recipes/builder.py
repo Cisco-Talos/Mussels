@@ -51,7 +51,7 @@ class Builder(object):
            #     "iface/blarghus" #  2. Copy directory to x64\\include\\blarghus
            # ],
            # "lib" : [
-           #     "Win32/blah.dll" #  3. Copy DLL to x64\\lib\\blah.dll
+           #     "x64/blah.dll" #  3. Copy DLL to x64\\lib\\blah.dll
            # ],
         }
     }
@@ -311,6 +311,44 @@ class Builder(object):
 
         return True
 
+    def __install(self, build):
+        '''
+        Copy the headers and libs to an install directory in the format expected by ClamAV.
+        '''
+        self.logger.info(f"Copying {self.name}-{self.version} install files to: {self.installdir}.")
+
+        for install_path in self.install_paths[build]:
+
+            for install_item in self.install_paths[build][install_path]:
+                src_path = os.path.join(self.builds[build], install_item)
+                dst_path = os.path.join(self.installdir, build, install_path, os.path.basename(install_item))
+
+                # Create the target install paths, if it doesn't already exist.
+                os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
+
+                # Make sure it actually exists.
+                if not os.path.exists(src_path):
+                    self.logger.error(f"Required target files for installation do not exist:\n\t{src_path}")
+                    return False
+
+                # Remove prior installation, if exists.
+                if os.path.isdir(dst_path):
+                    shutil.rmtree(dst_path)
+                elif os.path.isfile(dst_path):
+                    os.remove(dst_path)
+
+                self.logger.debug(f"Copying: {src_path}")
+                self.logger.debug(f"     to: {dst_path}")
+
+                # Now copy the file or directory.
+                if os.path.isdir(src_path):
+                    dir_util.copy_tree(src_path, dst_path)
+                else:
+                    shutil.copyfile(src_path, dst_path)
+
+        self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
+        return True
+
     def detect_toolchain(self) -> bool:
         '''
         Detect existence of toolchain filepaths needed for the build.
@@ -377,7 +415,7 @@ class Builder(object):
                     for install_item in self.install_paths[build][install_path]:
                         self.logger.debug(f"Checking for {install_item}")
 
-                        if not os.path.exists(os.path.join(self.builds[build], install_item)):
+                        if not os.path.exists(os.path.join(self.installdir, build, install_path, os.path.basename(install_item))):
                             self.logger.debug(f"{install_item} not found.")
                             already_built = False
                             break
@@ -444,7 +482,9 @@ class Builder(object):
             process.wait()
             if process.returncode != 0:
                 self.logger.warning(f"{self.name}-{self.version} {build} build failed!")
-                self.logger.warning(f"Command: {' && '.join(self.build_script[build])}\n")
+                self.logger.warning(f"Command:")
+                for line in self.build_script[build].splitlines():
+                    self.logger.warning(line)
                 self.logger.warning(f"Exit code: {process.returncode}")
                 os.chdir(cwd)
                 return False
@@ -452,45 +492,7 @@ class Builder(object):
             self.logger.info(f"{self.name}-{self.version} {build} build succeeded.")
             os.chdir(cwd)
 
+            if self.__install(build) == False:
+                return False
+
         return True
-
-    def install(self):
-        '''
-        Copy the headers and libs to an install directory in the format expected by ClamAV.
-        '''
-        self.logger.info(f"Copying {self.name}-{self.version} install files into install directory.")
-
-        for build in self.install_paths:
-            if build == "x86":
-                install_arch = "Win32"
-            else:
-                install_arch = build
-
-            for install_path in self.install_paths[build]:
-
-                for install_item in self.install_paths[build][install_path]:
-                    src_path = os.path.join(self.builds[build], install_item)
-                    dst_path = os.path.join(self.installdir, install_arch, install_path, os.path.basename(install_item))
-
-                    # Create the target install paths, if it doesn't already exist.
-                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
-
-                    # Make sure it actually exists.
-                    if not os.path.exists(src_path):
-                        self.logger.error(f"Required target files for installation do not exist:\n\t{src_path}")
-                        return False
-
-                    # Remove prior installation, if exists.
-                    if os.path.isdir(dst_path):
-                        shutil.rmtree(dst_path)
-                    elif os.path.isfile(dst_path):
-                        os.remove(dst_path)
-
-                    self.logger.debug(f"Copying: {src_path}")
-                    self.logger.debug(f"     to: {dst_path}")
-
-                    # Now copy the file or directory.
-                    if os.path.isdir(src_path):
-                        dir_util.copy_tree(src_path, dst_path)
-                    else:
-                        shutil.copyfile(src_path, dst_path)

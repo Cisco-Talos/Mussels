@@ -20,20 +20,27 @@ from recipes.builder import Builder
 
 class Recipe(Builder):
     '''
-    Recipe to build nghttp2.
+    Recipe to build libssh2.
     '''
-    name = "nghttp2"
-    version = "1.36.0"
-    url = "https://github.com/nghttp2/nghttp2/archive/v1.36.0.zip"
-    archive_name_change = ("v", "nghttp2-")
+    name = "libssh2"
+    version = "1.8.1"
+    url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
     install_paths = {
         "x86" : {
-            "include" : [os.path.join("lib", "includes", "nghttp2")],
-            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
+            "include" : [
+                os.path.join("include", "libssh2.h"),
+                os.path.join("include", "libssh2_publickey.h"),
+                os.path.join("include", "libssh2_sftp.h"),
+            ],
+            "lib" : [os.path.join("Release", "libssh2.dll"),],
         },
         "x64" : {
-            "include" : [os.path.join("lib", "includes", "nghttp2")],
-            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
+            "include" : [
+                os.path.join("include", "libssh2.h"),
+                os.path.join("include", "libssh2_publickey.h"),
+                os.path.join("include", "libssh2_sftp.h"),
+            ],
+            "lib" : [os.path.join("Release", "libssh2.dll"),],
         },
     }
     dependencies = ["openssl", "zlib"]

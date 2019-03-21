@@ -99,11 +99,7 @@ def build_recipe(recipe: str, version: str, tempdir: str) -> dict:
         module_logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
     else:
         module_logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
-        if builder.install() == False:
-            module_logger.error(f"FAILURE: {recipe}-{version} install failed!\n")
-        else:
-            module_logger.info(f"Success: {recipe}-{version} install succeeded. :)\n")
-            result['success'] = True
+        result['success'] = True
 
     result['time elapsed'] = time.time() - start
 
@@ -237,7 +233,7 @@ def get_all_recipes(recipe: str, chain: list) -> list:
     '''
     name, version = get_recipe_version(recipe)
 
-    if name in chain:
+    if (len(chain) > 0) and (name == chain[0]):
         raise ValueError(f"Circular dependencies found! {chain}")
     chain.append(name)
 
@@ -246,8 +242,8 @@ def get_all_recipes(recipe: str, chain: list) -> list:
     recipes.append(recipe)
 
     dependencies = RECIPES[name][version].dependencies
-    for recipe in dependencies:
-        recipes += get_all_recipes(recipe, chain)
+    for dependency in dependencies:
+        recipes += get_all_recipes(dependency, chain)
 
     return recipes
 

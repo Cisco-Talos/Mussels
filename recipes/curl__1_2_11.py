@@ -35,7 +35,8 @@ class Recipe(Builder):
             "lib" : [os.path.join("lib", "Release", "libcurl.dll"),],
         },
     }
-    dependencies = ["openssl", "nghttp2>=1.0.0", "zlib"]
+    dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
+    toolchain = ["cmake", "vs2017"]
     build_script = {
         'x86' : '''
             CALL set CMAKE_USE_OPENSSL
