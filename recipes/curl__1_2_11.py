@@ -28,11 +28,11 @@ class Recipe(Builder):
     install_paths = {
         "x86" : {
             "include" : [os.path.join("include", "curl")],
-            "lib" : [os.path.join("curl-build", "lib", "Release", "libcurl.dll"),],
+            "lib" : [os.path.join("lib", "Release", "libcurl.dll"),],
         },
         "x64" : {
             "include" : [os.path.join("include", "curl")],
-            "lib" : [os.path.join("curl-build", "lib", "Release", "libcurl.dll"),],
+            "lib" : [os.path.join("lib", "Release", "libcurl.dll"),],
         },
     }
     dependencies = ["openssl", "nghttp2>=1.0.0", "zlib"]
