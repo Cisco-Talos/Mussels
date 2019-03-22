@@ -42,15 +42,31 @@ class Recipe(Builder):
             ],
         },
     }
-    dependencies = ["openssl", "zlib"]
+    dependencies = ["openssl>=1.0.1", "zlib>=1.2.3"]
     toolchain = ["cmake", "vs2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe -G "Visual Studio 15 2017" \
+                -DCMAKE_CONFIGURATION_TYPES=Release \
+                -DBUILD_SHARED_LIBS=ON \
+                -DOPENSSL_ROOT_DIR="{install}" \
+                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                -DZLIB_ROOT="{includes}" \
+                -DZLIB_LIBRARY="{libs}/zlib.lib"
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" \
+                -DCMAKE_CONFIGURATION_TYPES=Release \
+                -DBUILD_SHARED_LIBS=ON \
+                -DOPENSSL_ROOT_DIR="{install}" \
+                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                -DZLIB_ROOT="{includes}" \
+                -DZLIB_LIBRARY="{libs}/zlib.lib"
             CALL cmake.exe --build . --config Release
         ''',
     }

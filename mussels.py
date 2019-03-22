@@ -48,6 +48,18 @@ module_logger.setLevel(logging.DEBUG)
 RECIPES = defaultdict(dict)
 SORTED_RECIPES = defaultdict(list)
 
+def version_keys(s):
+    import re
+    keys = []
+    for u in s.split('.'):
+        for v in re.split(r'(\d+)',u):
+            try:
+                val = int(v)
+            except:
+                val = str(v)
+            keys.append(val)
+    return keys
+
 # Collect all Recipes in recipes directory.
 __all__ = []
 recipe_path = os.path.join(os.path.split(__file__)[0], "recipes")
@@ -61,7 +73,7 @@ for loader, module_name, is_pkg in pkgutil.walk_packages([recipe_path]):
 # Sort the recipes, and determine the highest versions.
 for recipe in RECIPES:
     versions_list = list(RECIPES[recipe].keys())
-    versions_list.sort(key=lambda s: [str(u) for u in s.split('.')])
+    versions_list.sort(key=version_keys)
     versions_list.reverse()
     for idx,version in enumerate(versions_list):
         SORTED_RECIPES[recipe].append(version)
@@ -118,7 +130,8 @@ def compare_versions(version_a: str, version_b: str) -> int:
         return 0
 
     versions_list = [version_a, version_b]
-    versions_list.sort(key=lambda s: [str(u) for u in s.split('.')])
+
+    versions_list.sort(key=version_keys)
 
     if versions_list[0] == version_a:
         return -1
@@ -213,7 +226,7 @@ def get_recipe_version(recipe: str) -> tuple:
         if eq_cond == True:
             # EQ requirement found.
             # Try to find the specific version, and remove all others.
-            if not version in  SORTED_RECIPES[name]:
+            if not version in SORTED_RECIPES[name]:
                 raise Exception(f"No versions available to satisfy requirement for {recipe}")
             SORTED_RECIPES[name] = [version]
 
