@@ -30,14 +30,18 @@ class Recipe(Builder):
             "include" : [os.path.join("include", "openssl")],
             "lib" : [
                 os.path.join("libssl-1_1.dll"),
+                os.path.join("libssl.lib"),
                 os.path.join("libcrypto-1_1.dll"),
+                os.path.join("libcrypto.lib"),
             ],
         },
         "x64" : {
             "include" : [os.path.join("include", "openssl")],
             "lib" : [
                 os.path.join("libssl-1_1-x64.dll"),
+                os.path.join("libssl.lib"),
                 os.path.join("libcrypto-1_1-x64.dll"),
+                os.path.join("libcrypto.lib"),
             ],
         },
     }

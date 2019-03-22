@@ -30,14 +30,18 @@ class Recipe(Builder):
             "include" : [os.path.join("include", "openssl")],
             "lib" : [
                 os.path.join("libssl-1_1.dll"),
+                os.path.join("libssl.lib"),
                 os.path.join("libcrypto-1_1.dll"),
+                os.path.join("libcrypto.lib"),
             ],
         },
         "x64" : {
             "include" : [os.path.join("include", "openssl")],
             "lib" : [
                 os.path.join("libssl-1_1-x64.dll"),
+                os.path.join("libssl.lib"),
                 os.path.join("libcrypto-1_1-x64.dll"),
+                os.path.join("libcrypto.lib"),
             ],
         },
     }
@@ -45,15 +49,13 @@ class Recipe(Builder):
     toolchain = ["nasm", "perl", "vs2017"]
     build_script = {
         'x86' : '''
-            CALL set PATH={libs};%PATH%
             CALL vcvarsall.bat x86
-            CALL perl Configure VC-WIN32 zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}\\zlib.lib"
+            CALL perl Configure VC-WIN32 zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlib.lib"
             CALL nmake
         ''',
         'x64' : '''
-            CALL set PATH={libs};%PATH%
             CALL vcvarsall.bat amd64
-            CALL perl Configure VC-WIN64A zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}\\zlib.lib"
+            CALL perl Configure VC-WIN64A zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlib.lib"
             CALL nmake
         ''',
     }

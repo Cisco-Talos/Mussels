@@ -29,11 +29,17 @@ class Recipe(Builder):
     install_paths = {
         "x86" : {
             "include" : [os.path.join("lib", "includes", "nghttp2")],
-            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
+            "lib" : [
+                os.path.join("lib", "Release", "nghttp2.dll"),
+                os.path.join("lib", "Release", "nghttp2.lib"),
+            ],
         },
         "x64" : {
             "include" : [os.path.join("lib", "includes", "nghttp2")],
-            "lib" : [os.path.join("lib", "Release", "nghttp2.dll"),],
+            "lib" : [
+                os.path.join("lib", "Release", "nghttp2.dll"),
+                os.path.join("lib", "Release", "nghttp2.lib"),
+            ],
         },
     }
     dependencies = ["openssl", "zlib"]

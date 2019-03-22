@@ -32,7 +32,10 @@ class Recipe(Builder):
                 os.path.join("include", "libssh2_publickey.h"),
                 os.path.join("include", "libssh2_sftp.h"),
             ],
-            "lib" : [os.path.join("Release", "libssh2.dll"),],
+            "lib" : [
+                os.path.join("src", "Release", "libssh2.dll"),
+                os.path.join("src", "Release", "libssh2.lib"),
+            ],
         },
         "x64" : {
             "include" : [
@@ -40,18 +43,41 @@ class Recipe(Builder):
                 os.path.join("include", "libssh2_publickey.h"),
                 os.path.join("include", "libssh2_sftp.h"),
             ],
-            "lib" : [os.path.join("Release", "libssh2.dll"),],
+            "lib" : [
+                os.path.join("src", "Release", "libssh2.dll"),
+                os.path.join("src", "Release", "libssh2.lib"),
+            ],
         },
     }
-    dependencies = ["openssl", "zlib"]
+    dependencies = ["openssl>=1.1.0", "zlib"]
     toolchain = ["cmake", "vs2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe -G "Visual Studio 15 2017" \
+                -DCRYPTO_BACKEND=OpenSSL \
+                -DBUILD_SHARED_LIBS=ON \
+                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                -DDLL_LIBEAY32="{libs}/libcrypto-1_1.dll" \
+                -DDLL_SSLEAY32="{libs}/libssl-1_1.dll" \
+                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                -DENABLE_ZLIB_COMPRESSION=ON \
+                -DZLIB_INCLUDE_DIR="{includes}" \
+                -DZLIB_LIBRARY_RELEASE="{libs}/zlib.lib"
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" \
+                -DCRYPTO_BACKEND=OpenSSL \
+                -DBUILD_SHARED_LIBS=ON \
+                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                -DDLL_LIBEAY32="{libs}/libcrypto-1_1-x64.dll" \
+                -DDLL_SSLEAY32="{libs}/libssl-1_1-x64.dll" \
+                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                -DENABLE_ZLIB_COMPRESSION=ON \
+                -DZLIB_INCLUDE_DIR="{includes}" \
+                -DZLIB_LIBRARY_RELEASE="{libs}/zlib.lib"
             CALL cmake.exe --build . --config Release
         ''',
     }

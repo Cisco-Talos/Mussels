@@ -65,11 +65,13 @@ class Builder(object):
 
     build_script = {    # Dictionary containing build script. Example below is for generic CMake build.
                         # Variables in "".format() syntax will be evaluated at build() time.
+                        # Paths will have unix style forward slash (`/`) path separators.
+                        #
                         # Variable options include:
-                        # - install:  The base install directory for build output.
-                        # - includes: The install/{build}/include directory.
-                        # - libs:     The install/{build}/lib directory.
-                        # - build:    The build directory for a given build.
+                        # - install:        The base install directory for build output.
+                        # - includes:       The install/{build}/include directory.
+                        # - libs:           The install/{build}/lib directory.
+                        # - build:          The build directory for a given build.
         'x86' : '''
             CALL cmake.exe -G "Visual Studio 15 2017"
             CALL cmake.exe --build . --config Release
@@ -462,11 +464,16 @@ class Builder(object):
 
             with open(os.path.join(os.getcwd(), script_name), 'w', newline=newline) as fd:
                 # Evaluate "".format() syntax in the build script
+                var_includes =  os.path.join(self.installdir, build, "include").replace('\\', '/')
+                var_libs =      os.path.join(self.installdir, build, "lib").replace('\\', '/')
+                var_install =   os.path.join(self.installdir).replace('\\', '/')
+                var_build =     os.path.join(self.builds[build]).replace('\\', '/')
+
                 self.build_script[build] = self.build_script[build].format(
-                    includes=os.path.join(self.installdir, build, "include"),
-                    libs=os.path.join(self.installdir, build, "lib"),
-                    install=os.path.join(self.installdir),
-                    build=os.path.join(self.builds[build]),
+                    includes=var_includes,
+                    libs=var_libs,
+                    install=var_install,
+                    build=var_build,
                 )
 
                 # Write the build commands to a file

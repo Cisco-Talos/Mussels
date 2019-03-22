@@ -33,6 +33,7 @@ import json
 import logging
 import os
 import pkgutil
+import shutil
 import sys
 import time
 
@@ -175,7 +176,7 @@ def get_recipe_version(recipe: str) -> tuple:
             raise Exception(f"No versions available to satisfy requirement for {recipe}")
         while compare_versions(first, version) > 0:
             # Remove a version from the SORTED_RECIPES.
-            SORTED_RECIPES[name].remove(version)
+            SORTED_RECIPES[name].remove(first)
 
             try:
                 first = SORTED_RECIPES[name][0]
@@ -191,7 +192,7 @@ def get_recipe_version(recipe: str) -> tuple:
             raise Exception(f"No versions available to satisfy requirement for {recipe}")
         while compare_versions(first, version) >= 0:
             # Remove a version from the SORTED_RECIPES.
-            SORTED_RECIPES[name].remove(version)
+            SORTED_RECIPES[name].remove(first)
 
             try:
                 first = SORTED_RECIPES[name][0]
@@ -335,11 +336,12 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
         # Only need a temp directory for a real build.
         if tempdir == "":
             # Create a temporary directory to work in.
-            tempdir = os.path.abspath(os.path.join("clamdeps_" + str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')))
-            os.mkdir(tempdir)
+            tempdir = os.path.abspath("out")
         else:
-            # Use the current working directory.
+            # Use the directory provided by the caller.
             tempdir = os.path.abspath(os.path.join(tempdir))
+
+    os.makedirs(tempdir, exist_ok=True)
 
     batches = []
     results = []
@@ -356,6 +358,7 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
         module_logger.info("Dry-run: Build-order of requested recipes:")
 
     idx = 0
+    failure = False
     for i, bundle in enumerate(batches):
         for j, recipe in enumerate(bundle):
             idx += 1
@@ -364,8 +367,13 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
                 module_logger.info(f"   {idx:2} [{i}:{j:2}]: {recipe}-{SORTED_RECIPES[recipe][0]}")
                 continue
 
-            result = build_recipe(recipe, SORTED_RECIPES[recipe][0], tempdir)
-            results.append(result)
+            if failure:
+                module_logger.warning(f"Skipping {recipe} build due to prior failure.")
+            else:
+                result = build_recipe(recipe, SORTED_RECIPES[recipe][0], tempdir)
+                results.append(result)
+                if result['success'] == False:
+                    failure = True
 
     if not dryrun:
         print_results(results)
