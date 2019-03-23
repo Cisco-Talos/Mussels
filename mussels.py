@@ -33,6 +33,7 @@ import json
 import logging
 import os
 import pkgutil
+import platform
 import shutil
 import sys
 import time
@@ -62,7 +63,7 @@ def version_keys(s):
 
 # Collect all Recipes in recipes directory.
 __all__ = []
-recipe_path = os.path.join(os.path.split(__file__)[0], "recipes")
+recipe_path = os.path.join(os.path.split(__file__)[0], "recipes", platform.system())
 for loader, module_name, is_pkg in pkgutil.walk_packages([recipe_path]):
     __all__.append(module_name)
     _module = loader.find_module(module_name).load_module(module_name)
@@ -354,7 +355,7 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
             # Use the directory provided by the caller.
             tempdir = os.path.abspath(os.path.join(tempdir))
 
-    os.makedirs(tempdir, exist_ok=True)
+        os.makedirs(tempdir, exist_ok=True)
 
     batches = []
     results = []
