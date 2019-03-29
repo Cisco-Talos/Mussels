@@ -66,7 +66,6 @@ class Recipe(Builder):
                 -DCMAKE_CONFIGURATION_TYPES=Release \
                 -DBUILD_SHARED_LIBS=ON \
                 -DCMAKE_USE_OPENSSL=ON \
-                -DOPENSSL_ROOT_DIR="{install}" \
                 -DOPENSSL_INCLUDE_DIR="{includes}" \
                 -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
                 -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
