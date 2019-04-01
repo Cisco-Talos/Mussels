@@ -16,9 +16,9 @@ limitations under the License.
 
 import os
 
-from recipes.builder import Builder
+from recipes.recipe import BaseRecipe
 
-class Recipe(Builder):
+class Recipe(BaseRecipe):
     '''
     Recipe to build nghttp2.
     '''
@@ -43,7 +43,7 @@ class Recipe(Builder):
         },
     }
     dependencies = ["openssl>=1.0.1", "zlib>=1.2.3"]
-    toolchain = ["cmake", "vs2017"]
+    required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
             CALL cmake.exe -G "Visual Studio 15 2017" \

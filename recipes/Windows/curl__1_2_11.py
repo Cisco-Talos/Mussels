@@ -16,9 +16,9 @@ limitations under the License.
 
 import os
 
-from recipes.builder import Builder
+from recipes.recipe import BaseRecipe
 
-class Recipe(Builder):
+class Recipe(BaseRecipe):
     '''
     Recipe to build libcurl.
     '''
@@ -42,7 +42,7 @@ class Recipe(Builder):
         },
     }
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
-    toolchain = ["cmake", "vs2017"]
+    required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
             CALL cmake.exe -G "Visual Studio 15 2017" \

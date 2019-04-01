@@ -17,9 +17,9 @@ limitations under the License.
 import os
 import shutil
 
-from recipes.builder import Builder
+from recipes.recipe import BaseRecipe
 
-class Recipe(Builder):
+class Recipe(BaseRecipe):
     '''
     Recipe to build pthreads-win32.
     '''
@@ -37,7 +37,7 @@ class Recipe(Builder):
         },
     }
     dependencies = []
-    toolchain = ["vs2017"]
+    required_tools = ["visualstudio>=2017"]
     build_script = {
         'x86' : '''
             CALL vcvarsall.bat x86

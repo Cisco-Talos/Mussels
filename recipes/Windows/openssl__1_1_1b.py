@@ -16,9 +16,9 @@ limitations under the License.
 
 import os
 
-from recipes.builder import Builder
+from recipes.recipe import BaseRecipe
 
-class Recipe(Builder):
+class Recipe(BaseRecipe):
     '''
     Recipe to build libssl.
     '''
@@ -46,7 +46,7 @@ class Recipe(Builder):
         },
     }
     dependencies = ["zlib"]
-    toolchain = ["nasm", "perl", "vs2017"]
+    required_tools = ["nasm", "perl", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
             CALL vcvarsall.bat x86

@@ -28,7 +28,7 @@ import zipfile
 
 from io import StringIO
 
-class Builder(object):
+class BaseRecipe(object):
     '''
     Base class for Mussels recipe.
     '''
@@ -61,7 +61,7 @@ class Builder(object):
                         #    "@version" is optional.
                         #    If version is omitted, the default (highest) will be selected.
 
-    toolchain = []      # List of tools required by the build commands.
+    required_tools = []      # List of tools required by the build commands.
 
     build_script = {    # Dictionary containing build script. Example below is for generic CMake build.
                         # Variables in "".format() syntax will be evaluated at build() time.
@@ -90,7 +90,7 @@ class Builder(object):
     tempdir = ""
     installdir = ""
 
-    def __init__(self, tempdir="", installdir=""):
+    def __init__(self, toolchain: dict, tempdir: str=""):
         '''
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
@@ -100,17 +100,21 @@ class Builder(object):
             self.tempdir = os.getcwd()
         else:
             self.tempdir = os.path.abspath(tempdir)
+        os.makedirs(self.tempdir, exist_ok=True)
 
-        if installdir == "":
-            self.installdir = os.path.join(self.tempdir, "install")
-        else:
-            self.installdir = os.path.abspath(installdir)
+        self.installdir = os.path.join(self.tempdir, "install")
+        os.makedirs(self.installdir, exist_ok=True)
+
+        self.logsdir = os.path.join(self.tempdir, "logs", "recipes")
+        os.makedirs(self.logsdir, exist_ok=True)
+        self.workdir = os.path.join(self.tempdir, "work")
+        os.makedirs(self.workdir, exist_ok=True)
+        self.srcdir = os.path.join(self.tempdir, "src")
+        os.makedirs(self.srcdir, exist_ok=True)
 
         self.__init_logging()
 
-        # Detect required toolchain.
-        if self.detect_toolchain() == False:
-            raise(Exception(f"Failed to detect toolchain required to build {self.name}-{self.version}"))
+        self.toolchain = toolchain
 
         # Download if necessary.
         if self.__download_archive() == False:
@@ -131,7 +135,7 @@ class Builder(object):
             fmt='%(asctime)s - %(levelname)s:  %(message)s',
             datefmt='%m/%d/%Y %I:%M:%S %p')
 
-        self.log_file = os.path.join(self.tempdir, f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(':', '_'))
+        self.log_file = os.path.join(self.logsdir, f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(':', '_'))
         filehandler = logging.FileHandler(filename=self.log_file)
         filehandler.setLevel(logging.DEBUG)
         filehandler.setFormatter(formatter)
@@ -171,7 +175,7 @@ class Builder(object):
         '''
         if self.download_path.endswith(".tar.gz"):
             # Un-tar
-            self.extracted_source_path = os.path.join(self.tempdir, self.archive[:-7])
+            self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-7])
             if (os.path.exists(self.extracted_source_path)):
                 self.logger.debug(f"Archive already extracted.")
                 return True
@@ -179,11 +183,11 @@ class Builder(object):
             self.logger.info(f"Extracting Tarball {self.archive} to {self.extracted_source_path}...")
 
             tar = tarfile.open(self.download_path, "r:gz")
-            tar.extractall(self.tempdir)
+            tar.extractall(self.srcdir)
             tar.close()
         elif self.download_path.endswith(".zip"):
             # Un-zip
-            self.extracted_source_path = os.path.join(self.tempdir, self.archive[:-4])
+            self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-4])
             if (os.path.exists(self.extracted_source_path)):
                 self.logger.debug(f"Archive already extracted.")
                 return True
@@ -191,125 +195,11 @@ class Builder(object):
             self.logger.info(f"Extracting Zip {self.archive} to {self.extracted_source_path}...")
 
             zip_ref = zipfile.ZipFile(self.download_path, 'r')
-            zip_ref.extractall(self.tempdir)
+            zip_ref.extractall(self.srcdir)
             zip_ref.close()
         else:
             self.logger.error(f"Unexpected archive extension!")
             return False
-
-        return True
-
-    def __detect_vs2015(self) -> bool:
-        '''
-        Identify:
-         - The full path of vcvarsall.bat for vs2015.
-         - The location of rc.exe (check x86 and x64 locations).
-           This is a hack, needed only because vcvarsall.bat doesn't
-           set the rc.exe path location for you. vs2017 does.
-        '''
-        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC"
-
-        if not os.path.isfile(os.path.join(vcvars_path, "vcvarsall.bat")):
-            self.logger.warning("Failed to find vcvarsall.bat")
-            return False
-
-        self.logger.debug(f"vcvarsall.bat detected at: {vcvars_path}")
-        os.environ["PATH"] += os.pathsep + vcvars_path
-
-        # rc.exe Hack to make openssl build with vs2015
-        rc_path = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\"
-
-        bin_ver = 0
-        bin_file = ''
-        for filename in os.listdir(rc_path):
-            if filename.startswith("10.0."):
-                ver = int(filename.split('.')[2])
-                if (ver > bin_ver):
-                    bin_ver = ver
-                    bin_file = filename
-        if bin_ver == 0:
-            self.logger.warning("Failed to find rc.exe path")
-            return False
-
-        rc_path = os.path.join(rc_path, bin_file)
-
-        if not os.path.isfile(os.path.join(rc_path, "x86", "rc.exe")):
-            self.logger.warning(f"Failed to find: {os.path.join(rc_path, 'x86', 'rc.exe')}")
-            return False
-
-        if not os.path.isfile(os.path.join(rc_path, "x64", "rc.exe")):
-            self.logger.warning(f"Failed to find: {os.path.join(rc_path, 'x64', 'rc.exe')}")
-            return False
-
-        self.logger.debug(f"rc.exe detected at:")
-        self.logger.debug(f"\t{os.path.join(rc_path, 'x86')}")
-        self.logger.debug(f"\t{os.path.join(rc_path, 'x64')}")
-
-        self.rc_path = rc_path
-
-        return True
-
-    def __detect_vs2017(self) -> bool:
-        '''
-        Identify:
-         - The full path of vcvarsall.bat for vs2017.
-        '''
-        vcvars_path = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build"
-
-        if not os.path.isfile(os.path.join(vcvars_path, "vcvarsall.bat")):
-            self.logger.warning("Failed to find vcvarsall.bat")
-            return False
-
-        self.logger.debug(f"vcvarsall.bat detected at: {vcvars_path}")
-        os.environ["PATH"] += os.pathsep + vcvars_path
-
-        return True
-
-    def __detect_nasm(self) -> bool:
-        '''
-        Identify:
-         - The location of nasm.exe.
-        '''
-        nasm_path = "C:\\Program Files\\NASM"
-
-        if not os.path.isfile(os.path.join(nasm_path, "nasm.exe")):
-            self.logger.warning("Failed to find nasm.exe")
-            return False
-
-        self.logger.debug(f"nasm.exe detected at: {nasm_path}")
-        os.environ["PATH"] += os.pathsep + nasm_path
-
-        return True
-
-    def __detect_perl(self) -> bool:
-        '''
-        Identify:
-         - The location of perl.exe.
-        '''
-        perl_path = "C:\\Perl64\\bin"
-
-        if not os.path.isfile(os.path.join(perl_path, "perl.exe")):
-            self.logger.warning("Failed to find perl.exe")
-            return False
-
-        self.logger.debug(f"perl.exe detected at: {perl_path}")
-        os.environ["PATH"] += os.pathsep + perl_path
-
-        return True
-
-    def __detect_cmake(self) -> bool:
-        '''
-        Identify:
-         - The location of perl.exe.
-        '''
-        cmake_path = "C:\\Program Files\\CMake\\bin"
-
-        if not os.path.isfile(os.path.join(cmake_path, "cmake.exe")):
-            self.logger.warning("Failed to find cmake.exe")
-            return False
-
-        self.logger.debug(f"cmake.exe detected at: {cmake_path}")
-        os.environ["PATH"] += os.pathsep + cmake_path
 
         return True
 
@@ -351,55 +241,6 @@ class Builder(object):
         self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
 
-    def detect_toolchain(self) -> bool:
-        '''
-        Detect existence of toolchain filepaths needed for the build.
-
-        This base object implementation detects:
-         - "vs2015" : Adds paths to path needed to use Visual Studio for builds.
-         - "nmake" : Add NMake to the path.
-
-        You can extend this functionality by overriding it to detect
-        new tools to add to the path.
-        '''
-        for tool in self.toolchain:
-            if "vs2015" == tool:
-                if False == self.__detect_vs2015():
-                    self.logger.error("Failed to detect vs2015")
-                    return False
-                else:
-                    self.logger.info("Detected vs2015")
-
-            if "vs2017" == tool:
-                if False == self.__detect_vs2017():
-                    self.logger.error("Failed to detect vs2017")
-                    return False
-                else:
-                    self.logger.info("Detected vs2017")
-
-            elif "nasm" == tool:
-                if False == self.__detect_nasm():
-                    self.logger.error("Failed to detect nasm")
-                    return False
-                else:
-                    self.logger.info("Detected nasm")
-
-            elif "perl" == tool:
-                if False == self.__detect_perl():
-                    self.logger.error("Failed to detect perl")
-                    return False
-                else:
-                    self.logger.info("Detected perl")
-
-            elif "cmake" == tool:
-                if False == self.__detect_cmake():
-                    self.logger.error("Failed to detect cmake")
-                    return False
-                else:
-                    self.logger.info("Detected cmake")
-
-        return True
-
     def build(self) -> bool:
         '''
         Run the build commands if the output files don't already exist.
@@ -409,7 +250,7 @@ class Builder(object):
 
             # Check for prior completed build output.
             self.logger.info(f"Attempting to build {self.name}-{self.version} for {build}")
-            self.builds[build] = self.extracted_source_path + "." + build
+            self.builds[build] = os.path.join(self.workdir, f"{os.path.split(self.extracted_source_path)[-1]}-{build}")
 
             if os.path.exists(self.builds[build]):
                 self.logger.debug("Checking for prior build output...")
@@ -444,15 +285,16 @@ class Builder(object):
                 self.logger.debug(f"\t{self.builds[build]}")
                 shutil.copytree(self.extracted_source_path, self.builds[build])
 
+            #
             # Run the build.
+            #
             cwd = os.getcwd()
             os.chdir(self.builds[build])
 
-            # Hack to make openssl build work with vs2015
-            try:
-                os.environ["PATH"] += os.pathsep + self.rc_path + os.path.sep + build
-            except:
-                pass
+            # Add each tool from the toolchain to the PATH environment variable.
+            for tool in self.toolchain:
+                for path_mod in self.toolchain[tool].path_mods[self.toolchain[tool].installed][build]:
+                    os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
 
             # Create a build script.
             if platform.system() == "Windows":
