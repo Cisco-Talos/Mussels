@@ -26,6 +26,7 @@ class Recipe(BaseRecipe):
     name = "pthreads"
     version = "1.11.0"
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-1-11-0-release.tar.gz"
+    patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "x86" : {
             "include" : ["pthread.h","sched.h"],
@@ -48,28 +49,3 @@ class Recipe(BaseRecipe):
             CALL nmake clean VC
         ''',
     }
-
-    def build(self) -> bool:
-        '''
-        Override the original build() function to replace some text in pthread.h
-        because it is a buggy peice of crap.
-        '''
-        cwd = os.getcwd()
-        os.chdir(self.extracted_source_path)
-        fixed = False
-
-        shutil.copyfile("pthread.h", "pthread.h.bak")
-        with open("pthread.h.bak", "r") as pthread_h_bak:
-            with open("pthread.h", "w") as pthread_h:
-                for line in pthread_h_bak:
-                    if "#ifndef HAVE_STRUCT_TIMESPEC" in line:
-                        fixed = True
-                    if fixed == False and "#include <time.h>" in line:
-                        pthread_h.write("#ifndef HAVE_STRUCT_TIMESPEC\n")
-                        pthread_h.write("#define HAVE_STRUCT_TIMESPEC\n")
-                        pthread_h.write("#endif\n")
-                        fixed = True
-                    pthread_h.write(line)
-
-        os.chdir(cwd)
-        return super().build()

@@ -21,7 +21,9 @@ from recipes.recipe import BaseRecipe
 class Recipe(BaseRecipe):
     '''
     Recipe to build bzip2.
-    Notable script Re bzip2 on Windows, for reference: https://github.com/philr/bzip2-windows/blob/master/Build-Bzip2.ps1
+    Patches shamelessly copied from: https://github.com/philr/bzip2-windows
+    Copyright (c) 2015-2016 Philip Ross.
+    Licence: MIT
     '''
     name = "bzip2"
     version = "1.0.6"

@@ -252,6 +252,7 @@ class BaseRecipe(object):
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
+            self.logger.debug(f"Patch directory found for {self.name}-{self.version}.")
             if not os.path.exists(os.path.join(self.extracted_source_path, "_mussles.patched")):
                 # Not yet patched. Apply patches.
                 self.logger.info(f"Applying patches to {self.name}-{self.version} source directory...")
@@ -262,6 +263,7 @@ class BaseRecipe(object):
                         patched = pset.apply(1, root=self.extracted_source_path)
                         if not patched:
                             self.logger.error(f"Patch failed!")
+                            return False
                     else:
                         self.logger.info(f"Copying new file {patchfile} to {self.name}-{self.version} source directory...")
                         shutil.copyfile(
