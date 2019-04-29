@@ -17,16 +17,17 @@ limitations under the License.
 import datetime
 from distutils import dir_util
 import inspect
+from io import StringIO
 import logging
 import os
 import platform
-import requests
 import shutil
 import subprocess
 import tarfile
 import zipfile
 
-from io import StringIO
+import requests
+import patch
 
 class BaseRecipe(object):
     '''
@@ -35,6 +36,7 @@ class BaseRecipe(object):
     name = "sample"
     version = "1.2.3"
     url = "https://sample.com/sample.tar.gz"
+    patches = "" # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
 
     archive_name_change = ("","") # Tuple of strings to replace: Eg. ("v", "nghttp2-")
                                   # This hack is necessary because archives with changed
@@ -243,8 +245,32 @@ class BaseRecipe(object):
 
     def build(self) -> bool:
         '''
-        Run the build commands if the output files don't already exist.
+        First, patch source materials if not already patched.
+        Then, for each architecture, run the build commands if the output files don't already exist.
         '''
+        if self.patches == "":
+            self.logger.debug(f"No patch directory found.")
+        else:
+            # Patches exists for this recipe.
+            if not os.path.exists(os.path.join(self.extracted_source_path, "_mussles.patched")):
+                # Not yet patched. Apply patches.
+                self.logger.info(f"Applying patches to {self.name}-{self.version} source directory...")
+                for patchfile in os.listdir(self.patches):
+                    if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
+                        self.logger.info(f"Attempting to apply patch: {patchfile}")
+                        pset = patch.fromfile(os.path.join(self.patches, patchfile))
+                        patched = pset.apply(1, root=self.extracted_source_path)
+                        if not patched:
+                            self.logger.error(f"Patch failed!")
+                    else:
+                        self.logger.info(f"Copying new file {patchfile} to {self.name}-{self.version} source directory...")
+                        shutil.copyfile(
+                            os.path.join(self.patches, patchfile),
+                            os.path.join(self.extracted_source_path, patchfile))
+
+                with open(os.path.join(self.extracted_source_path, "_mussles.patched"), 'w') as patchmark:
+                    patchmark.write("patched")
+
         for build in self.build_script:
             already_built = True
 

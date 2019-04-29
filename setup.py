@@ -16,7 +16,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         "click>=7.0",
-        "coloredlogs>=10.0"
+        "coloredlogs>=10.0",
+        "requests",
+        "patch"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

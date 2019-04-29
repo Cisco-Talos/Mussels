@@ -75,12 +75,14 @@ def collect_recipes(recipe_path):
     global RECIPES
     global SORTED_RECIPES
 
-    for loader, module_name, _ in pkgutil.walk_packages([recipe_path]):
-        __all__.append(module_name)
-        _module = loader.find_module(module_name).load_module(module_name)
-        globals()[module_name] = _module
-        if "Recipe" in dir(_module):
-            RECIPES[_module.Recipe.name][_module.Recipe.version] = _module.Recipe
+    for root, dirs, _ in os.walk(recipe_path):
+        for directory in dirs:
+            for loader, module_name, _ in pkgutil.walk_packages([os.path.join(root, directory)]):
+                __all__.append(module_name)
+                _module = loader.find_module(module_name).load_module(module_name)
+                globals()[module_name] = _module
+                if "Recipe" in dir(_module):
+                    RECIPES[_module.Recipe.name][_module.Recipe.version] = _module.Recipe
 
     # Sort the recipes, and determine the highest versions.
     for recipe in RECIPES:
@@ -98,12 +100,15 @@ def collect_tools(tool_path):
     global TOOLS
     global SORTED_TOOLS
 
-    for loader, module_name, _ in pkgutil.walk_packages([tool_path]):
-        __all__.append(module_name)
-        _module = loader.find_module(module_name).load_module(module_name)
-        globals()[module_name] = _module
-        if "Tool" in dir(_module):
-            TOOLS[_module.Tool.name][_module.Tool.version] = _module.Tool
+
+    for root, dirs, _ in os.walk(tool_path):
+        for directory in dirs:
+            for loader, module_name, _ in pkgutil.walk_packages([os.path.join(root, directory)]):
+                __all__.append(module_name)
+                _module = loader.find_module(module_name).load_module(module_name)
+                globals()[module_name] = _module
+                if "Tool" in dir(_module):
+                    TOOLS[_module.Tool.name][_module.Tool.version] = _module.Tool
 
     # Sort the recipes, and determine the highest versions.
     for tool in TOOLS:
