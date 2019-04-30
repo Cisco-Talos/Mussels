@@ -46,14 +46,14 @@ class Recipe(BaseRecipe):
         },
     }
     dependencies = []
-    required_tools = ["visualstudio>=2017"]
+    required_tools = ["visualstudio==2017"]
     build_script = {
         'x86' : '''
-            CALL vcvarsall.bat x86
+            CALL vcvarsall.bat x86 -vcvars_ver=14.1
             CALL nmake -f makefile.msc all
         ''',
         'x64' : '''
-            CALL vcvarsall.bat amd64
+            CALL vcvarsall.bat amd64 -vcvars_ver=14.1
             CALL nmake -f makefile.msc all
         ''',
     }

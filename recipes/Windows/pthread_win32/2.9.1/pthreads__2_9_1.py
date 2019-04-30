@@ -24,17 +24,17 @@ class Recipe(BaseRecipe):
     Recipe to build pthreads-win32.
     '''
     name = "pthreads"
-    version = "1.11.0"
-    url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-1-11-0-release.tar.gz"
+    version = "2.9.1"
+    url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.tar.gz"
     patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "x86" : {
             "include" : ["pthread.h","sched.h"],
-            "lib" : ["pthreadVC1.dll", "pthreadVC1.lib"],
+            "lib" : ["pthreadVC2.dll", "pthreadVC2.lib"],
         },
         "x64" : {
             "include" : ["pthread.h","sched.h"],
-            "lib" : ["pthreadVC1.dll", "pthreadVC1.lib"],
+            "lib" : ["pthreadVC2.dll", "pthreadVC2.lib"],
         },
     }
     dependencies = []
@@ -42,10 +42,10 @@ class Recipe(BaseRecipe):
     build_script = {
         'x86' : '''
             CALL vcvarsall.bat x86 -vcvars_ver=14.1
-            CALL nmake clean VC
+            CALL nmake realclean VC
         ''',
         'x64' : '''
             CALL vcvarsall.bat amd64 -vcvars_ver=14.1
-            CALL nmake clean VC
+            CALL nmake realclean VC
         ''',
     }

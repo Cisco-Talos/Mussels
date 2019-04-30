@@ -29,15 +29,15 @@ class Recipe(BaseRecipe):
         "x86" : {
             "include" : ["zlib.h", "zconf.h"],
             "lib" : [
-                os.path.join("Release", "zlib.dll"),
-                os.path.join("Release", "zlib.lib"),
+                #os.path.join("Release", "zlib1.dll"),
+                os.path.join("Release", "zlibstatic.lib"),
             ],
         },
         "x64" : {
             "include" : ["zlib.h", "zconf.h"],
             "lib" : [
-                os.path.join("Release", "zlib.dll"),
-                os.path.join("Release", "zlib.lib"),
+                #os.path.join("Release", "zlib1.dll"),
+                os.path.join("Release", "zlibstatic.lib"),
             ],
         },
     }
@@ -45,11 +45,13 @@ class Recipe(BaseRecipe):
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL vcvarsall.bat x86 -vcvars_ver=14.1
+            CALL cmake.exe -G "Visual Studio 15 2017" -T v141
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL vcvarsall.bat amd64 -vcvars_ver=14.1
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141
             CALL cmake.exe --build . --config Release
         ''',
     }

@@ -49,13 +49,13 @@ class Recipe(BaseRecipe):
     required_tools = ["nasm", "perl", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
-            CALL vcvarsall.bat x86
-            CALL perl Configure VC-WIN32 zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlib.lib"
+            CALL vcvarsall.bat x86 -vcvars_ver=14.1
+            CALL perl Configure VC-WIN32 zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlibstatic.lib"
             CALL nmake
         ''',
         'x64' : '''
-            CALL vcvarsall.bat amd64
-            CALL perl Configure VC-WIN64A zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlib.lib"
+            CALL vcvarsall.bat amd64 -vcvars_ver=14.1
+            CALL perl Configure VC-WIN64A zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlibstatic.lib"
             CALL nmake
         ''',
     }

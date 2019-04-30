@@ -77,11 +77,11 @@ class Recipe(BaseRecipe):
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017"
+            CALL cmake.exe -G "Visual Studio 15 2017" -T v141
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141
             CALL cmake.exe --build . --config Release
         ''',
     }

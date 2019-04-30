@@ -50,21 +50,21 @@ class Recipe(BaseRecipe):
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017" \
+            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
                 -DBUILD_SHARED_LIBS=ON \
                 -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}\\zlib.lib" \
+                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
                 -DBZIP2_INCLUDE_DIR="{includes}" \
-                -DBZIP2_LIBRARY_RELEASE="{libs}\\libbz2.lib"
+                -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" \
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
                 -DBUILD_SHARED_LIBS=ON \
                 -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}\\zlib.lib" \
+                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
                 -DBZIP2_INCLUDE_DIR="{includes}" \
-                -DBZIP2_LIBRARY_RELEASE="{libs}\\libbz2.lib"
+                -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
             CALL cmake.exe --build . --config Release
         ''',
     }

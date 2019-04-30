@@ -46,7 +46,7 @@ class Recipe(BaseRecipe):
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017" \
+            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
                 -DCMAKE_CONFIGURATION_TYPES=Release \
                 -DBUILD_SHARED_LIBS=ON \
                 -DOPENSSL_ROOT_DIR="{install}" \
@@ -54,11 +54,11 @@ class Recipe(BaseRecipe):
                 -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
                 -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
                 -DZLIB_ROOT="{includes}" \
-                -DZLIB_LIBRARY="{libs}/zlib.lib"
+                -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
             CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" \
+            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
                 -DCMAKE_CONFIGURATION_TYPES=Release \
                 -DBUILD_SHARED_LIBS=ON \
                 -DOPENSSL_ROOT_DIR="{install}" \
@@ -66,7 +66,7 @@ class Recipe(BaseRecipe):
                 -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
                 -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
                 -DZLIB_ROOT="{includes}" \
-                -DZLIB_LIBRARY="{libs}/zlib.lib"
+                -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
             CALL cmake.exe --build . --config Release
         ''',
     }
