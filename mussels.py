@@ -73,7 +73,6 @@ def collect_recipes(recipe_path):
     '''
     global __all__
     global RECIPES
-    global SORTED_RECIPES
 
     for root, dirs, _ in os.walk(recipe_path):
         for directory in dirs:
@@ -84,6 +83,11 @@ def collect_recipes(recipe_path):
                 if "Recipe" in dir(_module):
                     RECIPES[_module.Recipe.name][_module.Recipe.version] = _module.Recipe
 
+def sort_recipes():
+    global __all__
+    global RECIPES
+    global SORTED_RECIPES
+    
     # Sort the recipes, and determine the highest versions.
     for recipe in RECIPES:
         versions_list = list(RECIPES[recipe].keys())
@@ -120,11 +124,21 @@ def collect_tools(tool_path):
 
 # Collect all Recipes provided by Mussels recipes directory.
 collect_recipes(os.path.join(os.path.split(__file__)[0], "recipes", platform.system()))
-# Collect all Recipes in cwd/mussels/recipes/<platform> directory.
-collect_recipes(os.path.join(os.getcwd(), "mussels", "recipes", platform.system()))
+# Collect all Recipe collections provided by Mussels collections directory.
+collect_recipes(os.path.join(os.path.split(__file__)[0], "collections", platform.system()))
+
+if os.path.abspath( os.getcwd() ) != os.path.abspath( os.path.split(__file__)[0] ):
+    # Collect all Recipes in cwd/mussels/recipes/<platform> directory.
+    collect_recipes(os.path.join(os.getcwd(), "mussels", "recipes", platform.system()))
+    # Collect all Recipe collections in cwd/mussels/collections/<platform> directory.
+    collect_recipes(os.path.join(os.getcwd(), "mussels", "collections", platform.system()))
+
+# Sort the recipes
+sort_recipes()
 
 # Collect all Tools provided by Mussels tools directory.
 collect_tools(os.path.join(os.path.split(__file__)[0], "tools", platform.system()))
+
 # Collect all Tools in cwd/mussels/tools/<platform> directory.
 collect_tools(os.path.join(os.getcwd(), "mussels", "tools", platform.system()))
 
@@ -548,21 +562,35 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
     sys.exit(0)
 
 @cli.command()
-def ls():
+def list():
     '''
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
     '''
     module_logger.info("Recipes:")
     for recipe in SORTED_RECIPES:
-        outline = f"    {recipe:10} ["
-        for i,version in enumerate(SORTED_RECIPES[recipe]):
-            if i == 0:
-                outline += f" {version}*"
-            else:
-                outline += f", {version}"
-        outline += " ]"
-        module_logger.info(outline)
+        if RECIPES[recipe][SORTED_RECIPES[recipe][0]].collection == False:
+            outline = f"    {recipe:10} ["
+            for i,version in enumerate(SORTED_RECIPES[recipe]):
+                if i == 0:
+                    outline += f" {version}*"
+                else:
+                    outline += f", {version}"
+            outline += " ]"
+            module_logger.info(outline)
+            
+    module_logger.info("")
+    module_logger.info("Collections:")
+    for recipe in SORTED_RECIPES:
+        if RECIPES[recipe][SORTED_RECIPES[recipe][0]].collection == True:
+            outline = f"    {recipe:10} ["
+            for i,version in enumerate(SORTED_RECIPES[recipe]):
+                if i == 0:
+                    outline += f" {version}*"
+                else:
+                    outline += f", {version}"
+            outline += " ]"
+            module_logger.info(outline)
 
 if __name__ == '__main__':
     cli(sys.argv[1:])

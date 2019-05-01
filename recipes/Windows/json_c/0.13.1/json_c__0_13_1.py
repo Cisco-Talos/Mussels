@@ -22,7 +22,7 @@ class Recipe(BaseRecipe):
     '''
     Recipe to build json-c.
     '''
-    name = "jsonc"
+    name = "json_c"
     version = "0.13.1"
     url = "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.13.1.tar.gz"
     install_paths = {

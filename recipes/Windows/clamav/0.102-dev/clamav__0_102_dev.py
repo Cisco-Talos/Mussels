@@ -24,8 +24,9 @@ class Recipe(BaseRecipe):
     Recipe to build clamav.
     '''
     name = "clamav"
-    version = "0.101.2"
-    url = "https://www.clamav.net/downloads/production/clamav-0.101.2.tar.gz"
+    version = "0.102"
+    url = "https://github.com/Cisco-Talos/clamav-devel/archive/dev/0.102.zip"
+    archive_name_change = ("0.102", "clamav-devel-dev-0.102")
     install_paths = {
         "x86" : {
             "include" : [
@@ -35,6 +36,8 @@ class Recipe(BaseRecipe):
             "lib" : [
                 os.path.join("win32", "Win32", "Release", "libclamav.dll"),
                 os.path.join("win32", "Win32", "Release", "libclamav.lib"),
+                os.path.join("win32", "Win32", "Release", "libfreshclam.dll"),
+                os.path.join("win32", "Win32", "Release", "libfreshclam.lib"),
             ],
             "bin" : [
                 os.path.join("win32", "Win32", "Release", "clambc.exe"),
@@ -42,6 +45,7 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "Win32", "Release", "clamd.exe"),
                 os.path.join("win32", "Win32", "Release", "clamdscan.exe"),
                 os.path.join("win32", "Win32", "Release", "clamscan.exe"),
+                os.path.join("win32", "Win32", "Release", "clamsubmit.exe"),
                 os.path.join("win32", "Win32", "Release", "freshclam.exe"),
                 os.path.join("win32", "Win32", "Release", "sigtool.exe"),
             ],
@@ -54,6 +58,8 @@ class Recipe(BaseRecipe):
             "lib" : [
                 os.path.join("win32", "x64", "Release", "libclamav.dll"),
                 os.path.join("win32", "x64", "Release", "libclamav.lib"),
+                os.path.join("win32", "x64", "Release", "libfreshclam.dll"),
+                os.path.join("win32", "x64", "Release", "libfreshclam.lib"),
             ],
             "bin" : [
                 os.path.join("win32", "x64", "Release", "clambc.exe"),
@@ -61,17 +67,18 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "x64", "Release", "clamd.exe"),
                 os.path.join("win32", "x64", "Release", "clamdscan.exe"),
                 os.path.join("win32", "x64", "Release", "clamscan.exe"),
+                os.path.join("win32", "x64", "Release", "clamsubmit.exe"),
                 os.path.join("win32", "x64", "Release", "freshclam.exe"),
                 os.path.join("win32", "x64", "Release", "sigtool.exe"),
             ],
         },
     }
-    dependencies = ["openssl"]
-    required_tools = ["visualstudio>=2015"]
+    dependencies = ["curl", "json_c", "pthreads", "libxml2", "openssl", "pcre2", "bzip2"]
+    required_tools = ["visualstudio>=2017"]
     build_script = {
         'x86' : '''
         robocopy "{install}" "%CD%\\clamdeps" /MIR
-        ren "%CD%\\clamdeps\\x86" "%CD%\\clamdeps\\Win32"
+        rename "%CD%\\clamdeps\\x86" "Win32"
         call vcvarsall.bat x86 -vcvars_ver=14.1
         setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
         cd win32
@@ -81,7 +88,7 @@ class Recipe(BaseRecipe):
         ''',
         'x64' : '''
         robocopy "{install}" "%CD%\\clamdeps" /MIR
-        ren "%CD%\\clamdeps\\x86" "%CD%\\clamdeps\\Win32"
+        rename "%CD%\\clamdeps\\x86" "Win32"
         call vcvarsall.bat x64 -vcvars_ver=14.1
         setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
         cd win32

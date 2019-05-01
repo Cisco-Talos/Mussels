@@ -23,24 +23,7 @@ class Recipe(BaseRecipe):
     '''
     Recipe to build clamav.
     '''
-    name = "clamav"
+    name = "clamav_deps"
     version = "0.101.2"
-    url = "https://www.clamav.net/downloads/production/clamav-0.101.2.tar.gz"
-    install_paths = {
-        "x86" : {
-            "include" : [],
-            "lib" : [],
-        },
-        "x64" : {
-            "include" : [],
-            "lib" : [],
-        },
-    }
-    dependencies = ["curl", "jsonc", "pthreads", "libxml2", "openssl", "pcre2"]
-    required_tools = ["visualstudio>=2017"]
-    build_script = {
-        'x86' : '''
-        ''',
-        'x64' : '''
-        ''',
-    }
+    collection = True
+    dependencies = ["openssl<1.1.1"]

@@ -35,12 +35,22 @@ class BaseRecipe(object):
     '''
     name = "sample"
     version = "1.2.3"
-    url = "https://sample.com/sample.tar.gz"
-    patches = "" # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
+    
+    collection = False            # Set collection to True if this is just a collection of recipes to build, and not an actual recipe.
+                                  # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
+                                  
+    url = "https://sample.com/sample.tar.gz" # URL of project release materials.
 
-    archive_name_change = ("","") # Tuple of strings to replace: Eg. ("v", "nghttp2-")
-                                  # This hack is necessary because archives with changed
-                                  # will extract to their original directory name.
+    patches = ""                  # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
+                                  # This allows you to place .diff or .patch files in a patches directory to be applied prior to the build.
+                                  # Files in the patches directory without .diff or .patch extensions will simply be copied into the source directory.
+
+    archive_name_change = ("","") # Tuple of strings to replace.
+                                  # For example: 
+                                  #     ("v", "nghttp2-") 
+                                  # will change: 
+                                  #     v2.3.4  to  nghttp2-2.3.4.
+                                  # This hack is necessary because archives with changed names will extract to their original directory name.
 
     install_paths = {
         "x86" : {
@@ -49,11 +59,12 @@ class BaseRecipe(object):
         },
         "x64" : {
            # "include" : [        # Examples:
-           #     "blarghus.h",    #  1. Copy file to x64\\include\\blarghus.h
-           #     "iface/blarghus" #  2. Copy directory to x64\\include\\blarghus
+           #     "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
+           #     "iface/blarghus" #   Copy directory to x64\\include\\blarghus
            # ],
            # "lib" : [
-           #     "x64/blah.dll" #  3. Copy DLL to x64\\lib\\blah.dll
+           #     "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
+           #     "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
            # ],
         }
     }
@@ -63,7 +74,7 @@ class BaseRecipe(object):
                         #    "@version" is optional.
                         #    If version is omitted, the default (highest) will be selected.
 
-    required_tools = []      # List of tools required by the build commands.
+    required_tools = [] # List of tools required by the build commands.
 
     build_script = {    # Dictionary containing build script. Example below is for generic CMake build.
                         # Variables in "".format() syntax will be evaluated at build() time.
@@ -75,12 +86,8 @@ class BaseRecipe(object):
                         # - libs:           The install/{build}/lib directory.
                         # - build:          The build directory for a given build.
         'x86' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017"
-            CALL cmake.exe --build . --config Release
         ''',
         'x64' : '''
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64"
-            CALL cmake.exe --build . --config Release
         ''',
     }
 
@@ -118,13 +125,15 @@ class BaseRecipe(object):
 
         self.toolchain = toolchain
 
-        # Download if necessary.
-        if self.__download_archive() == False:
-            raise(Exception(f"Failed to download source archive for {self.name}-{self.version}"))
+        # Skip download & build steps for collections.
+        if self.collection == False:
+            # Download and build if necessary.
+            if self.__download_archive() == False:
+                raise(Exception(f"Failed to download source archive for {self.name}-{self.version}"))
 
-        # Extract to the tempdir.
-        if self.__extract_archive() == False:
-            raise(Exception(f"Failed to extract source archive for {self.name}-{self.version}"))
+            # Extract to the tempdir.
+            if self.__extract_archive() == False:
+                raise(Exception(f"Failed to extract source archive for {self.name}-{self.version}"))
 
     def __init_logging(self):
         '''
@@ -248,6 +257,10 @@ class BaseRecipe(object):
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
         '''
+        if self.collection == True:
+            self.logger.debug(f"Build completed for recipe collection {self.name}-{self.version}")
+            return True
+
         if self.patches == "":
             self.logger.debug(f"No patch directory found.")
         else:
