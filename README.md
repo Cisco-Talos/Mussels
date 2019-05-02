@@ -29,9 +29,14 @@ limitations under the License.
 
 ## Example Usage
 
+Get help:
+
+> `python mussels.py --help`
+> `python mussels.py build --help`
+
 View all available recipes:
 
-> `python mussels.py ls`
+> `python mussels.py list`
 
 Perform a dry-run to view order in which dependency graph will be build all recipes:
 
@@ -44,3 +49,20 @@ Perform a dry-run to view order in which dependency graph will be build a specif
 Build a specific version of a recipe:
 
 > `python mussels.py build -r openssl -v 1.1.0j`
+
+## To-do
+
+The following are issues or features on the to-do list to implement or repair.
+
+* Ability to specify "Debug" or "Release" builds
+  * Debug builds should also include copying .pdb files to the out/install directory (Windows)
+* Ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
+  * It may make sense to create the platform toolset as a tool which adds a build script variable.
+    * Should tools have the ability to add new build script variables?
+* Ability to package release materials (zip/tarball per "application")
+  * An "application" would be a recipe that includes "bin" install materials.
+  * A release package would include install files for the recipe and all dependencies.
+  * A release package should include license files/directories for the recipe and each dependency.
+* Recipes to build common libraries on non-Windows systems.
+* Recipes should install their licenses.  
+  * Maybe a new "license" directory next to "include", "lib", "bin".
