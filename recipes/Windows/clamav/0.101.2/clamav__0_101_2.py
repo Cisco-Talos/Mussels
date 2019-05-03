@@ -35,6 +35,14 @@ class Recipe(BaseRecipe):
             "lib" : [
                 os.path.join("win32", "Win32", "Release", "libclamav.dll"),
                 os.path.join("win32", "Win32", "Release", "libclamav.lib"),
+                os.path.join("win32", "Win32", "Release", "libclamunrar.dll"),
+                os.path.join("win32", "Win32", "Release", "libclamunrar.lib"),
+                os.path.join("win32", "Win32", "Release", "libclamunrar_iface.dll"),
+                os.path.join("win32", "Win32", "Release", "libclamunrar_iface.lib"),
+                os.path.join("win32", "Win32", "Release", "mspack.dll"),
+                os.path.join("win32", "Win32", "Release", "mspack.lib"),
+                os.path.join("win32", "Win32", "Release", "pthreads.dll"),
+                os.path.join("win32", "Win32", "Release", "pthreads.lib"),
             ],
             "bin" : [
                 os.path.join("win32", "Win32", "Release", "clambc.exe"),
@@ -54,6 +62,14 @@ class Recipe(BaseRecipe):
             "lib" : [
                 os.path.join("win32", "x64", "Release", "libclamav.dll"),
                 os.path.join("win32", "x64", "Release", "libclamav.lib"),
+                os.path.join("win32", "x64", "Release", "libclamunrar.dll"),
+                os.path.join("win32", "x64", "Release", "libclamunrar.lib"),
+                os.path.join("win32", "x64", "Release", "libclamunrar_iface.dll"),
+                os.path.join("win32", "x64", "Release", "libclamunrar_iface.lib"),
+                os.path.join("win32", "x64", "Release", "mspack.dll"),
+                os.path.join("win32", "x64", "Release", "mspack.lib"),
+                os.path.join("win32", "x64", "Release", "pthreads.dll"),
+                os.path.join("win32", "x64", "Release", "pthreads.lib"),
             ],
             "bin" : [
                 os.path.join("win32", "x64", "Release", "clambc.exe"),
