@@ -53,6 +53,10 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "Win32", "Release", "freshclam.exe"),
                 os.path.join("win32", "Win32", "Release", "sigtool.exe"),
             ],
+            "etc" : [
+                os.path.join("win32", "conf_examples", "clamd.conf.sample"),
+                os.path.join("win32", "conf_examples", "freshclam.conf.sample"),
+            ],
         },
         "x64" : {
             "include" : [
@@ -79,6 +83,10 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "x64", "Release", "clamscan.exe"),
                 os.path.join("win32", "x64", "Release", "freshclam.exe"),
                 os.path.join("win32", "x64", "Release", "sigtool.exe"),
+            ],
+            "etc" : [
+                os.path.join("win32", "conf_examples", "clamd.conf.sample"),
+                os.path.join("win32", "conf_examples", "freshclam.conf.sample"),
             ],
         },
     }

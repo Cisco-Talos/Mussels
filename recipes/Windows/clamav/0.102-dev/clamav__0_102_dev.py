@@ -55,6 +55,10 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "Win32", "Release", "freshclam.exe"),
                 os.path.join("win32", "Win32", "Release", "sigtool.exe"),
             ],
+            "etc" : [
+                os.path.join("win32", "conf_examples", "clamd.conf.sample"),
+                os.path.join("win32", "conf_examples", "freshclam.conf.sample"),
+            ],
         },
         "x64" : {
             "include" : [
@@ -83,6 +87,10 @@ class Recipe(BaseRecipe):
                 os.path.join("win32", "x64", "Release", "freshclam.exe"),
                 os.path.join("win32", "x64", "Release", "sigtool.exe"),
             ],
+            "etc" : [
+                os.path.join("win32", "conf_examples", "clamd.conf.sample"),
+                os.path.join("win32", "conf_examples", "freshclam.conf.sample"),
+            ],
         },
     }
     dependencies = ["curl", "json_c", "pthreads", "libxml2", "openssl", "pcre2", "bzip2"]
@@ -96,16 +104,15 @@ class Recipe(BaseRecipe):
         cd win32
         call configure.bat
         call devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"
-        call devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"
+        set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"
         ''',
         'x64' : '''
         robocopy "{install}" "%CD%\\clamdeps" /MIR
-        rename "%CD%\\clamdeps\\x86" "Win32"
         call vcvarsall.bat x64 -vcvars_ver=14.1
         setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
         cd win32
         call configure.bat
         call devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
-        call devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"
+        set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"
         ''',
     }

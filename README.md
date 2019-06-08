@@ -62,7 +62,8 @@ The following are issues or features on the to-do list to implement or repair.
 * Ability to package release materials (zip/tarball per "application")
   * An "application" would be a recipe that includes "bin" install materials.
   * A release package would include install files for the recipe and all dependencies.
-  * A release package should include license files/directories for the recipe and each dependency.
+  * A release package should include license & configuration files/directories for the recipe and each dependency.
 * Recipes to build common libraries on non-Windows systems.
 * Recipes should install their licenses.  
   * Maybe a new "license" directory next to "include", "lib", "bin".
+* There should be an option to build just one architecture (eg. "x64").
