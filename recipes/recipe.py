@@ -436,9 +436,9 @@ class BaseRecipe(object):
                 for line in build_lines:
                     fd.write(line.strip() + "\n")
 
-        if platform.system() != "Windows":
-            st = os.stat(script_name)
-            os.chmod(script_name, st.st_mode | stat.S_IEXEC)
+            if platform.system() != "Windows":
+                st = os.stat(script_name)
+                os.chmod(script_name, st.st_mode | stat.S_IEXEC)
 
             # Run the build script.
             process = subprocess.Popen(
