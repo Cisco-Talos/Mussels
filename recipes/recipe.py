@@ -28,6 +28,7 @@ import tarfile
 import zipfile
 
 import requests
+import urllib.request
 import patch
 
 
@@ -196,13 +197,20 @@ class BaseRecipe(object):
 
         self.logger.info(f"Downloading {self.url} to {self.download_path}...")
 
-        try:
-            r = requests.get(self.url)
-            with open(self.download_path, "wb") as f:
-                f.write(r.content)
-        except Exception:
-            self.logger.info(f"Failed to download archive from {self.url}!")
-            return False
+        if self.url.startswith("ftp"):
+            try:
+                urllib.request.urlretrieve(self.url, self.download_path)
+            except Exception as exc:
+                self.logger.info(f"Failed to download archive from {self.url}, {exc}!")
+                return False
+        else:
+            try:
+                r = requests.get(self.url)
+                with open(self.download_path, "wb") as f:
+                    f.write(r.content)
+            except Exception:
+                self.logger.info(f"Failed to download archive from {self.url}!")
+                return False
 
         return True
 

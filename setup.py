@@ -14,7 +14,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://git.vrt.sourcefire.com/clamav/clamav-internal-devel/tree/mussels",
     packages=setuptools.find_packages(),
-    install_requires=["click>=7.0", "coloredlogs>=10.0", "requests", "patch"],
+    install_requires=["click>=7.0", "coloredlogs>=10.0", "requests", "patch", "urllib"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache 2.0 License",
