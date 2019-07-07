@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 
 import datetime
 from distutils import dir_util
@@ -30,69 +30,76 @@ import zipfile
 import requests
 import patch
 
+
 class BaseRecipe(object):
-    '''
+    """
     Base class for Mussels recipe.
-    '''
+    """
+
     name = "sample"
     version = "1.2.3"
 
-    collection = False            # Set collection to True if this is just a collection of recipes to build, and not an actual recipe.
-                                  # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
+    # Set collection to True if this is just a collection of recipes to build, and not an actual recipe.
+    # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
+    collection = False
 
-    url = "https://sample.com/sample.tar.gz" # URL of project release materials.
+    url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
 
-    patches = ""                  # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
-                                  # This allows you to place .diff or .patch files in a patches directory to be applied prior to the build.
-                                  # Files in the patches directory without .diff or .patch extensions will simply be copied into the source directory.
+    # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
+    # This allows you to place .diff or .patch files in a patches directory to be applied prior to the build.
+    # Files in the patches directory without .diff or .patch extensions will simply be copied into the source directory.
+    patches = ""
 
-    archive_name_change = ("","") # Tuple of strings to replace.
-                                  # For example:
-                                  #     ("v", "nghttp2-")
-                                  # will change:
-                                  #     v2.3.4  to  nghttp2-2.3.4.
-                                  # This hack is necessary because archives with changed names will extract to their original directory name.
+    # archive_name_change is a tuple of strings to replace.
+    # For example:
+    #     ("v", "nghttp2-")
+    # will change:
+    #     v2.3.4  to  nghttp2-2.3.4.
+    # This hack is necessary because archives with changed names will extract to their original directory name.
+    archive_name_change = ("", "")
 
     install_paths = {
-        "x86" : {
-           # "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
-           # "lib" : [],          # Will copy source item to destination directory,
+        "x86": {
+            # "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
+            # "lib" : [],          # Will copy source item to destination directory,
         },
-        "x64" : {
-           # "include" : [        # Examples:
-           #     "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
-           #     "iface/blarghus" #   Copy directory to x64\\include\\blarghus
-           # ],
-           # "lib" : [
-           #     "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
-           #     "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
-           # ],
-        }
+        "x64": {
+            # "include" : [        # Examples:
+            #     "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
+            #     "iface/blarghus" #   Copy directory to x64\\include\\blarghus
+            # ],
+            # "lib" : [
+            #     "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
+            #     "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
+            # ],
+        },
     }
 
-    dependencies = []   # Dependencies on other Mussels builds.
-                        # str format:  name@version.
-                        #    "@version" is optional.
-                        #    If version is omitted, the default (highest) will be selected.
+    # Dependencies on other Mussels builds.
+    # str format:  name@version.
+    #    "@version" is optional.
+    #    If version is omitted, the default (highest) will be selected.
+    dependencies = []
 
-    required_tools = [] # List of tools required by the build commands.
+    required_tools = []  # List of tools required by the build commands.
 
-    build_script = {    # Dictionary containing build script. Example below is for generic CMake build.
-                        # Variables in "".format() syntax will be evaluated at build() time.
-                        # Paths will have unix style forward slash (`/`) path separators.
-                        #
-                        # Variable options include:
-                        # - install:        The base install directory for build output.
-                        # - includes:       The install/{build}/include directory.
-                        # - libs:           The install/{build}/lib directory.
-                        # - build:          The build directory for a given build.
-        'x86' : '''
-        ''',
-        'x64' : '''
-        ''',
+    # build_script is a dictionary containing build scripts for each build target.
+    # Variables in "".format() syntax will be evaluated at build() time.
+    # Paths must have unix style forward slash (`/`) path separators.
+    #
+    # Variable options include:
+    # - install:        The base install directory for build output.
+    # - includes:       The install/{build}/include directory.
+    # - libs:           The install/{build}/lib directory.
+    # - build:          The build directory for a given build.
+    build_script = {
+        "x86": """
+        """,
+        "x64": """
+        """,
     }
 
-    builds = {}         # Dictionary of build paths.
+    builds = {}  # Dictionary of build paths.
 
     # The following will be defined during the build and exist here for convenience
     # when writing build_script's using the f-string `f` prefix to help remember the
@@ -100,11 +107,11 @@ class BaseRecipe(object):
     tempdir = ""
     installdir = ""
 
-    def __init__(self, toolchain: dict, tempdir: str=""):
-        '''
+    def __init__(self, toolchain: dict, tempdir: str = ""):
+        """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
-        '''
+        """
         if tempdir == "":
             # No temp dir provided, build in the current working directory.
             self.tempdir = os.getcwd()
@@ -130,24 +137,38 @@ class BaseRecipe(object):
         if self.collection == False:
             # Download and build if necessary.
             if self.__download_archive() == False:
-                raise(Exception(f"Failed to download source archive for {self.name}-{self.version}"))
+                raise (
+                    Exception(
+                        f"Failed to download source archive for {self.name}-{self.version}"
+                    )
+                )
 
             # Extract to the tempdir.
             if self.__extract_archive() == False:
-                raise(Exception(f"Failed to extract source archive for {self.name}-{self.version}"))
+                raise (
+                    Exception(
+                        f"Failed to extract source archive for {self.name}-{self.version}"
+                    )
+                )
 
     def __init_logging(self):
-        '''
+        """
         Initializes the logging parameters
-        '''
-        self.logger = logging.getLogger(f'{self.name}-{self.version}')
-        self.logger.setLevel(os.environ.get('LOG_LEVEL', logging.DEBUG))
+        """
+        self.logger = logging.getLogger(f"{self.name}-{self.version}")
+        self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
-            fmt='%(asctime)s - %(levelname)s:  %(message)s',
-            datefmt='%m/%d/%Y %I:%M:%S %p')
+            fmt="%(asctime)s - %(levelname)s:  %(message)s",
+            datefmt="%m/%d/%Y %I:%M:%S %p",
+        )
 
-        self.log_file = os.path.join(self.logsdir, f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(':', '_'))
+        self.log_file = os.path.join(
+            self.logsdir,
+            f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(
+                ":", "_"
+            ),
+        )
         filehandler = logging.FileHandler(filename=self.log_file)
         filehandler.setLevel(logging.DEBUG)
         filehandler.setFormatter(formatter)
@@ -155,17 +176,21 @@ class BaseRecipe(object):
         self.logger.addHandler(filehandler)
 
     def __download_archive(self) -> bool:
-        '''
+        """
         Use the URL to download the archive if it doesn't already exist in the Downloads directory.
-        '''
+        """
         # Determine download path from URL &  possible archive name change.
-        self.archive = self.url.split('/')[-1]
+        self.archive = self.url.split("/")[-1]
         if self.archive_name_change[0] != "":
-            self.archive = self.archive.replace(self.archive_name_change[0], self.archive_name_change[1])
-        self.download_path = os.path.join(os.path.expanduser('~'), 'Downloads', self.archive)
+            self.archive = self.archive.replace(
+                self.archive_name_change[0], self.archive_name_change[1]
+            )
+        self.download_path = os.path.join(
+            os.path.expanduser("~"), "Downloads", self.archive
+        )
 
         # Exit early if we already have the archive.
-        if (os.path.exists(self.download_path)):
+        if os.path.exists(self.download_path):
             self.logger.debug(f"Archive already downloaded.")
             return True
 
@@ -173,7 +198,7 @@ class BaseRecipe(object):
 
         try:
             r = requests.get(self.url)
-            with open(self.download_path, 'wb') as f:
+            with open(self.download_path, "wb") as f:
                 f.write(r.content)
         except Exception:
             self.logger.info(f"Failed to download archive from {self.url}!")
@@ -182,17 +207,19 @@ class BaseRecipe(object):
         return True
 
     def __extract_archive(self) -> bool:
-        '''
+        """
         Extract the archive found in Downloads directory, if necessary.
-        '''
+        """
         if self.download_path.endswith(".tar.gz"):
             # Un-tar
             self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-7])
-            if (os.path.exists(self.extracted_source_path)):
+            if os.path.exists(self.extracted_source_path):
                 self.logger.debug(f"Archive already extracted.")
                 return True
 
-            self.logger.info(f"Extracting Tarball {self.archive} to {self.extracted_source_path}...")
+            self.logger.info(
+                f"Extracting Tarball {self.archive} to {self.extracted_source_path}..."
+            )
 
             tar = tarfile.open(self.download_path, "r:gz")
             tar.extractall(self.srcdir)
@@ -200,13 +227,15 @@ class BaseRecipe(object):
         elif self.download_path.endswith(".zip"):
             # Un-zip
             self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-4])
-            if (os.path.exists(self.extracted_source_path)):
+            if os.path.exists(self.extracted_source_path):
                 self.logger.debug(f"Archive already extracted.")
                 return True
 
-            self.logger.info(f"Extracting Zip {self.archive} to {self.extracted_source_path}...")
+            self.logger.info(
+                f"Extracting Zip {self.archive} to {self.extracted_source_path}..."
+            )
 
-            zip_ref = zipfile.ZipFile(self.download_path, 'r')
+            zip_ref = zipfile.ZipFile(self.download_path, "r")
             zip_ref.extractall(self.srcdir)
             zip_ref.close()
         else:
@@ -216,23 +245,29 @@ class BaseRecipe(object):
         return True
 
     def __install(self, build):
-        '''
+        """
         Copy the headers and libs to an install directory in the format expected by ClamAV.
-        '''
-        self.logger.info(f"Copying {self.name}-{self.version} install files to: {self.installdir}.")
+        """
+        self.logger.info(
+            f"Copying {self.name}-{self.version} install files to: {self.installdir}."
+        )
 
         for install_path in self.install_paths[build]:
 
             for install_item in self.install_paths[build][install_path]:
                 src_path = os.path.join(self.builds[build], install_item)
-                dst_path = os.path.join(self.installdir, build, install_path, os.path.basename(install_item))
+                dst_path = os.path.join(
+                    self.installdir, build, install_path, os.path.basename(install_item)
+                )
 
                 # Create the target install paths, if it doesn't already exist.
                 os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
 
                 # Make sure it actually exists.
                 if not os.path.exists(src_path):
-                    self.logger.error(f"Required target files for installation do not exist:\n\t{src_path}")
+                    self.logger.error(
+                        f"Required target files for installation do not exist:\n\t{src_path}"
+                    )
                     return False
 
                 # Remove prior installation, if exists.
@@ -254,12 +289,14 @@ class BaseRecipe(object):
         return True
 
     def build(self) -> bool:
-        '''
+        """
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
-        '''
+        """
         if self.collection == True:
-            self.logger.debug(f"Build completed for recipe collection {self.name}-{self.version}")
+            self.logger.debug(
+                f"Build completed for recipe collection {self.name}-{self.version}"
+            )
             return True
 
         if self.patches == "":
@@ -267,9 +304,13 @@ class BaseRecipe(object):
         else:
             # Patches exists for this recipe.
             self.logger.debug(f"Patch directory found for {self.name}-{self.version}.")
-            if not os.path.exists(os.path.join(self.extracted_source_path, "_mussles.patched")):
+            if not os.path.exists(
+                os.path.join(self.extracted_source_path, "_mussles.patched")
+            ):
                 # Not yet patched. Apply patches.
-                self.logger.info(f"Applying patches to {self.name}-{self.version} source directory...")
+                self.logger.info(
+                    f"Applying patches to {self.name}-{self.version} source directory..."
+                )
                 for patchfile in os.listdir(self.patches):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
                         self.logger.info(f"Attempting to apply patch: {patchfile}")
@@ -279,20 +320,29 @@ class BaseRecipe(object):
                             self.logger.error(f"Patch failed!")
                             return False
                     else:
-                        self.logger.info(f"Copying new file {patchfile} to {self.name}-{self.version} source directory...")
+                        self.logger.info(
+                            f"Copying new file {patchfile} to {self.name}-{self.version} source directory..."
+                        )
                         shutil.copyfile(
                             os.path.join(self.patches, patchfile),
-                            os.path.join(self.extracted_source_path, patchfile))
+                            os.path.join(self.extracted_source_path, patchfile),
+                        )
 
-                with open(os.path.join(self.extracted_source_path, "_mussles.patched"), 'w') as patchmark:
+                with open(
+                    os.path.join(self.extracted_source_path, "_mussles.patched"), "w"
+                ) as patchmark:
                     patchmark.write("patched")
 
         for build in self.build_script:
             already_built = True
 
             # Check for prior completed build output.
-            self.logger.info(f"Attempting to build {self.name}-{self.version} for {build}")
-            self.builds[build] = os.path.join(self.workdir, f"{os.path.split(self.extracted_source_path)[-1]}-{build}")
+            self.logger.info(
+                f"Attempting to build {self.name}-{self.version} for {build}"
+            )
+            self.builds[build] = os.path.join(
+                self.workdir, f"{os.path.split(self.extracted_source_path)[-1]}-{build}"
+            )
 
             if os.path.exists(self.builds[build]):
                 self.logger.debug("Checking for prior build output...")
@@ -300,14 +350,23 @@ class BaseRecipe(object):
                     for install_item in self.install_paths[build][install_path]:
                         self.logger.debug(f"Checking for {install_item}")
 
-                        if not os.path.exists(os.path.join(self.installdir, build, install_path, os.path.basename(install_item))):
+                        if not os.path.exists(
+                            os.path.join(
+                                self.installdir,
+                                build,
+                                install_path,
+                                os.path.basename(install_item),
+                            )
+                        ):
                             self.logger.debug(f"{install_item} not found.")
                             already_built = False
                             break
 
                 if already_built == True:
                     # It looks like there was a successful prior build. Skip.
-                    self.logger.info(f"{self.name}-{self.version} {build} build output already exists.")
+                    self.logger.info(
+                        f"{self.name}-{self.version} {build} build output already exists."
+                    )
                     continue
                 else:
                     # It appears that the previous build is missing the desired build output.
@@ -318,12 +377,16 @@ class BaseRecipe(object):
                     shutil.rmtree(self.builds[build])
 
                     # Make our own copy of the extracted source so we don't dirty the original.
-                    self.logger.debug(f"Creating new {build} build directory from extracted sources:")
+                    self.logger.debug(
+                        f"Creating new {build} build directory from extracted sources:"
+                    )
                     self.logger.debug(f"   {self.builds[build]}")
                     shutil.copytree(self.extracted_source_path, self.builds[build])
             else:
                 # Make our own copy of the extracted source so we don't dirty the original.
-                self.logger.debug(f"Creating {build} build directory from extracted sources:")
+                self.logger.debug(
+                    f"Creating {build} build directory from extracted sources:"
+                )
                 self.logger.debug(f"\t{self.builds[build]}")
                 shutil.copytree(self.extracted_source_path, self.builds[build])
 
@@ -335,23 +398,31 @@ class BaseRecipe(object):
 
             # Add each tool from the toolchain to the PATH environment variable.
             for tool in self.toolchain:
-                for path_mod in self.toolchain[tool].path_mods[self.toolchain[tool].installed][build]:
+                for path_mod in self.toolchain[tool].path_mods[
+                    self.toolchain[tool].installed
+                ][build]:
                     os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
 
             # Create a build script.
             if platform.system() == "Windows":
                 script_name = "build.bat"
-                newline = '\r\n'
+                newline = "\r\n"
             else:
                 script_name = "build.sh"
-                newline = '\n'
+                newline = "\n"
 
-            with open(os.path.join(os.getcwd(), script_name), 'w', newline=newline) as fd:
+            with open(
+                os.path.join(os.getcwd(), script_name), "w", newline=newline
+            ) as fd:
                 # Evaluate "".format() syntax in the build script
-                var_includes =  os.path.join(self.installdir, build, "include").replace('\\', '/')
-                var_libs =      os.path.join(self.installdir, build, "lib").replace('\\', '/')
-                var_install =   os.path.join(self.installdir).replace('\\', '/')
-                var_build =     os.path.join(self.builds[build]).replace('\\', '/')
+                var_includes = os.path.join(self.installdir, build, "include").replace(
+                    "\\", "/"
+                )
+                var_libs = os.path.join(self.installdir, build, "lib").replace(
+                    "\\", "/"
+                )
+                var_install = os.path.join(self.installdir).replace("\\", "/")
+                var_build = os.path.join(self.builds[build]).replace("\\", "/")
 
                 self.build_script[build] = self.build_script[build].format(
                     includes=var_includes,
@@ -363,17 +434,22 @@ class BaseRecipe(object):
                 # Write the build commands to a file
                 build_lines = self.build_script[build].splitlines()
                 for line in build_lines:
-                    fd.write(line.strip() + '\n')
+                    fd.write(line.strip() + "\n")
 
         if platform.system() != "Windows":
             st = os.stat(script_name)
             os.chmod(script_name, st.st_mode | stat.S_IEXEC)
 
             # Run the build script.
-            process = subprocess.Popen(os.path.join(os.getcwd(), script_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process = subprocess.Popen(
+                os.path.join(os.getcwd(), script_name),
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
             with process.stdout:
-                for line in iter(process.stdout.readline, b''):
-                    self.logger.debug(line.decode('utf-8').strip())
+                for line in iter(process.stdout.readline, b""):
+                    self.logger.debug(line.decode("utf-8").strip())
             process.wait()
             if process.returncode != 0:
                 self.logger.warning(f"{self.name}-{self.version} {build} build failed!")

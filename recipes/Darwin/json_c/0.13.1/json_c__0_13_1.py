@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,23 +12,25 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 
 import os
 
 from recipes.recipe import BaseRecipe
 
+
 class Recipe(BaseRecipe):
-    '''
+    """
     Recipe to build json-c.
     Uses ./configure, make, because json-c's CMakeLists.txt for posix, particularly Mac, are bad.
-    '''
+    """
+
     name = "json_c"
     version = "0.13.1"
     url = "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.13.1.tar.gz"
     install_paths = {
-        "host" : {
-            "include/json-c" : [
+        "host": {
+            "include/json-c": [
                 os.path.join("arraylist.h"),
                 os.path.join("bits.h"),
                 os.path.join("debug.h"),
@@ -45,17 +47,17 @@ class Recipe(BaseRecipe):
                 os.path.join("printbuf.h"),
                 os.path.join("json_config.h"),
             ],
-            "lib" : [
+            "lib": [
                 os.path.join(".libs", "libjson-c.4.dylib"),
                 os.path.join("libjson-c.la"),
             ],
-        },
+        }
     }
     dependencies = []
     required_tools = ["make", "clang"]
     build_script = {
-        'host' : '''
+        "host": """
             ./configure
             make
-        ''',
+        """
     }

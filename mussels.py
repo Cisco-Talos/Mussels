@@ -1,4 +1,4 @@
-r'''
+r"""
   __    __     __  __     ______     ______     ______     __         ______
  /\ "-./  \   /\ \/\ \   /\  ___\   /\  ___\   /\  ___\   /\ \       /\  ___\
  \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \
@@ -9,9 +9,9 @@ A tool to download, build, and assemble application dependencies.
                                     Brought to you by the Clam AntiVirus Team.
 
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
-'''
+"""
 
-'''
+"""
 Author: Micah Snyder
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 
 from collections import defaultdict
 import datetime
@@ -42,8 +42,8 @@ import click
 import coloredlogs
 
 logging.basicConfig()
-module_logger = logging.getLogger('mussels')
-coloredlogs.install(level='DEBUG')
+module_logger = logging.getLogger("mussels")
+coloredlogs.install(level="DEBUG")
 module_logger.setLevel(logging.DEBUG)
 
 __all__ = []
@@ -54,11 +54,13 @@ SORTED_RECIPES = defaultdict(list)
 TOOLS = defaultdict(dict)
 SORTED_TOOLS = defaultdict(list)
 
+
 def version_keys(s):
     import re
+
     keys = []
-    for u in s.split('.'):
-        for v in re.split(r'(\d+)',u):
+    for u in s.split("."):
+        for v in re.split(r"(\d+)", u):
             try:
                 val = int(v)
             except:
@@ -68,26 +70,31 @@ def version_keys(s):
 
 
 def collect_recipes(recipe_path):
-    '''
+    """
     Collect all Recipes in directory.
-    '''
+    """
     global __all__
     global RECIPES
 
     for root, dirs, _ in os.walk(recipe_path):
         for directory in dirs:
-            for loader, module_name, _ in pkgutil.walk_packages([os.path.join(root, directory)]):
+            for loader, module_name, _ in pkgutil.walk_packages(
+                [os.path.join(root, directory)]
+            ):
                 __all__.append(module_name)
                 _module = loader.find_module(module_name).load_module(module_name)
                 globals()[module_name] = _module
                 if "Recipe" in dir(_module):
-                    RECIPES[_module.Recipe.name][_module.Recipe.version] = _module.Recipe
+                    RECIPES[_module.Recipe.name][
+                        _module.Recipe.version
+                    ] = _module.Recipe
+
 
 def sort_recipes():
     global __all__
     global RECIPES
     global SORTED_RECIPES
-    
+
     # Sort the recipes, and determine the highest versions.
     for recipe in RECIPES:
         versions_list = list(RECIPES[recipe].keys())
@@ -96,18 +103,20 @@ def sort_recipes():
         for version in versions_list:
             SORTED_RECIPES[recipe].append(version)
 
+
 def collect_tools(tool_path):
-    '''
+    """
     Collect all Tools in directory.
-    '''
+    """
     global __all__
     global TOOLS
     global SORTED_TOOLS
 
-
     for root, dirs, _ in os.walk(tool_path):
         for directory in dirs:
-            for loader, module_name, _ in pkgutil.walk_packages([os.path.join(root, directory)]):
+            for loader, module_name, _ in pkgutil.walk_packages(
+                [os.path.join(root, directory)]
+            ):
                 __all__.append(module_name)
                 _module = loader.find_module(module_name).load_module(module_name)
                 globals()[module_name] = _module
@@ -122,16 +131,21 @@ def collect_tools(tool_path):
         for version in versions_list:
             SORTED_TOOLS[tool].append(version)
 
+
 # Collect all Recipes provided by Mussels recipes directory.
 collect_recipes(os.path.join(os.path.split(__file__)[0], "recipes", platform.system()))
 # Collect all Recipe collections provided by Mussels collections directory.
-collect_recipes(os.path.join(os.path.split(__file__)[0], "collections", platform.system()))
+collect_recipes(
+    os.path.join(os.path.split(__file__)[0], "collections", platform.system())
+)
 
-if os.path.abspath( os.getcwd() ) != os.path.abspath( os.path.split(__file__)[0] ):
+if os.path.abspath(os.getcwd()) != os.path.abspath(os.path.split(__file__)[0]):
     # Collect all Recipes in cwd/mussels/recipes/<platform> directory.
     collect_recipes(os.path.join(os.getcwd(), "mussels", "recipes", platform.system()))
     # Collect all Recipe collections in cwd/mussels/collections/<platform> directory.
-    collect_recipes(os.path.join(os.getcwd(), "mussels", "collections", platform.system()))
+    collect_recipes(
+        os.path.join(os.getcwd(), "mussels", "collections", platform.system())
+    )
 
 # Sort the recipes
 sort_recipes()
@@ -142,15 +156,12 @@ collect_tools(os.path.join(os.path.split(__file__)[0], "tools", platform.system(
 # Collect all Tools in cwd/mussels/tools/<platform> directory.
 collect_tools(os.path.join(os.getcwd(), "mussels", "tools", platform.system()))
 
+
 def build_recipe(recipe: str, version: str, tempdir: str, toolchain: dict) -> dict:
-    '''
+    """
     Build a specific recipe.
-    '''
-    result = {
-        'name' : recipe,
-        'version' : version,
-        'success' : False
-    }
+    """
+    result = {"name": recipe, "version": version, "success": False}
 
     start = time.time()
 
@@ -162,34 +173,35 @@ def build_recipe(recipe: str, version: str, tempdir: str, toolchain: dict) -> di
             version = SORTED_RECIPES[recipe][0]
         except KeyError:
             module_logger.error(f"FAILED to find recipe: {recipe}!")
-            result['time elapsed'] = time.time() - start
+            result["time elapsed"] = time.time() - start
             return result
 
     try:
         builder = RECIPES[recipe][version](toolchain, tempdir)
     except KeyError:
         module_logger.error(f"FAILED to find recipe: {recipe}-{version}!")
-        result['time elapsed'] = time.time() - start
+        result["time elapsed"] = time.time() - start
         return result
 
     if builder.build() == False:
         module_logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
     else:
         module_logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
-        result['success'] = True
+        result["success"] = True
 
-    result['time elapsed'] = time.time() - start
+    result["time elapsed"] = time.time() - start
 
     return result
 
+
 def compare_versions(version_a: str, version_b: str) -> int:
-    '''
+    """
     Evaluate version strings of two versions.
     Compare if version A against version B.
     :return: -1  if A < B
     :return: 0   if A == B
     :return: 1   if A > B
-    '''
+    """
     if version_a == version_b:
         return 0
 
@@ -202,8 +214,9 @@ def compare_versions(version_a: str, version_b: str) -> int:
     else:
         return 1
 
+
 def get_item_version(item: str, sorted_items: dict) -> tuple:
-    '''
+    """
     Convert a item name in the format to a (name, version) tuple:
 
         name[ >=, <=, >, <, (==|=|@) version ]
@@ -225,13 +238,13 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
     :return: tuple of:
         - the sorted_items and
         - a tuple of the item (name,version) with the highest qualified version.
-    '''
+    """
     if ">=" in item:
         # GTE requirement found.
         name, version = item.split(">=")
-        for i,ver in enumerate(sorted_items[name]):
+        for i, ver in enumerate(sorted_items[name]):
             cmp = compare_versions(ver, version)
-            if (cmp < 0):
+            if cmp < 0:
                 # Version is too low. Remove it, and subsequent versions.
                 sorted_items[name] = sorted_items[name][:i]
                 break
@@ -239,9 +252,9 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
     elif ">" in item:
         # GT requirement found.
         name, version = item.split(">")
-        for i,ver in enumerate(sorted_items[name]):
+        for i, ver in enumerate(sorted_items[name]):
             cmp = compare_versions(ver, version)
-            if (cmp <= 0):
+            if cmp <= 0:
                 # Version is too low. Remove it, and subsequent versions.
                 sorted_items[name] = sorted_items[name][:i]
                 break
@@ -260,7 +273,9 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
             try:
                 first = sorted_items[name][0]
             except:
-                raise Exception(f"No versions available to satisfy requirement for {item}")
+                raise Exception(
+                    f"No versions available to satisfy requirement for {item}"
+                )
 
     elif "<" in item:
         # LT requirement found.
@@ -276,19 +291,21 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
             try:
                 first = sorted_items[name][0]
             except:
-                raise Exception(f"No versions available to satisfy requirement for {item}")
+                raise Exception(
+                    f"No versions available to satisfy requirement for {item}"
+                )
     else:
         eq_cond = False
-        if ("==" in item):
+        if "==" in item:
             name, version = item.split("==")
             eq_cond = True
-        elif ("=" in item):
+        elif "=" in item:
             name, version = item.split("=")
             eq_cond = True
-        elif ("-" in item):
+        elif "-" in item:
             name, version = item.split("-")
             eq_cond = True
-        elif ("@" in item):
+        elif "@" in item:
             name, version = item.split("@")
             eq_cond = True
 
@@ -296,7 +313,9 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
             # EQ requirement found.
             # Try to find the specific version, and remove all others.
             if not version in sorted_items[name]:
-                raise Exception(f"No versions available to satisfy requirement for {item}")
+                raise Exception(
+                    f"No versions available to satisfy requirement for {item}"
+                )
             sorted_items[name] = [version]
 
         else:
@@ -310,12 +329,13 @@ def get_item_version(item: str, sorted_items: dict) -> tuple:
 
     return (sorted_items, (name, selected_version))
 
+
 def get_recipe_version(recipe: str) -> tuple:
-    '''
+    """
     Select recipe version based on version requirements.
     Eliminate recipe versions and sorted tools versions based on
     these requirements, and the required_tools requirements of remaining recipes.
-    '''
+    """
     global SORTED_RECIPES
     global SORTED_TOOLS
 
@@ -327,14 +347,17 @@ def get_recipe_version(recipe: str) -> tuple:
                 try:
                     SORTED_TOOLS, _ = get_item_version(tool, SORTED_TOOLS)
                 except:
-                    raise Exception(f"No {tool} version available to satisfy requirement for build.")
+                    raise Exception(
+                        f"No {tool} version available to satisfy requirement for build."
+                    )
 
     return recipe_version
 
+
 def get_all_recipes(recipe: str, chain: list) -> list:
-    '''
+    """
     Identify all recipes that must be built given a specific recipe.
-    '''
+    """
     name, version = get_recipe_version(recipe)
 
     if (len(chain) > 0) and (name == chain[0]):
@@ -351,20 +374,22 @@ def get_all_recipes(recipe: str, chain: list) -> list:
 
     return recipes
 
+
 def get_all_recipes_from_list(recipes: list) -> set:
-    '''
+    """
     Identify all recipes that must be built given a list of recipes.
-    '''
+    """
     all_recipes = []
     for recipe in recipes:
         all_recipes += get_all_recipes(recipe, [])
 
     return set(all_recipes)
 
+
 def get_build_batches(recipes: list) -> list:
-    '''
+    """
     Get list of build batches that can be built concurrently.
-    '''
+    """
     # Identify all recipes that must be built given list of desired builds.
     all_recipes = get_all_recipes_from_list(recipes)
 
@@ -373,7 +398,9 @@ def get_build_batches(recipes: list) -> list:
     for recipe in all_recipes:
         name, version = get_recipe_version(recipe)
         dependencies = RECIPES[name][version].dependencies
-        name_to_deps[name] = set([get_recipe_version(dependency)[0] for dependency in dependencies])
+        name_to_deps[name] = set(
+            [get_recipe_version(dependency)[0] for dependency in dependencies]
+        )
 
     batches = []
 
@@ -385,7 +412,7 @@ def get_build_batches(recipes: list) -> list:
 
         # If there aren't any, we have a loop in the graph
         if not ready:
-            msg  = "Circular dependencies found!\n"
+            msg = "Circular dependencies found!\n"
             msg += json.dumps(name_to_deps, indent=4)
             raise ValueError(msg)
 
@@ -396,46 +423,70 @@ def get_build_batches(recipes: list) -> list:
             deps.difference_update(ready)
 
         # Add the batch to the list
-        batches.append( ready )
+        batches.append(ready)
 
     # Return the list of batches
     return batches
 
+
 def print_results(results: list):
-    '''
+    """
     Print the build results in a pretty way.
-    '''
+    """
     for result in results:
         if result["success"] == True:
-            module_logger.info(f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}.")
+            module_logger.info(
+                f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}."
+            )
         else:
-            module_logger.error(f"Failure building {result['name']}-{result['version']}, terminated after {datetime.timedelta(0, result['time elapsed'])}")
+            module_logger.error(
+                f"Failure building {result['name']}-{result['version']}, terminated after {datetime.timedelta(0, result['time elapsed'])}"
+            )
+
 
 class SpecialEpilog(click.Group):
     def format_epilog(self, ctx, formatter):
         if self.epilog:
             print(self.epilog)
 
+
 # Tell click to use our epilog formatter
 @click.group(cls=SpecialEpilog, epilog=__doc__, chain=True)
 def cli():
     print(__doc__)
 
+
 @cli.command()
-@click.option('--recipe', '-r', required=False,
-              type=click.Choice(list(RECIPES.keys()) + ["all"]),
-              default="all",
-              help='Recipe to build. Format: recipe[@version]')
-@click.option('--version', '-v', default="",
-              help='Version of recipe to build. May not be combined with @version in recipe name. [optional]')
-@click.option('--tempdir', '-t', default="out",
-              help='Build in a specific directory instead of a temp directory. [optional]')
-@click.option('--dryrun', '-d', is_flag=True,
-              help='Print out the version dependency graph without actually doing a build. [optional]')
+@click.option(
+    "--recipe",
+    "-r",
+    required=False,
+    type=click.Choice(list(RECIPES.keys()) + ["all"]),
+    default="all",
+    help="Recipe to build. Format: recipe[@version]",
+)
+@click.option(
+    "--version",
+    "-v",
+    default="",
+    help="Version of recipe to build. May not be combined with @version in recipe name. [optional]",
+)
+@click.option(
+    "--tempdir",
+    "-t",
+    default="out",
+    help="Build in a specific directory instead of a temp directory. [optional]",
+)
+@click.option(
+    "--dryrun",
+    "-d",
+    is_flag=True,
+    help="Print out the version dependency graph without actually doing a build. [optional]",
+)
 def build(recipe: str, version: str, tempdir: str, dryrun: bool):
-    '''
+    """
     Download, extract, build, and install the recipe.
-    '''
+    """
     global RECIPES
     global SORTED_RECIPES
     global TOOLS
@@ -470,34 +521,48 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
     missing_tools = []
     for preferred_tool_version in preferred_tool_versions:
         tool_found = False
-        prefered_tool = TOOLS[preferred_tool_version[0]][preferred_tool_version[1]](tempdir)
+        prefered_tool = TOOLS[preferred_tool_version[0]][preferred_tool_version[1]](
+            tempdir
+        )
 
         if prefered_tool.detect() == True:
             # Preferred tool version is available.
             tool_found = True
             toolchain[preferred_tool_version[0]] = prefered_tool
-            module_logger.info(f"    {preferred_tool_version[0]}-{preferred_tool_version[1]} found.")
+            module_logger.info(
+                f"    {preferred_tool_version[0]}-{preferred_tool_version[1]} found."
+            )
         else:
             # Check if non-prefered (older, but compatible) version is available.
-            module_logger.warning(f"    {preferred_tool_version[0]}-{preferred_tool_version[1]} not found.")
+            module_logger.warning(
+                f"    {preferred_tool_version[0]}-{preferred_tool_version[1]} not found."
+            )
 
             if len(SORTED_TOOLS[preferred_tool_version[0]]) > 1:
                 module_logger.warning(f"        Checking for alternative versions...")
                 alternative_versions = SORTED_TOOLS[preferred_tool_version[0]][1:]
 
                 for alternative_version in alternative_versions:
-                    alternative_tool = TOOLS[preferred_tool_version[0]][alternative_version](tempdir)
+                    alternative_tool = TOOLS[preferred_tool_version[0]][
+                        alternative_version
+                    ](tempdir)
 
                     if alternative_tool.detect() == True:
                         # Found a compatible version to use.
                         tool_found = True
                         toolchain[preferred_tool_version[0]] = alternative_tool
                         # Select the version so it will be the default.
-                        SORTED_TOOLS, _ = get_item_version(f"{preferred_tool_version[0]}={alternative_version}",
-                                                           SORTED_TOOLS)
-                        module_logger.info(f"    Alternative version {preferred_tool_version[0]}-{alternative_version} found.")
+                        SORTED_TOOLS, _ = get_item_version(
+                            f"{preferred_tool_version[0]}={alternative_version}",
+                            SORTED_TOOLS,
+                        )
+                        module_logger.info(
+                            f"    Alternative version {preferred_tool_version[0]}-{alternative_version} found."
+                        )
                     else:
-                        module_logger.warning(f"    Alternative version {preferred_tool_version[0]}-{alternative_version} not found.")
+                        module_logger.warning(
+                            f"    Alternative version {preferred_tool_version[0]}-{alternative_version} not found."
+                        )
 
             if tool_found == False:
                 # Tool is missing.  Build will fail.
@@ -505,7 +570,9 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
 
     if len(missing_tools) > 0:
         module_logger.warning("")
-        module_logger.warning("The following tools are missing and must be installed for this build to continue:")
+        module_logger.warning(
+            "The following tools are missing and must be installed for this build to continue:"
+        )
         for tool_version in missing_tools:
             module_logger.warning(f"    {tool_version[0]}-{tool_version[1]}")
             # TODO: Provide an option to install the missing tools automatically.
@@ -535,7 +602,9 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
             idx += 1
 
             if dryrun:
-                module_logger.info(f"   {idx:2} [{i}:{j:2}]: {recipe}-{SORTED_RECIPES[recipe][0]}")
+                module_logger.info(
+                    f"   {idx:2} [{i}:{j:2}]: {recipe}-{SORTED_RECIPES[recipe][0]}"
+                )
                 module_logger.debug(f"      Tool(s):")
                 for tool in RECIPES[recipe][SORTED_RECIPES[recipe][0]].required_tools:
                     _, tool_version = get_item_version(tool, SORTED_TOOLS)
@@ -545,12 +614,11 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
             if failure:
                 module_logger.warning(f"Skipping {recipe} build due to prior failure.")
             else:
-                result = build_recipe(recipe,
-                                      SORTED_RECIPES[recipe][0],
-                                      tempdir,
-                                      toolchain)
+                result = build_recipe(
+                    recipe, SORTED_RECIPES[recipe][0], tempdir, toolchain
+                )
                 results.append(result)
-                if result['success'] == False:
+                if result["success"] == False:
                     failure = True
 
     if not dryrun:
@@ -561,30 +629,18 @@ def build(recipe: str, version: str, tempdir: str, dryrun: bool):
 
     sys.exit(0)
 
+
 @cli.command()
 def list():
-    '''
+    """
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
-    '''
+    """
     module_logger.info("Recipes:")
     for recipe in SORTED_RECIPES:
         if RECIPES[recipe][SORTED_RECIPES[recipe][0]].collection == False:
             outline = f"    {recipe:10} ["
-            for i,version in enumerate(SORTED_RECIPES[recipe]):
-                if i == 0:
-                    outline += f" {version}*"
-                else:
-                    outline += f", {version}"
-            outline += " ]"
-            module_logger.info(outline)
-            
-    module_logger.info("")
-    module_logger.info("Collections:")
-    for recipe in SORTED_RECIPES:
-        if RECIPES[recipe][SORTED_RECIPES[recipe][0]].collection == True:
-            outline = f"    {recipe:10} ["
-            for i,version in enumerate(SORTED_RECIPES[recipe]):
+            for i, version in enumerate(SORTED_RECIPES[recipe]):
                 if i == 0:
                     outline += f" {version}*"
                 else:
@@ -592,5 +648,19 @@ def list():
             outline += " ]"
             module_logger.info(outline)
 
-if __name__ == '__main__':
+    module_logger.info("")
+    module_logger.info("Collections:")
+    for recipe in SORTED_RECIPES:
+        if RECIPES[recipe][SORTED_RECIPES[recipe][0]].collection == True:
+            outline = f"    {recipe:10} ["
+            for i, version in enumerate(SORTED_RECIPES[recipe]):
+                if i == 0:
+                    outline += f" {version}*"
+                else:
+                    outline += f", {version}"
+            outline += " ]"
+            module_logger.info(outline)
+
+
+if __name__ == "__main__":
     cli(sys.argv[1:])

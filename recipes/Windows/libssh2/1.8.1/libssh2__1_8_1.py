@@ -1,4 +1,4 @@
-'''
+"""
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,38 +12,40 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 
 import os
 
 from recipes.recipe import BaseRecipe
 
+
 class Recipe(BaseRecipe):
-    '''
+    """
     Recipe to build libssh2.
-    '''
+    """
+
     name = "libssh2"
     version = "1.8.1"
     url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
     install_paths = {
-        "x86" : {
-            "include" : [
+        "x86": {
+            "include": [
                 os.path.join("include", "libssh2.h"),
                 os.path.join("include", "libssh2_publickey.h"),
                 os.path.join("include", "libssh2_sftp.h"),
             ],
-            "lib" : [
+            "lib": [
                 os.path.join("src", "Release", "libssh2.dll"),
                 os.path.join("src", "Release", "libssh2.lib"),
             ],
         },
-        "x64" : {
-            "include" : [
+        "x64": {
+            "include": [
                 os.path.join("include", "libssh2.h"),
                 os.path.join("include", "libssh2_publickey.h"),
                 os.path.join("include", "libssh2_sftp.h"),
             ],
-            "lib" : [
+            "lib": [
                 os.path.join("src", "Release", "libssh2.dll"),
                 os.path.join("src", "Release", "libssh2.lib"),
             ],
@@ -52,7 +54,7 @@ class Recipe(BaseRecipe):
     dependencies = ["openssl>=1.1.0", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
-        'x86' : '''
+        "x86": """
             CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
                 -DCRYPTO_BACKEND=OpenSSL \
                 -DBUILD_SHARED_LIBS=ON \
@@ -65,8 +67,8 @@ class Recipe(BaseRecipe):
                 -DZLIB_INCLUDE_DIR="{includes}" \
                 -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
             CALL cmake.exe --build . --config Release
-        ''',
-        'x64' : '''
+        """,
+        "x64": """
             CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
                 -DCRYPTO_BACKEND=OpenSSL \
                 -DBUILD_SHARED_LIBS=ON \
@@ -79,5 +81,5 @@ class Recipe(BaseRecipe):
                 -DZLIB_INCLUDE_DIR="{includes}" \
                 -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
             CALL cmake.exe --build . --config Release
-        ''',
+        """,
     }
