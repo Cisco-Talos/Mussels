@@ -22,6 +22,7 @@ import os
 import platform
 import requests
 import shutil
+import stat
 import subprocess
 import tarfile
 import zipfile
@@ -196,6 +197,10 @@ class BaseTool(object):
             build_lines = self.install_script.splitlines()
             for line in build_lines:
                 fd.write(line.strip() + '\n')
+
+        if platform.system() != "Windows":
+            st = os.stat(script_name)
+            os.chmod(script_name, st.st_mode | stat.S_IEXEC)
 
         # Run the build script.
         process = subprocess.Popen(os.path.join(os.getcwd(), script_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

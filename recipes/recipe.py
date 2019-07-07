@@ -22,6 +22,7 @@ import logging
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import tarfile
 import zipfile
@@ -35,10 +36,10 @@ class BaseRecipe(object):
     '''
     name = "sample"
     version = "1.2.3"
-    
+
     collection = False            # Set collection to True if this is just a collection of recipes to build, and not an actual recipe.
                                   # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
-                                  
+
     url = "https://sample.com/sample.tar.gz" # URL of project release materials.
 
     patches = ""                  # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
@@ -46,9 +47,9 @@ class BaseRecipe(object):
                                   # Files in the patches directory without .diff or .patch extensions will simply be copied into the source directory.
 
     archive_name_change = ("","") # Tuple of strings to replace.
-                                  # For example: 
-                                  #     ("v", "nghttp2-") 
-                                  # will change: 
+                                  # For example:
+                                  #     ("v", "nghttp2-")
+                                  # will change:
                                   #     v2.3.4  to  nghttp2-2.3.4.
                                   # This hack is necessary because archives with changed names will extract to their original directory name.
 
@@ -363,6 +364,10 @@ class BaseRecipe(object):
                 build_lines = self.build_script[build].splitlines()
                 for line in build_lines:
                     fd.write(line.strip() + '\n')
+
+        if platform.system() != "Windows":
+            st = os.stat(script_name)
+            os.chmod(script_name, st.st_mode | stat.S_IEXEC)
 
             # Run the build script.
             process = subprocess.Popen(os.path.join(os.getcwd(), script_name), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
