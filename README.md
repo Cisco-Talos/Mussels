@@ -71,3 +71,14 @@ The following are issues or features on the to-do list to implement or repair.
 * Add build `--clean` option.  A clean build always deletes the work directory and starts over.  The default behavior should be that the work directory is not deleted just because the previous build did not succeed, and the "configure" step is skipped if the work directory already exists.
 * Add build `--dev` option.  A dev build always runs the "build" step for the primary build target, even if the output binaries already exist in the out/install directory.
 * Add build `--deploy` option that copies the primary build target install files as well as the "lib" and "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
+* Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dryrun` option.
+  * Feature must include a `-y`/`--yes` override for non-interactive builds.
+* Add cookbook capability.
+  * Cookbooks would be external git repositories containing mussels recipes.
+  * Add an optional option to specify which cookbook to use when building a recipe.
+    * If multiple cookbooks provide the recipe and the user does not specify which book to use, an interactive prompt should give the user a choice.
+  * Mussels should include an index of known cookbooks. Additional cookbooks should be added with a `books --add` option.
+  * Recipes should prefer to use dependencies defined in the same cookbook, but warn users when another cookbook offers a recipe for a dependency with a newer version.
+    * This warning should include an offer to use the newer recipe from the 3rd-party cookbook if the dependencies are compatible (default No).
+  * Cookbooks should be cloned to a local directory and should be updated with a `books --update` option.
+  * Migrate existing recipes to a separate `mussels-clamav-cookbook` repository.
