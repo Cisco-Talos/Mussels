@@ -30,7 +30,13 @@ class Recipe(BaseRecipe):
     install_paths = {
         "host": {
             "include": ["zlib.h", "zconf.h"],
-            "lib": [os.path.join("libz.a"), os.path.join("libz.1.2.11.dylib")],
+            "lib": [
+                os.path.join("libz.1.2.11.dylib"),
+                os.path.join("libz.1.dylib"),
+                os.path.join("libz.dylib"),
+                os.path.join("libz.a"),
+            ],
+            "bin": [os.path.join("minigzip")],
         }
     }
     dependencies = []

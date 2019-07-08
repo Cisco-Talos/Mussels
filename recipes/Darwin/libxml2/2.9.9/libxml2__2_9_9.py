@@ -33,6 +33,7 @@ class Recipe(BaseRecipe):
             "include": ["libxml.h", os.path.join("include", "libxml")],
             "lib": [
                 os.path.join(".libs", "libxml2.2.dylib"),
+                os.path.join(".libs", "libxml2.dylib"),
                 os.path.join(".libs", "libxml2.a"),
             ],
         }

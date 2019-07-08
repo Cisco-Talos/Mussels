@@ -34,7 +34,11 @@ class Recipe(BaseRecipe):
                 os.path.join("include", "libssh2_publickey.h"),
                 os.path.join("include", "libssh2_sftp.h"),
             ],
-            "lib": [os.path.join("src", "libssh2.dylib")],
+            "lib": [
+                os.path.join("src", "libssh2.1.0.1.dylib"),
+                os.path.join("src", "libssh2.1.dylib"),
+                os.path.join("src", "libssh2.dylib"),
+            ],
         }
     }
     dependencies = ["openssl>=1.1.0", "zlib"]

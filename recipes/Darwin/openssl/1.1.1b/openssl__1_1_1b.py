@@ -32,8 +32,10 @@ class Recipe(BaseRecipe):
             "include": [os.path.join("include", "openssl")],
             "lib": [
                 os.path.join("libssl.1.1.dylib"),
+                os.path.join("libssl.dylib"),
                 os.path.join("libssl.a"),
                 os.path.join("libcrypto.1.1.dylib"),
+                os.path.join("libcrypto.dylib"),
                 os.path.join("libcrypto.a"),
             ],
         }

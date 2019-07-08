@@ -28,7 +28,26 @@ class Recipe(BaseRecipe):
     version = "1.1.0"
     url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gz"
     install_paths = {
-        "host": {"include": ["bzlib.h"], "lib": [os.path.join("libbz2.1.1.0.dylib")]}
+        "host": {
+            "include": ["bzlib.h"],
+            "lib": [
+                os.path.join("libbz2.1.1.0.dylib"),
+                os.path.join("libbz2.1.dylib"),
+                os.path.join("libbz2.a"),
+            ],
+            "bin": [
+                os.path.join("bunzip2"),
+                os.path.join("bzcat"),
+                os.path.join("bzcmp"),
+                os.path.join("bzdiff"),
+                os.path.join("bzegrep"),
+                os.path.join("bzfgrep"),
+                os.path.join("bzip2"),
+                os.path.join("bzip2recover"),
+                os.path.join("bzless"),
+                os.path.join("bzmore"),
+            ],
+        }
     }
     dependencies = []
     required_tools = ["cmake", "clang"]

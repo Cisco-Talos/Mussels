@@ -49,7 +49,8 @@ class Recipe(BaseRecipe):
             ],
             "lib": [
                 os.path.join(".libs", "libjson-c.4.dylib"),
-                os.path.join("libjson-c.la"),
+                os.path.join(".libs", "libjson-c.dylib"),
+                os.path.join(".libs", "libjson-c.a"),
             ],
         }
     }
