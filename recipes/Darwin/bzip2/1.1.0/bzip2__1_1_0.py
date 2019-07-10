@@ -24,7 +24,7 @@ class Recipe(BaseRecipe):
     Recipe to build bzip2.
     """
 
-    name = "bzip2"
+    name = "bzip2-dev"
     version = "1.1.0"
     url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gz"
     install_paths = {
