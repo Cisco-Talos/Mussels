@@ -1,12 +1,4 @@
-# Mussels
-
-```
-  __    __     __  __     ______     ______     ______     __         ______
- /\ "-./  \   /\ \/\ \   /\  ___\   /\  ___\   /\  ___\   /\ \       /\  ___\
- \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \
-  \ \_\ \ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \/\_____\
-   \/_/  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/
-```
+# ![image](images/mussels-500.png)
 
 A tool to download, build, and assemble application dependencies.
                                     Brought to you by the Clam AntiVirus Team.
@@ -56,23 +48,40 @@ The following are issues or features on the to-do list to implement or repair.
 
 * Add ability to specify "Debug" or "Release" builds
   * Debug builds should also include copying .pdb files to the out/install directory (Windows)
+
 * Add ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
   * It may make sense to create the platform toolset as a tool which adds a build script variable.
     * Should tools have the ability to add new build script variables?
+
 * Add ability to package release materials (zip/tarball per "application")
   * An "application" would be a recipe that includes "bin" install materials.
   * A release package would include install files for the recipe and all dependencies.
   * A release package should include license & configuration files/directories for the recipe and each dependency.
+
 * Recipes should install their licenses.
   * Maybe each should install a "license" directory alongside "include", "lib", "bin".
-* There should be an option to build just one architecture (eg. "x86", or "cross-..."). The default should be "host" or the current system architecture.
+
+* There should be an option to build just one architecture (eg. "x86", or "cross-..."). The default should either be "host" or, for Windows, the current system architecture. This will be very important for anyone who wants to make recipes that have a cross-compile build architecture.
+
 * Currently recipes install to a single path (out/install).  It should be possible to install to out/install/{recipe}/{version} instead.  This will require careful design, as each recipe must still be able to pass the path for their dependencies when they configure.
+  * It should be possible to write it so you can reference each dependency's variables using the `.` notation. Eg: `{<dep>.install}`.
+
 * Separate the "configure" and "build" steps into separate scripts.  Not all recipes will have a "configure" or a "build" step.  That's ok.
+
 * Add build `--clean` option.  A clean build always deletes the work directory and starts over.  The default behavior should be that the work directory is not deleted just because the previous build did not succeed, and the "configure" step is skipped if the work directory already exists.
+
 * Add build `--dev` option.  A dev build always runs the "build" step for the primary build target, even if the output binaries already exist in the out/install directory.
-* Add build `--deploy` option that copies the primary build target install files as well as the "lib" and "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
+
+* Add build `--package` option that copies the items located in directories such as "lib", "bin", "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
+  * Recipes should define a list of files so the `--package` option knows what files to collect.
+    * Two ways of defining the list are needed.
+      * "lib dist" if the recipe is being used as a dependency.
+      * "app dist" if the recipe is the primary build target.
+    * This feature must support globbing, so you can specify a directory or all files within the directory.
+
 * Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dryrun` option.
   * Feature must include a `-y`/`--yes` override for non-interactive builds.
+
 * Add cookbook capability.
   * Cookbooks would be external git repositories containing mussels recipes.
   * Add an optional option to specify which cookbook to use when building a recipe.
@@ -81,4 +90,7 @@ The following are issues or features on the to-do list to implement or repair.
   * Recipes should prefer to use dependencies defined in the same cookbook, but warn users when another cookbook offers a recipe for a dependency with a newer version.
     * This warning should include an offer to use the newer recipe from the 3rd-party cookbook if the dependencies are compatible (default No).
   * Cookbooks should be cloned to a local directory and should be updated with a `books --update` option.
-  * Migrate existing recipes to a separate `mussels-clamav-cookbook` repository.
+  * Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
+  * Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
+  * Hardcode the above cookbook repo's into the index.
+    * Start documentation about cookbooks and how to get new cookbooks added to the index.
