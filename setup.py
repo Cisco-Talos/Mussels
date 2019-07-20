@@ -12,8 +12,9 @@ setuptools.setup(
     description="Mussels Build System",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://git.vrt.sourcefire.com/clamav/clamav-internal-devel/tree/mussels",
+    url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
+    entry_points={"console_scripts": ["mussels = mussels.main:cli"]},
     install_requires=["click>=7.0", "coloredlogs>=10.0", "requests", "patch"],
     classifiers=[
         "Programming Language :: Python :: 3",
