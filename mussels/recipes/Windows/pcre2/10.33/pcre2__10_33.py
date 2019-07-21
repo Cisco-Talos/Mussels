@@ -27,7 +27,6 @@ class Recipe(BaseRecipe):
     name = "pcre2"
     version = "10.33"
     url = "https://ftp.pcre.org/pub/pcre/pcre2-10.33.zip"
-    patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "x86": {
             "include": [os.path.join("pcre2.h")],

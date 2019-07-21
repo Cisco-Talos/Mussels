@@ -27,14 +27,11 @@ class Recipe(BaseRecipe):
     name = "pcre2"
     version = "10.33"
     url = "https://ftp.pcre.org/pub/pcre/pcre2-10.33.zip"
-    patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "host": {
             "include": [os.path.join("pcre2.h")],
-            "lib": [
-                os.path.join("libpcre2-8.dylib"),
-            ],
-        },
+            "lib": [os.path.join("libpcre2-8.dylib")],
+        }
     }
     dependencies = ["bzip2", "zlib"]
     required_tools = ["cmake", "clang"]
@@ -47,5 +44,5 @@ class Recipe(BaseRecipe):
                 -DBZIP2_INCLUDE_DIR="{includes}" \
                 -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.a"
             cmake --build . --config Release
-        """,
+        """
     }

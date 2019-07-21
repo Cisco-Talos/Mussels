@@ -30,7 +30,6 @@ class Recipe(BaseRecipe):
     name = "bzip2"
     version = "1.0.7"
     url = "https://sourceware.org/pub/bzip2/bzip2-1.0.7.tar.gz"
-    patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "x86": {
             "include": ["bzlib.h"],

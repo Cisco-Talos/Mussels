@@ -28,7 +28,6 @@ class Recipe(BaseRecipe):
     name = "pthreads"
     version = "2.9.1"
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.tar.gz"
-    patches = os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
     install_paths = {
         "x86": {
             "include": ["pthread.h", "sched.h"],

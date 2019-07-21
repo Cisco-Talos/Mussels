@@ -29,6 +29,7 @@ import platform
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 import zipfile
 
@@ -51,11 +52,6 @@ class BaseRecipe(object):
 
     url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
 
-    # May be set to:  os.path.join(os.path.split(os.path.abspath(__file__))[0], "patches")
-    # This allows you to place .diff or .patch files in a patches directory to be applied prior to the build.
-    # Files in the patches directory without .diff or .patch extensions will simply be copied into the source directory.
-    patches = ""
-
     # archive_name_change is a tuple of strings to replace.
     # For example:
     #     ("v", "nghttp2-")
@@ -65,20 +61,20 @@ class BaseRecipe(object):
     archive_name_change = ("", "")
 
     install_paths = {
-        "x86": {
-            # "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
-            # "lib" : [],          # Will copy source item to destination directory,
-        },
-        "x64": {
-            # "include" : [        # Examples:
-            #     "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
-            #     "iface/blarghus" #   Copy directory to x64\\include\\blarghus
-            # ],
-            # "lib" : [
-            #     "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
-            #     "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
-            # ],
-        },
+        # "x86": {
+        #     "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
+        #     "lib" : [],          # Will copy source item to destination directory,
+        # },
+        # "x64": {
+        #     "include" : [        # Examples:
+        #         "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
+        #         "iface/blarghus" #   Copy directory to x64\\include\\blarghus
+        #     ],
+        #     "lib" : [
+        #         "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
+        #         "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
+        #     ],
+        # },
     }
 
     # Dependencies on other Mussels builds.
@@ -90,7 +86,7 @@ class BaseRecipe(object):
     required_tools = []  # List of tools required by the build commands.
 
     # build_script is a dictionary containing build scripts for each build target.
-    # Variables in "".format() syntax will be evaluated at build() time.
+    # Variables in "".format() syntax will be evaluated at build time.
     # Paths must have unix style forward slash (`/`) path separators.
     #
     # Variable options include:
@@ -158,6 +154,11 @@ class BaseRecipe(object):
                         f"Failed to extract source archive for {self.name}-{self.version}"
                     )
                 )
+
+        module_file = sys.modules[self.__class__.__module__].__file__
+        self.patches = os.path.join(
+            os.path.split(os.path.abspath(module_file))[0], "patches"
+        )
 
     def __init_logging(self):
         """
@@ -303,7 +304,7 @@ class BaseRecipe(object):
         self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
 
-    def build(self) -> bool:
+    def __build(self) -> bool:
         """
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
@@ -314,7 +315,7 @@ class BaseRecipe(object):
             )
             return True
 
-        if self.patches == "":
+        if os.path.isdir(self.patches) == "":
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
