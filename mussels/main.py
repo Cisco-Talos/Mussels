@@ -31,6 +31,7 @@ limitations under the License.
 
 from collections import defaultdict
 import datetime
+import fnmatch
 import json
 import logging
 import os
@@ -42,6 +43,7 @@ import time
 
 import click
 import coloredlogs
+import git
 
 import mussels.bookshelf
 from mussels.utils import read
@@ -59,7 +61,7 @@ class Mussels:
     The Mussels class provides context required for all Mussels features.
     """
 
-    cookbooks = defaultdict(list)
+    cookbooks = defaultdict(dict)
 
     recipes = defaultdict(dict)
     sorted_recipes = defaultdict(list)
@@ -76,7 +78,14 @@ class Mussels:
         else:
             self.temp_dir = os.path.join(self.app_data_dir, "tmp")
 
-    def read_cookbook(self, cookbook, cookbook_path):
+        # load config, if exists.
+        try:
+            with open(os.path.join(self.app_data_dir, "config.json"), "r") as cache_file:
+                self.tools = json.dump(cache_file)
+        except:
+            module_logger.debug(f"No mussels config found.")
+
+    def read_cookbook(self, cookbook: str, cookbook_path: str) -> bool:
         """
         Load the recipes and tools from a single cookbook.
         """
@@ -88,33 +97,34 @@ class Mussels:
         # Load the recipes and collections
         recipes = read.recipes(os.path.join(cookbook_path, "recipes"))
         recipes.update(read.recipes(os.path.join(cookbook_path, "collections")))
-        sort_by_version(recipes, sorted_recipes)
+        sorted_recipes = sort_by_version(recipes)
 
         self.cookbooks[cookbook]["recipes"] = sorted_recipes
         for recipe in recipes.keys():
-            if recipes[recipe]["version"] not in self.recipes[recipe].keys():
-                self.recipes[recipe][recipes[recipe]["version"]] = []
-            self.recipes[recipe][recipes[recipe]["version"]].append(
-                {"cookbook": cookbook, "recipe": recipes[recipe]}
-            )
+            for version in recipes[recipe]:
+                if version not in self.recipes[recipe].keys():
+                    self.recipes[recipe][version] = {}
+                self.recipes[recipe][version][cookbook] = recipes[recipe][version]
 
         # Load the tools
         tools = read.tools(os.path.join(cookbook_path, "tools"))
-        sort_by_version(tools, sorted_tools)
+        sorted_tools = sort_by_version(tools)
 
         self.cookbooks[cookbook]["tools"] = sorted_tools
         for tool in tools.keys():
-            if tools[tool]["version"] not in self.tools[tool].keys():
-                self.tools[tool][tools[tool]["version"]] = []
-            self.tools[tool][tools[tool]["version"]].append(
-                {"cookbook": cookbook, "tool": tools[tool]}
-            )
+            for version in tools[tool]:
+                if version not in self.tools[tool].keys():
+                    self.tools[tool][version] = {}
+                self.tools[tool][version][cookbook] = tools[tool][version]
 
-    def read_bookshelf(self):
+        if len(recipes) == 0 and len(tools) == 0:
+            return False
+
+        return True
+
+    def read_bookshelf(self) -> bool:
         """
-        Load the recipes and tools from:
-        - cookbooks in ~/.mussels/bookshelf
-        - local "mussels" directory
+        Load the recipes and tools from cookbooks in ~/.mussels/bookshelf
         """
         # Load the recipes and tools from all cookbooks in ~/.mussels/bookshelf
         bookshelf = os.path.join(self.app_data_dir, "bookshelf")
@@ -124,33 +134,110 @@ class Mussels:
                     os.path.join(self.app_data_dir, "bookshelf"), cookbook
                 )
                 if os.path.isdir(cookbook_path):
-                    self.read_cookbook(cookbook, cookbook_path)
+                    if self.read_cookbook(cookbook, cookbook_path) == False:
+                        module_logger.warning(f"Failed to read any recipes or tools from cookbook: {cookbook}")
 
+            # Update the cache files in ~/.mussels/recipe_cache
+            try:
+                if not os.path.isdir(os.path.join(self.app_data_dir, "recipe_cache")):
+                    os.makedirs(os.path.join(self.app_data_dir, "recipe_cache"))
+                with open(os.path.join(self.app_data_dir, "recipe_cache", "bookshelf.json"), "wx") as cache_file:
+                    json.dump(self.cookbooks, cache_file)
+                with open(os.path.join(self.app_data_dir, "recipe_cache", "recipes.json"), "wx") as cache_file:
+                    json.dump(self.recipes, cache_file)
+                with open(os.path.join(self.app_data_dir, "recipe_cache", "tools.json"), "wx") as cache_file:
+                    json.dump(self.tools, cache_file)
+            except Exception as exc:
+                module_logger.warning(f"Failed to update recipe_cache.  Exception: {exc}")
+                return False
+
+        return True
+
+    def read_local_recipes(self) -> bool:
+        """
+        Load the recipes and tools from local "mussels" directory
+        """
         # Load recipes and tools from `cwd`/mussels directory, if any exist.
         local_recipes = os.path.join(os.getcwd(), "mussels")
         if os.path.isdir(local_recipes):
-            self.read_cookbook("local_recipes", local_recipes)
+            if self.read_cookbook("local", local_recipes) == False:
+                return False
 
-        # Sort the recipes
-        sort_by_version(self.recipes, self.sorted_recipes)
-        sort_by_version(self.tools, self.sorted_tools)
+            self.cookbooks["local"]["url"] = ""
+            self.cookbooks["local"]["path"] = local_recipes
 
-    def update_bookshelf(self):
+        return True
+
+    def load_recipe_cache(self) -> bool:
+        '''
+        Load recipes from the cache.
+        '''
+        try:
+            with open(os.path.join(self.app_data_dir, "recipe_cache", "bookshelf.json"), "r") as cache_file:
+                self.cookbooks = json.dump(cache_file)
+            with open(os.path.join(self.app_data_dir, "recipe_cache", "recipes.json"), "r") as cache_file:
+                self.recipes = json.dump(cache_file)
+            with open(os.path.join(self.app_data_dir, "recipe_cache", "tools.json"), "r") as cache_file:
+                self.tools = json.dump(cache_file)
+        except:
+            module_logger.debug(f"Unable to load recipe cache.")
+            return False
+
+        return True
+
+    def load_recipes(self) -> bool:
         """
-        Attempt to update each cookbook in the bookshelf using `git pull`
-
-        If `git` is available, clone each of the cookbooks.
-        If it isn't, warn the user they should probably install Git and add it to their PATH.
+        Load the recipes.
         """
-        # Check for git.
+        # Clear the in-memory cache.
+        self.cookbooks = defaultdict(dict)
+        self.recipes = defaultdict(dict)
+        self.sorted_recipes = defaultdict(list)
+        self.tools = defaultdict(dict)
+        self.sorted_tools = defaultdict(list)
 
+        # Load bookshelf from the cache, if exists.
+        if self.load_recipe_cache() == False:
+            # Else load by reading the cookbooks in the bookshelf, if that exists.
+            self.read_bookshelf()
+
+        # Load recipes from the local mussels directory, if those exists.
+        if self.read_local_recipes() == False:
+            module_logger.warning(f"Local `mussels` directory found, but failed to load any recipes or tools.")
+
+        self.sorted_recipes = sort_by_version(self.recipes)
+        self.sorted_tools = sort_by_version(self.tools)
+
+        if len(self.sorted_recipes) == 0:
+            module_logger.warning(f"Failed to find any recipes.")
+            module_logger.warning(f"Local recipes must be stored under a `./mussels` directory.")
+            module_logger.warning(f"To update your local bookshelf of public cookbooks, run `mussels update`.")
+            return False
+
+        return True
+
+    def update_cookbooks(self) -> bool:
+        """
+        Attempt to update each cookbook in using Git to clone or pull each repo.
+        If git isn't available, warn the user they should probably install Git and add it to their PATH.
+        """
         # Get url for each cookbook from the
         for book in mussels.bookshelf.cookbooks:
             self.cookbooks[book]["url"] = mussels.bookshelf.cookbooks[book]["url"]
 
         # Create ~/.mussels/bookshelf if it doesn't already exist.
-        if not os.path.exists(os.path.join(self.app_data_dir, "bookshelf")):
-            os.makedirs(os.path.join(self.app_data_dir, "bookshelf"))
+        os.makedirs(os.path.join(self.app_data_dir, "bookshelf"), exist_ok=True)
+
+        for book in self.cookbooks:
+            repo_dir = os.path.join(self.app_data_dir, "bookshelf", book)
+
+            if self.cookbooks[book]["url"] != "":
+                if not os.path.isdir(repo_dir):
+                    repo = git.Repo.clone_from(self.cookbooks[book]["url"], repo_dir)
+                else:
+                    repo = git.Repo(repo_dir)
+                    out = repo.git.pull()
+
 
     def build_recipe(self, recipe: str, version: str, toolchain: dict) -> dict:
         """
@@ -300,7 +387,7 @@ class Mussels:
         return batches
 
     def perform_build(
-        self, recipe: str, version: str, results: list, dryrun: bool = False
+        self, recipe: str, version: str, results: list, dry_run: bool = False
     ) -> bool:
         """
         Execute a build of a recipe.
@@ -309,7 +396,7 @@ class Mussels:
             recipe:     The recipe to build. Use "all" to build newest version of all recipes.
             version:    A specific version to build.  Leave empty ("") to build the newest.
             results:    (out) A list of dictionaries describing the results of the build.
-            dryrun:     (optional) Don't actually build, just print the build chain.
+            dry_run:     (optional) Don't actually build, just print the build chain.
         """
 
         def print_results(results: list):
@@ -426,7 +513,7 @@ class Mussels:
         #
         # Perform Build
         #
-        if dryrun:
+        if dry_run:
             module_logger.warning("")
             module_logger.warning(r"    ___   ___   _         ___   _     _    ")
             module_logger.warning(r"   | | \ | |_) \ \_/     | |_) | | | | |\ |")
@@ -440,7 +527,7 @@ class Mussels:
             for j, recipe in enumerate(bundle):
                 idx += 1
 
-                if dryrun:
+                if dry_run:
                     module_logger.info(
                         f"   {idx:2} [{i}:{j:2}]: {recipe}-{self.sorted_recipes[recipe][0]}"
                     )
@@ -466,41 +553,193 @@ class Mussels:
                     if result["success"] == False:
                         failure = True
 
-        if not dryrun:
+        if not dry_run:
             print_results(results)
 
         if failure:
             return False
         return True
 
-    def list_recipes(self):
+    def show_recipe(self, recipe_match: str, version_match: str, verbose: bool = False):
+        """
+        Search recipes for a specific recipe and print recipe details.
+        """
+
+        def print_recipe_details(recipe: str, version: str):
+            """
+            Print recipe information.
+            """
+            cookbooks = list(self.recipes[recipe][version].keys())
+            module_logger.info(f"    {recipe} v{version};  from: {cookbooks}")
+
+            if verbose:
+                module_logger.info("")
+                for cookbook in cookbooks:
+                    module_logger.info(f"        Cookbook: {cookbook}")
+
+                    book_recipe = self.recipes[recipe][version][cookbook]
+                    module_logger.info(
+                        f"            dependencies:   {book_recipe.dependencies}"
+                    )
+                    module_logger.info(
+                        f"            required tools: {book_recipe.required_tools}"
+                    )
+                    module_logger.info(
+                        f"            target arch:    {list(book_recipe.build_script.keys())}"
+                    )
+
+                module_logger.info("")
+
+        found = False
+
+        if version_match == "":
+            module_logger.info(
+                f'Searching for recipe matching name: "{recipe_match}"...'
+            )
+        else:
+            module_logger.info(
+                f'Searching for recipe matching name: "{recipe_match}", version: "{version_match}"...'
+            )
+        # Attempt to match the recipe name
+        for recipe in self.sorted_recipes:
+            if fnmatch.fnmatch(recipe, recipe_match):
+                if version_match == "":
+                    found = True
+
+                    # Show info for every version
+                    for version in self.sorted_recipes[recipe]:
+                        print_recipe_details(recipe, version)
+                    break
+                else:
+                    # Attempt to match the version too
+                    for version in self.sorted_recipes[recipe]:
+                        cookbooks = list(self.recipes[recipe][version].keys())
+                        if fnmatch.fnmatch(version, version_match):
+                            found = True
+
+                            print_recipe_details(recipe, version)
+                            break
+                    if found:
+                        break
+        if not found:
+            if version_match == "":
+                module_logger.warning(f'No recipe matching name: "{recipe_match}"')
+            else:
+                module_logger.warning(
+                    f'No recipe matching name: "{recipe_match}", version: "{version_match}"'
+                )
+
+    def list_recipes(self, verbose: bool = False):
         """
         Print out a list of all recipes and all collections.
         """
+        has_collections = False
+
         module_logger.info("Recipes:")
         for recipe in self.sorted_recipes:
-            if self.recipes[recipe][self.sorted_recipes[recipe][0]].collection == False:
-                outline = f"    {recipe:10} ["
-                for i, version in enumerate(self.sorted_recipes[recipe]):
-                    if i == 0:
-                        outline += f" {version}*"
-                    else:
-                        outline += f", {version}"
-                outline += " ]"
-                module_logger.info(outline)
+            newest_version = self.sorted_recipes[recipe][0]
+            cookbooks = list(self.recipes[recipe][newest_version].keys())
+            if self.recipes[recipe][newest_version][cookbooks[0]].collection == False:
+                if not verbose:
+                    outline = f"    {recipe:10} ["
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
+                        if i == 0:
+                            outline += f" {version}*"
+                        else:
+                            outline += f", {version}"
+                    outline += " ]"
+                    module_logger.info(outline)
+                else:
+                    module_logger.info(f"    {recipe}")
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
+                        if i == 0:
+                            cookbooks = list(self.recipes[recipe][version].keys())
+                            module_logger.info(
+                                f"       *{version:10} ( provided by: {cookbooks} )"
+                            )
+                        else:
+                            module_logger.info(
+                                f"        {version:10} ( provided by: {cookbooks} )"
+                            )
 
-        module_logger.info("")
-        module_logger.info("Collections:")
         for recipe in self.sorted_recipes:
-            if self.recipes[recipe][self.sorted_recipes[recipe][0]].collection == True:
-                outline = f"    {recipe:10} ["
-                for i, version in enumerate(self.sorted_recipes[recipe]):
-                    if i == 0:
-                        outline += f" {version}*"
-                    else:
-                        outline += f", {version}"
-                outline += " ]"
-                module_logger.info(outline)
+            newest_version = self.sorted_recipes[recipe][0]
+            cookbooks = list(self.recipes[recipe][newest_version].keys())
+            if self.recipes[recipe][newest_version][cookbooks[0]].collection == True:
+                if not has_collections:
+                    module_logger.info("")
+                    module_logger.info("Collections:")
+                    has_collections = True
+
+                if not verbose:
+                    outline = f"    {recipe:10} ["
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
+                        if i == 0:
+                            outline += f" {version}*"
+                        else:
+                            outline += f", {version}"
+                    outline += " ]"
+                    module_logger.info(outline)
+                else:
+                    module_logger.info(f"    {recipe}")
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
+                        if i == 0:
+                            module_logger.info(
+                                f"       *{version:10} ( provided by: {cookbooks} )"
+                            )
+                        else:
+                            module_logger.info(
+                                f"        {version:10} ( provided by: {cookbooks} )"
+                            )
+
+    def list_cookbooks(self, verbose: bool = False):
+        """
+        Print out a list of all cookbooks.
+        """
+        module_logger.info("Cookbooks:")
+        for cookbook in self.cookbooks:
+            module_logger.info(f"    {cookbook}")
+            if cookbook == "local":
+                module_logger.info(f"        url:  n/a")
+            else:
+                module_logger.info(f"        url:  {self.cookbooks[cookbook]['url']}")
+            module_logger.info(f"        path: {self.cookbooks[cookbook]['path']}")
+            module_logger.info(f"")
+
+    def show_cookbook(self, cookbook_match: str, verbose: bool):
+        """
+        Search cookbooks for a specific cookbook and print the details.
+        """
+        found = False
+
+        module_logger.info(f'Searching for cookbook matching name: "{cookbook_match}"...')
+
+        # Attempt to match the cookbook name
+        for cookbook in self.cookbooks:
+            if fnmatch.fnmatch(cookbook, cookbook_match):
+                found = True
+
+                module_logger.info(f"    {cookbook}")
+                if cookbook == "local":
+                    module_logger.info(f"        url:  n/a")
+                else:
+                    module_logger.info(f"        url:  {self.cookbooks[cookbook]['url']}")
+                module_logger.info(f"        path: {self.cookbooks[cookbook]['path']}")
+
+                if verbose:
+                    module_logger.info(f"")
+                    if len(self.cookbooks[cookbook]["recipes"].keys()) > 0:
+                        module_logger.info(f"    Recipes:")
+                        for recipe in self.cookbooks[cookbook]["recipes"]:
+                            module_logger.info(f"        {recipe} : {self.cookbooks[cookbook]['recipes'][recipe]}")
+                    if len(self.cookbooks[cookbook]["tools"].keys()) > 0:
+                        module_logger.info(f"    Tools:")
+                        for tool in self.cookbooks[cookbook]["tools"]:
+                            module_logger.info(f"        {tool} : {self.cookbooks[cookbook]['tools'][tool]}")
+
+        if not found:
+            module_logger.warning(f'No cookbook matching name: "{cookbook_match}"')
+
 
 
 #
@@ -511,22 +750,88 @@ def cli():
     pass
 
 
+@cli.group(cls=ShortNames, help="Commands that operate on cookbooks.")
+def cookbook():
+    pass
+
+@cookbook.command("list")
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def cookbook_list(verbose: bool):
+    """
+    Print the list of all known cookbooks.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.load_recipes()
+
+    my_mussels.list_cookbooks(verbose)
+
+@cookbook.command("show")
+@click.argument("cookbook", required=True)
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def cookbook_show(cookbook: str, verbose: bool):
+    """
+    Show details about a specific cookbook.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.load_recipes()
+
+    my_mussels.show_cookbook(cookbook, verbose)
+
+@cookbook.command("update")
+def cookbook_update():
+    """
+    Update the cookbooks from the internet.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.load_recipes()
+
+    my_mussels.update_cookbooks()
+
+
+
+
 @cli.group(cls=ShortNames, help="Commands that operate on recipes.")
 def recipe():
     pass
 
-
 @recipe.command("list")
-def recipe_list():
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def recipe_list(verbose: bool):
     """
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
     """
     my_mussels = Mussels()
 
-    my_mussels.read_bookshelf()
+    my_mussels.load_recipes()
 
-    my_mussels.list_recipes()
+    my_mussels.list_recipes(verbose)
+
+
+@recipe.command("show")
+@click.argument("recipe", required=True)
+@click.option("--version", "-v", default="", help="Version. [optional]")
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def recipe_show(recipe: str, version: str, verbose: bool):
+    """
+    Show details about a specific recipe.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.load_recipes()
+
+    my_mussels.show_recipe(recipe, version, verbose)
 
 
 @recipe.command("build")
@@ -544,23 +849,23 @@ def recipe_list():
     help="Build in a specific directory instead of a temp directory. [optional]",
 )
 @click.option(
-    "--dryrun",
+    "--dry-run",
     "-d",
     is_flag=True,
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
-def recipe_build(recipe: str, version: str, tempdir: str, dryrun: bool):
+def recipe_build(recipe: str, version: str, tempdir: str, dry_run: bool):
     """
     Download, extract, build, and install a recipe.
     """
 
     my_mussels = Mussels(temp_dir=os.path.abspath(tempdir))
 
-    my_mussels.read_bookshelf()
+    my_mussels.load_recipes()
 
     results = []
 
-    success = my_mussels.perform_build(recipe, version, results, dryrun)
+    success = my_mussels.perform_build(recipe, version, results, dry_run)
     if success == False:
         sys.exit(1)
 
@@ -585,13 +890,13 @@ def recipe_build(recipe: str, version: str, tempdir: str, dryrun: bool):
     help="Build in a specific directory instead of a temp directory. [optional]",
 )
 @click.option(
-    "--dryrun",
+    "--dry-run",
     "-d",
     is_flag=True,
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
 @click.pass_context
-def build_alias(ctx, recipe: str, version: str, tempdir: str, dryrun: bool):
+def build_alias(ctx, recipe: str, version: str, tempdir: str, dry_run: bool):
     """
     Download, extract, build, and install a recipe.
 
@@ -602,13 +907,32 @@ def build_alias(ctx, recipe: str, version: str, tempdir: str, dryrun: bool):
 
 @cli.command("list")
 @click.pass_context
-def list_alias(ctx):
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def list_alias(ctx, verbose: bool):
     """
     List all known recipes.
 
     This is just an alias for `recipe list`.
     """
     ctx.forward(recipe_list)
+
+
+@cli.command("show")
+@click.pass_context
+@click.argument("recipe", required=True)
+@click.option("--version", "-v", default="", help="Version. [optional]")
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+def show_alias(ctx, recipe: str, version: str, verbose: bool):
+    """
+    Show details about a specific recipe.
+
+    This is just an alias for `recipe show`.
+    """
+    ctx.forward(recipe_show)
 
 
 if __name__ == "__main__":

@@ -15,7 +15,13 @@ setuptools.setup(
     url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
     entry_points={"console_scripts": ["mussels = mussels.main:cli"]},
-    install_requires=["click>=7.0", "coloredlogs>=10.0", "requests", "patch"],
+    install_requires=[
+        "click>=7.0",
+        "coloredlogs>=10.0",
+        "requests",
+        "patch",
+        "gitpython",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache 2.0 License",

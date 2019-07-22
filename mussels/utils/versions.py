@@ -16,6 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from collections import defaultdict
+
 
 def version_keys(s):
     """
@@ -34,16 +36,20 @@ def version_keys(s):
     return keys
 
 
-def sort_by_version(items, sorted_items):
+def sort_by_version(items) -> defaultdict:
     """
     Sort items, and determine the highest versions.
     """
+    sorted_items = defaultdict(list)
+
     for item in items:
         versions_list = list(items[item].keys())
         versions_list.sort(key=version_keys)
         versions_list.reverse()
         for version in versions_list:
             sorted_items[item].append(version)
+
+    return sorted_items
 
 
 def compare_versions(version_a: str, version_b: str) -> int:
