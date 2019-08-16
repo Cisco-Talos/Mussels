@@ -35,5 +35,5 @@ class Recipe(BaseRecipe):
         "libxml2",
         "openssl",
         "pcre2",
-        "bzip2",
+        "bzip2=1.0.7",
     ]
