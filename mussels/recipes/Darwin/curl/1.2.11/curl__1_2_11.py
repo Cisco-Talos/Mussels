@@ -35,6 +35,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Darwin"]
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {

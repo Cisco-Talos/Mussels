@@ -54,6 +54,7 @@ class Recipe(BaseRecipe):
             ],
         }
     }
+    platform = ["Darwin"]
     dependencies = []
     required_tools = ["make", "clang"]
     build_script = {

@@ -48,7 +48,7 @@ class BaseRecipe(object):
 
     # Set collection to True if this is just a collection of recipes to build, and not an actual recipe.
     # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
-    collection = False
+    is_collection = False
 
     url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
 
@@ -76,6 +76,8 @@ class BaseRecipe(object):
         #     ],
         # },
     }
+
+    platform = []
 
     # Dependencies on other Mussels builds.
     # str format:  name@version.
@@ -108,29 +110,29 @@ class BaseRecipe(object):
     # The following will be defined during the build and exist here for convenience
     # when writing build_script's using the f-string `f` prefix to help remember the
     # names of variables.
-    tempdir = ""
+    data_dir = ""
     installdir = ""
 
-    def __init__(self, toolchain: dict, tempdir: str = ""):
+    def __init__(self, toolchain: dict, data_dir: str = ""):
         """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
         """
-        if tempdir == "":
+        if data_dir == "":
             # No temp dir provided, build in the current working directory.
-            self.tempdir = os.getcwd()
+            self.data_dir = os.getcwd()
         else:
-            self.tempdir = os.path.abspath(tempdir)
-        os.makedirs(self.tempdir, exist_ok=True)
+            self.data_dir = os.path.abspath(data_dir)
+        os.makedirs(self.data_dir, exist_ok=True)
 
-        self.installdir = os.path.join(self.tempdir, "install")
+        self.installdir = os.path.join(self.data_dir, "install")
         os.makedirs(self.installdir, exist_ok=True)
 
-        self.logsdir = os.path.join(self.tempdir, "logs", "recipes")
+        self.logsdir = os.path.join(self.data_dir, "logs", "recipes")
         os.makedirs(self.logsdir, exist_ok=True)
-        self.workdir = os.path.join(self.tempdir, "work")
+        self.workdir = os.path.join(self.data_dir, "work")
         os.makedirs(self.workdir, exist_ok=True)
-        self.srcdir = os.path.join(self.tempdir, "src")
+        self.srcdir = os.path.join(self.data_dir, "src")
         os.makedirs(self.srcdir, exist_ok=True)
 
         self.__init_logging()
@@ -138,7 +140,7 @@ class BaseRecipe(object):
         self.toolchain = toolchain
 
         # Skip download & build steps for collections.
-        if self.collection == False:
+        if self.is_collection == False:
             # Download and build if necessary.
             if self.__download_archive() == False:
                 raise (
@@ -147,7 +149,7 @@ class BaseRecipe(object):
                     )
                 )
 
-            # Extract to the tempdir.
+            # Extract to the data_dir.
             if self.__extract_archive() == False:
                 raise (
                     Exception(
@@ -309,7 +311,7 @@ class BaseRecipe(object):
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
         """
-        if self.collection == True:
+        if self.is_collection == True:
             self.logger.debug(
                 f"Build completed for recipe collection {self.name}-{self.version}"
             )

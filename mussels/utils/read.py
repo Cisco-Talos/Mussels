@@ -18,6 +18,7 @@ limitations under the License.
 
 from collections import defaultdict
 import pkgutil
+import platform
 import os
 
 
@@ -38,9 +39,10 @@ def recipes(recipe_path):
                 _module = loader.find_module(module_name).load_module(module_name)
                 globals()[module_name] = _module
                 if "Recipe" in dir(_module):
-                    recipes[_module.Recipe.name][
-                        _module.Recipe.version
-                    ] = _module.Recipe
+                    if platform.system() in _module.Recipe.platform:
+                        recipes[_module.Recipe.name][
+                            _module.Recipe.version
+                        ] = _module.Recipe
 
     return recipes
 

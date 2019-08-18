@@ -33,6 +33,7 @@ class Recipe(BaseRecipe):
             "lib": [os.path.join("libpcre2-8.dylib")],
         }
     }
+    platform = ["Darwin"]
     dependencies = ["bzip2", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {

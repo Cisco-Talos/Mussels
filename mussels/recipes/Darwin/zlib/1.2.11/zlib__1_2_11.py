@@ -39,6 +39,7 @@ class Recipe(BaseRecipe):
             "bin": [os.path.join("minigzip")],
         }
     }
+    platform = ["Darwin"]
     dependencies = []
     required_tools = ["cmake", "clang"]
     build_script = {

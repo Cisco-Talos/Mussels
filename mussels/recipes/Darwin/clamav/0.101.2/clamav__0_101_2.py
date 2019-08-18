@@ -57,6 +57,7 @@ class Recipe(BaseRecipe):
             ],
         }
     }
+    platform = ["Darwin"]
     dependencies = ["curl", "json_c", "libxml2", "openssl", "pcre2", "bzip2"]
     required_tools = ["make", "clang"]
     build_script = {

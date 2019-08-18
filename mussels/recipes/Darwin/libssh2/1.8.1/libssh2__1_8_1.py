@@ -40,6 +40,7 @@ class Recipe(BaseRecipe):
             ],
         }
     }
+    platform = ["Darwin"]
     dependencies = ["openssl>=1.1.0", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {
