@@ -38,6 +38,7 @@ class Recipe(BaseRecipe):
             "lib": ["pthreadVC2.dll", "pthreadVC2.lib"],
         },
     }
+    platform = ["Windows"]
     dependencies = []
     required_tools = ["visualstudio>=2017"]
     build_script = {

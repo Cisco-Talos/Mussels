@@ -27,6 +27,7 @@ class Tool(BaseTool):
     name = "nasm"
     version = "2.14.02"
     url = "https://www.nasm.us/pub/nasm/releasebuilds/2.14.02/win64/nasm-2.14.02-win64.zip"
+    platform = ["Windows"]
 
     path_mods = {
         "system": {

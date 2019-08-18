@@ -27,6 +27,7 @@ class Tool(BaseTool):
     name = "perl"
     version = "5.26.3.2603"
     url = "https://downloads.activestate.com/ActivePerl/releases/5.26.3.2603/ActivePerl-5.26.3.2603-MSWin32-x64-a95bce075.exe"
+    platform = ["Windows"]
 
     path_mods = {
         "system": {

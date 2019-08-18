@@ -78,9 +78,9 @@ class BaseTool(object):
             self.logs_dir = os.path.join(os.path.abspath(data_dir), "logs", "tools")
         os.makedirs(self.logs_dir, exist_ok=True)
 
-        self.__init_logging()
+        self._init_logging()
 
-    def __init_logging(self):
+    def _init_logging(self):
         """
         Initializes the logging parameters
         """

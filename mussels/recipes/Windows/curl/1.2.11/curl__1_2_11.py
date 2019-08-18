@@ -43,6 +43,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {

@@ -28,6 +28,7 @@ class Tool(BaseTool):
     name = "clang"
     version = "10"
     url = ""
+    platform = ["Darwin"]
 
     path_mods = {
         "usr": {"host": []},

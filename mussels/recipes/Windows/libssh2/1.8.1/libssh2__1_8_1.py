@@ -51,6 +51,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["openssl>=1.1.0", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {

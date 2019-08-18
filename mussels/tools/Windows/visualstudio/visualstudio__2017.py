@@ -27,6 +27,7 @@ class Tool(BaseTool):
     name = "visualstudio"
     version = "2017"
     url = "https://download.visualstudio.microsoft.com/download/pr/cb4bb895-e020-49e0-8cb0-1cdeeb1bfc2f/0224f1b33e9624fd445c582b375c4076/vs_community.exe"
+    platform = ["Windows"]
 
     path_mods = {
         "system": {

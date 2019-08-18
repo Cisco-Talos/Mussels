@@ -47,6 +47,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["zlib"]
     required_tools = ["nasm", "perl", "visualstudio>=2017"]
     build_script = {

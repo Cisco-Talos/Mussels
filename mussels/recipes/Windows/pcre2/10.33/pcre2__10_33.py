@@ -43,6 +43,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["bzip2", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {

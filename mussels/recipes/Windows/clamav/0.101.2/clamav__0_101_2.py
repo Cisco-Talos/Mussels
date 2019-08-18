@@ -92,6 +92,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["openssl"]
     required_tools = ["visualstudio>=2015"]
     build_script = {

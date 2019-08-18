@@ -28,6 +28,7 @@ class Tool(BaseTool):
     name = "make"
     version = "3"
     url = ""
+    platform = ["Darwin"]
 
     path_mods = {
         "usr": {"host": []},

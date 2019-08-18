@@ -16,7 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
+
+NVC = namedtuple("NVC", "name version cookbook")
 
 
 def version_keys(s):
@@ -40,7 +42,7 @@ def sort_cookbook_by_version(items) -> defaultdict:
     """
     Sort items, and determine the highest versions.
     """
-    sorted_items = defaultdict(list)
+    sorted_items: defaultdict = defaultdict(list)
 
     for item in items:
         versions_list = list(items[item].keys())
@@ -56,7 +58,7 @@ def sort_all_recipes_by_version(items) -> defaultdict:
     """
     Sort items, and determine the highest versions.
     """
-    sorted_items = defaultdict(list)
+    sorted_items: defaultdict = defaultdict(list)
 
     for item in items:
         versions_list = list(items[item].keys())
@@ -93,7 +95,7 @@ def compare_versions(version_a: str, version_b: str) -> int:
         return 1
 
 
-def get_item_version(item_name: str, sorted_items: dict) -> dict:
+def get_item_version(item_name: str, sorted_items: dict) -> NVC:
     """
     Convert a item name in the below format to a (name, version) tuple:
 
@@ -327,4 +329,4 @@ def get_item_version(item_name: str, sorted_items: dict) -> dict:
             f"No versions available to satisfy requirement for {requested_item}"
         )
 
-    return nvc
+    return NVC(nvc["name"], nvc["version"], nvc["cookbook"])

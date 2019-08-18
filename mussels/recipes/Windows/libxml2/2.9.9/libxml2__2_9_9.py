@@ -44,6 +44,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = []
     required_tools = ["visualstudio>=2017"]
     build_script = {

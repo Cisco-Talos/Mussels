@@ -27,6 +27,7 @@ class Tool(BaseTool):
     name = "cmake"
     version = "3.14.1"
     url = "https://github.com/Kitware/CMake/releases/download/v3.14.1/cmake-3.14.1-win64-x64.zip"
+    platform = ["Windows"]
 
     path_mods = {
         "system": {

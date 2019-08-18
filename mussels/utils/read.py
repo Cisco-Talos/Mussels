@@ -27,6 +27,7 @@ def recipes(recipe_path):
     Collect all Recipes in a directory.
     """
     recipes = defaultdict(dict)
+    platform_ = platform.system()
 
     if not os.path.exists(recipe_path):
         return recipes
@@ -37,9 +38,8 @@ def recipes(recipe_path):
                 [os.path.join(root, directory)]
             ):
                 _module = loader.find_module(module_name).load_module(module_name)
-                globals()[module_name] = _module
                 if "Recipe" in dir(_module):
-                    if platform.system() in _module.Recipe.platform:
+                    if platform_ in _module.Recipe.platform:
                         recipes[_module.Recipe.name][
                             _module.Recipe.version
                         ] = _module.Recipe
@@ -52,6 +52,7 @@ def tools(tool_path):
     Collect all Tools in a directory.
     """
     tools = defaultdict(dict)
+    platform_ = platform.system()
 
     if not os.path.exists(tool_path):
         return tools
@@ -62,8 +63,8 @@ def tools(tool_path):
                 [os.path.join(root, directory)]
             ):
                 _module = loader.find_module(module_name).load_module(module_name)
-                globals()[module_name] = _module
                 if "Tool" in dir(_module):
-                    tools[_module.Tool.name][_module.Tool.version] = _module.Tool
+                    if platform_ in _module.Tool.platform:
+                        tools[_module.Tool.name][_module.Tool.version] = _module.Tool
 
     return tools

@@ -28,6 +28,7 @@ class Tool(BaseTool):
     name = "cmake"
     version = "3.14"
     url = ""
+    platform = ["Darwin"]
 
     path_mods = {
         "usr": {"host": []},

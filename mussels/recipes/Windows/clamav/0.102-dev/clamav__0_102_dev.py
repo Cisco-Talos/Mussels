@@ -95,6 +95,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = [
         "curl",
         "json_c",

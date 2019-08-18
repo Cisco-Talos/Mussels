@@ -27,6 +27,7 @@ class Tool(BaseTool):
     name = "visualstudio"
     version = "2015"
     url = ""
+    platform = ["Windows"]
 
     path_mods = {
         "system": {

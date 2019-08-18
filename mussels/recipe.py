@@ -58,9 +58,9 @@ class BaseRecipe(object):
     # will change:
     #     v2.3.4  to  nghttp2-2.3.4.
     # This hack is necessary because archives with changed names will extract to their original directory name.
-    archive_name_change = ("", "")
+    archive_name_change: tuple = ("", "")
 
-    install_paths = {
+    install_paths: dict = {
         # "x86": {
         #     "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
         #     "lib" : [],          # Will copy source item to destination directory,
@@ -77,15 +77,15 @@ class BaseRecipe(object):
         # },
     }
 
-    platform = []
+    platform: list = []
 
     # Dependencies on other Mussels builds.
     # str format:  name@version.
     #    "@version" is optional.
     #    If version is omitted, the default (highest) will be selected.
-    dependencies = []
+    dependencies: list = []
 
-    required_tools = []  # List of tools required by the build commands.
+    required_tools: list = []  # List of tools required by the build commands.
 
     # build_script is a dictionary containing build scripts for each build target.
     # Variables in "".format() syntax will be evaluated at build time.
@@ -96,7 +96,7 @@ class BaseRecipe(object):
     # - includes:       The install/{build}/include directory.
     # - libs:           The install/{build}/lib directory.
     # - build:          The build directory for a given build.
-    build_script = {
+    build_script: dict = {
         # "x86": """
         # """,
         # "x64": """
@@ -105,7 +105,7 @@ class BaseRecipe(object):
         # """,
     }
 
-    builds = {}  # Dictionary of build paths.
+    builds: dict = {}  # Dictionary of build paths.
 
     # The following will be defined during the build and exist here for convenience
     # when writing build_script's using the f-string `f` prefix to help remember the
@@ -135,14 +135,14 @@ class BaseRecipe(object):
         self.srcdir = os.path.join(self.data_dir, "src")
         os.makedirs(self.srcdir, exist_ok=True)
 
-        self.__init_logging()
+        self._init_logging()
 
         self.toolchain = toolchain
 
         # Skip download & build steps for collections.
         if self.is_collection == False:
             # Download and build if necessary.
-            if self.__download_archive() == False:
+            if self._download_archive() == False:
                 raise (
                     Exception(
                         f"Failed to download source archive for {self.name}-{self.version}"
@@ -150,7 +150,7 @@ class BaseRecipe(object):
                 )
 
             # Extract to the data_dir.
-            if self.__extract_archive() == False:
+            if self._extract_archive() == False:
                 raise (
                     Exception(
                         f"Failed to extract source archive for {self.name}-{self.version}"
@@ -162,7 +162,7 @@ class BaseRecipe(object):
             os.path.split(os.path.abspath(module_file))[0], "patches"
         )
 
-    def __init_logging(self):
+    def _init_logging(self):
         """
         Initializes the logging parameters
         """
@@ -186,7 +186,7 @@ class BaseRecipe(object):
 
         self.logger.addHandler(filehandler)
 
-    def __download_archive(self) -> bool:
+    def _download_archive(self) -> bool:
         """
         Use the URL to download the archive if it doesn't already exist in the Downloads directory.
         """
@@ -224,7 +224,7 @@ class BaseRecipe(object):
 
         return True
 
-    def __extract_archive(self) -> bool:
+    def _extract_archive(self) -> bool:
         """
         Extract the archive found in Downloads directory, if necessary.
         """
@@ -262,7 +262,7 @@ class BaseRecipe(object):
 
         return True
 
-    def __install(self, build):
+    def _install(self, build):
         """
         Copy the headers and libs to an install directory.
         """
@@ -306,7 +306,7 @@ class BaseRecipe(object):
         self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
 
-    def __build(self) -> bool:
+    def _build(self) -> bool:
         """
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
@@ -317,7 +317,7 @@ class BaseRecipe(object):
             )
             return True
 
-        if os.path.isdir(self.patches) == "":
+        if not os.path.isdir(self.patches):
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
@@ -481,7 +481,7 @@ class BaseRecipe(object):
             self.logger.info(f"{self.name}-{self.version} {build} build succeeded.")
             os.chdir(cwd)
 
-            if self.__install(build) == False:
+            if self._install(build) == False:
                 return False
 
         return True

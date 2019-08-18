@@ -40,6 +40,7 @@ class Recipe(BaseRecipe):
             "lib": [os.path.join("libbz2.dll"), os.path.join("libbz2.lib")],
         },
     }
+    platform = ["Windows"]
     dependencies = []
     required_tools = ["visualstudio==2017"]
     build_script = {

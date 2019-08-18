@@ -75,6 +75,7 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = []
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {

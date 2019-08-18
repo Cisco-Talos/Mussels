@@ -28,6 +28,7 @@ class Tool(BaseTool):
     name = "meson"
     version = "0.51.0"
     url = ""
+    platform = ["Darwin"]
 
     path_mods = {
         "system": {"host": []},
