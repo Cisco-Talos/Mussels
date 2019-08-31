@@ -30,6 +30,7 @@ class Recipe(BaseRecipe):
     archive_name_change = ("v", "nghttp2-")
     install_paths = {
         "x86": {
+            "license/nghttp2": ["COPYING"],
             "include": [os.path.join("lib", "includes", "nghttp2")],
             "lib": [
                 os.path.join("lib", "Release", "nghttp2.dll"),
@@ -37,6 +38,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/nghttp2": ["COPYING"],
             "include": [os.path.join("lib", "includes", "nghttp2")],
             "lib": [
                 os.path.join("lib", "Release", "nghttp2.dll"),

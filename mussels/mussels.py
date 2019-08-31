@@ -62,7 +62,7 @@ class Mussels:
         self,
         data_dir: str = os.path.join(str(Path.home()), ".mussels"),
         log_file: str = os.path.join(
-            str(Path.home()), ".mussels", "log", "mussels.log"
+            str(Path.home()), ".mussels", "logs", "mussels.log"
         ),
         log_level: str = "DEBUG",
     ) -> None:
@@ -159,8 +159,12 @@ class Mussels:
         sorted_tools: defaultdict = defaultdict(list)
 
         # Load the recipes and collections
-        recipes = read.recipes(os.path.join(cookbook_path, "recipes", platform.system()))
-        recipes.update(read.recipes(os.path.join(cookbook_path, "collections", platform.system())))
+        recipes = read.recipes(
+            os.path.join(cookbook_path, "recipes", platform.system())
+        )
+        recipes.update(
+            read.recipes(os.path.join(cookbook_path, "collections", platform.system()))
+        )
         sorted_recipes = sort_cookbook_by_version(recipes)
 
         self.cookbooks[cookbook]["recipes"] = sorted_recipes
@@ -252,7 +256,12 @@ class Mussels:
         return True
 
     def _build_recipe(
-        self, recipe: str, version: str, cookbook: str, toolchain: dict
+        self,
+        recipe: str,
+        version: str,
+        cookbook: str,
+        toolchain: dict,
+        force: bool = False,
     ) -> dict:
         """
         Build a specific recipe.
@@ -318,7 +327,7 @@ class Mussels:
             result["time elapsed"] = time.time() - start
             return result
 
-        if not builder._build():
+        if not builder._build(force):
             self.logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
         else:
             self.logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
@@ -451,6 +460,7 @@ class Mussels:
         cookbook: str,
         results: list,
         dry_run: bool = False,
+        force: bool = False,
     ) -> bool:
         """
         Execute a build of a recipe.
@@ -488,9 +498,9 @@ class Mussels:
             recipe_str = f"{recipe}=={version}"
 
         if cookbook == "":
-            recipe_str = f"local:{recipe}"
+            recipe_str = f"local:{recipe_str}"
         else:
-            recipe_str = f"{cookbook}:{recipe}"
+            recipe_str = f"{cookbook}:{recipe_str}"
 
         batches = self._get_build_batches(recipe_str)
 
@@ -615,6 +625,7 @@ class Mussels:
                         recipe_nvc.version,
                         recipe_nvc.cookbook,
                         toolchain,
+                        force,
                     )
                     results.append(result)
                     if not result["success"]:

@@ -27,25 +27,26 @@ class Recipe(BaseRecipe):
     name = "openssl"
     version = "1.1.1b"
     url = "https://www.openssl.org/source/openssl-1.1.1b.tar.gz"
-    install_paths = {
-        "host": {
-            "include": [os.path.join("include", "openssl")],
-            "lib": [
-                os.path.join("libssl.1.1.dylib"),
-                os.path.join("libssl.dylib"),
-                os.path.join("libssl.a"),
-                os.path.join("libcrypto.1.1.dylib"),
-                os.path.join("libcrypto.dylib"),
-                os.path.join("libcrypto.a"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/openssl": ["LICENSE"]}}
     platform = ["Darwin"]
     dependencies = ["zlib"]
     required_tools = ["make", "clang"]
     build_script = {
-        "host": """
-            ./config zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}"
-            make
-        """
+        "host": {
+            "configure": """
+                ./config  \
+                    --prefix="{install}/{target}" \
+                    zlib \
+                    --with-zlib-include="{includes}" \
+                    --with-zlib-lib="{libs}"
+            """,
+            "make": """
+                make
+            """,
+            "make": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libcrypto.1.1.dylib"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libssl.1.1.dylib"
+            """,
+        }
     }

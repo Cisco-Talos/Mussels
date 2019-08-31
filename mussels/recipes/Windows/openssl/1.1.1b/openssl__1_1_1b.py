@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://www.openssl.org/source/openssl-1.1.1b.tar.gz"
     install_paths = {
         "x86": {
+            "license/openssl": ["LICENSE"],
             "include": [os.path.join("include", "openssl")],
             "lib": [
                 os.path.join("libssl-1_1.dll"),
@@ -38,6 +39,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/openssl": ["LICENSE"],
             "include": [os.path.join("include", "openssl")],
             "lib": [
                 os.path.join("libssl-1_1-x64.dll"),

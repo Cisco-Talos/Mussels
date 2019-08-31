@@ -32,12 +32,14 @@ class Recipe(BaseRecipe):
     url = "https://downloads.sourceforge.net/project/bzip2/bzip2-1.0.6.tar.gz"
     install_paths = {
         "x86": {
+            "license/bzip2": ["LICENSE"],
             "include": ["bzlib.h"],
-            "lib": [os.path.join("libbz2.dll"), os.path.join("libbz2.lib")],
+            "lib": ["libbz2.dll", "libbz2.lib"],
         },
         "x64": {
+            "license/bzip2": ["LICENSE"],
             "include": ["bzlib.h"],
-            "lib": [os.path.join("libbz2.dll"), os.path.join("libbz2.lib")],
+            "lib": ["libbz2.dll", "libbz2.lib"],
         },
     }
     platform = ["Windows"]

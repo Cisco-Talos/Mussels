@@ -27,24 +27,21 @@ class Recipe(BaseRecipe):
     name = "zlib"
     version = "1.2.11"
     url = "https://www.zlib.net/zlib-1.2.11.tar.gz"
-    install_paths = {
-        "host": {
-            "include": ["zlib.h", "zconf.h"],
-            "lib": [
-                os.path.join("libz.1.2.11.dylib"),
-                os.path.join("libz.1.dylib"),
-                os.path.join("libz.dylib"),
-                os.path.join("libz.a"),
-            ],
-            "bin": [os.path.join("minigzip")],
-        }
-    }
+    install_paths = {"host": {"license/zlib": ["README"]}}
     platform = ["Darwin"]
     dependencies = []
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake .
-            cmake --build . --config Release
-        """
+        "host": {
+            "configure": """
+                cmake . \
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+            """,
+            "make": """
+                cmake --build . --config Release
+            """,
+            "install": """
+                make install
+            """,
+        }
     }

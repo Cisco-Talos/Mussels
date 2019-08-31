@@ -29,12 +29,14 @@ class Recipe(BaseRecipe):
     url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gzs"
     install_paths = {
         "x86": {
+            "license/bzip2": ["COPYING"],
             "include": ["bzlib.h"],
-            "lib": [os.path.join("libbz2.dll"), os.path.join("libbz2.lib")],
+            "lib": ["libbz2.dll", "libbz2.lib"],
         },
         "x64": {
+            "license/bzip2": ["COPYING"],
             "include": ["bzlib.h"],
-            "lib": [os.path.join("libbz2.dll"), os.path.join("libbz2.lib")],
+            "lib": ["libbz2.dll", "libbz2.lib"],
         },
     }
     platform = ["Windows"]

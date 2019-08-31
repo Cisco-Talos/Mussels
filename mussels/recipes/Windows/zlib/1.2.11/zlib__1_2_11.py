@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://www.zlib.net/zlib-1.2.11.tar.gz"
     install_paths = {
         "x86": {
+            "license/zlib": ["README"],
             "include": ["zlib.h", "zconf.h"],
             "lib": [
                 # os.path.join("Release", "zlib1.dll"),
@@ -36,6 +37,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/zlib": ["README"],
             "include": ["zlib.h", "zconf.h"],
             "lib": [
                 # os.path.join("Release", "zlib1.dll"),

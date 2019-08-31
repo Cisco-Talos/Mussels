@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
     install_paths = {
         "x86": {
+            "license/libssh2": ["COPYING"],
             "include": [
                 os.path.join("include", "libssh2.h"),
                 os.path.join("include", "libssh2_publickey.h"),
@@ -40,6 +41,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/libssh2": ["COPYING"],
             "include": [
                 os.path.join("include", "libssh2.h"),
                 os.path.join("include", "libssh2_publickey.h"),

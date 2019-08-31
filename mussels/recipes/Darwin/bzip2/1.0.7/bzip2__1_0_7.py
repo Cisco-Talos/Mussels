@@ -27,31 +27,20 @@ class Recipe(BaseRecipe):
     name = "bzip2"
     version = "1.0.7"
     url = "https://sourceware.org/pub/bzip2/bzip2-1.0.7.tar.gz"
-    install_paths = {
-        "host": {
-            "include": ["install/include/bzlib.h"],
-            "lib": [os.path.join("install/lib/libbz2.a")],
-            "bin": [
-                os.path.join("install/bin/bunzip2"),
-                os.path.join("install/bin/bzcat"),
-                os.path.join("install/bin/bzcmp"),
-                os.path.join("install/bin/bzdiff"),
-                os.path.join("install/bin/bzegrep"),
-                os.path.join("install/bin/bzfgrep"),
-                os.path.join("install/bin/bzip2"),
-                os.path.join("install/bin/bzip2recover"),
-                os.path.join("install/bin/bzless"),
-                os.path.join("install/bin/bzmore"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/bzip2": ["LICENSE"]}}
     platform = ["Darwin"]
     dependencies = []
     required_tools = ["make", "clang"]
     build_script = {
-        "host": """
-            ./configure
-            make
-            make install PREFIX=`pwd`/install
-        """
+        "host": {
+            "configure": """
+                ./configure
+            """,
+            "make": """
+                make
+            """,
+            "install": """
+                make install PREFIX=`pwd`/install
+            """,
+        }
     }

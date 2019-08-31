@@ -27,23 +27,22 @@ class Recipe(BaseRecipe):
     name = "pcre2"
     version = "10.33"
     url = "https://ftp.pcre.org/pub/pcre/pcre2-10.33.zip"
-    install_paths = {
-        "host": {
-            "include": [os.path.join("pcre2.h")],
-            "lib": [os.path.join("libpcre2-8.dylib")],
-        }
-    }
+    install_paths = {"host": {"license/pcre2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["bzip2", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake . \
-                -DBUILD_SHARED_LIBS=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
-                -DBZIP2_INCLUDE_DIR="{includes}" \
-                -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.a"
-            cmake --build . --config Release
-        """
+        "host": {
+            "configure": """
+                chmod +x ./configure ./install-sh
+                ./configure --prefix="{install}/{target}" --disable-dependency-tracking
+            """,
+            "make": """
+                make
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libpcre2-8.dylib"
+            """,
+        }
     }

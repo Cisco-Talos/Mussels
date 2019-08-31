@@ -28,22 +28,24 @@ class Recipe(BaseRecipe):
     name = "libxml2"
     version = "2.9.9"
     url = "ftp://xmlsoft.org/libxml2/libxml2-2.9.9.tar.gz"
-    install_paths = {
-        "host": {
-            "include": ["libxml.h", os.path.join("include", "libxml")],
-            "lib": [
-                os.path.join(".libs", "libxml2.2.dylib"),
-                os.path.join(".libs", "libxml2.dylib"),
-                os.path.join(".libs", "libxml2.a"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/libxml2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = []
     required_tools = ["make", "clang"]
     build_script = {
-        "host": """
-            ./configure zlib=no incdir="{includes}" libdir="{libs}" sodir="{libs}" iconv=no static=no
-            make
-        """
+        "host": {
+            "configure": """
+                ./configure \
+                    --with-zlib={install}/{target} \
+                    --with-iconv=no \
+                    --prefix="{install}/{target}"
+            """,
+            "make": """
+                make
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libxml2.2.dylib"
+            """,
+        }
     }

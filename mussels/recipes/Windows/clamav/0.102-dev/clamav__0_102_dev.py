@@ -26,11 +26,12 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav"
-    version = "0.102"
+    version = "0.102.0"
     url = "https://github.com/Cisco-Talos/clamav-devel/archive/dev/0.102.zip"
     archive_name_change = ("0.102", "clamav-devel-dev-0.102")
     install_paths = {
         "x86": {
+            "license/clamav": ["COPYING*"],
             "include": [
                 os.path.join("libclamav", "clamav.h"),
                 os.path.join("win32", "clamav-types.h"),
@@ -63,6 +64,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/clamav": ["COPYING*"],
             "include": [
                 os.path.join("libclamav", "clamav.h"),
                 os.path.join("win32", "clamav-types.h"),
@@ -103,7 +105,7 @@ class Recipe(BaseRecipe):
         "libxml2",
         "openssl",
         "pcre2",
-        "bzip2",
+        "bzip2-1.0.7",
     ]
     required_tools = ["visualstudio>=2017"]
     build_script = {

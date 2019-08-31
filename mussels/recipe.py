@@ -21,6 +21,7 @@ limitations under the License.
 
 import datetime
 from distutils import dir_util
+import glob
 import inspect
 from io import StringIO
 import logging
@@ -88,6 +89,12 @@ class BaseRecipe(object):
     required_tools: list = []  # List of tools required by the build commands.
 
     # build_script is a dictionary containing build scripts for each build target.
+    # There are 3 types of scripts and each are optional:
+    # - "configure": To be run the first time you build, before the "make" script.
+    #                Subsequent builds will not re-configure unless you use `-f` / `--force`.
+    # - "make":      To be run each time you build, if the "configure" script succeeded.
+    # - "Install":   To be run each time you build, if the "make" script succeeded.
+    #
     # Variables in "".format() syntax will be evaluated at build time.
     # Paths must have unix style forward slash (`/`) path separators.
     #
@@ -101,8 +108,17 @@ class BaseRecipe(object):
         # """,
         # "x64": """
         # """,
-        # "host": """
-        # """,
+        # "host": {
+        #     "configure": """
+        #         ./configure
+        #     """,
+        #     "make": """
+        #         make
+        #     """,
+        #     "install": """
+        #         make install PREFIX=`pwd`/install
+        #     """,
+        # },
     }
 
     builds: dict = {}  # Dictionary of build paths.
@@ -130,9 +146,9 @@ class BaseRecipe(object):
 
         self.logsdir = os.path.join(self.data_dir, "logs", "recipes")
         os.makedirs(self.logsdir, exist_ok=True)
-        self.workdir = os.path.join(self.data_dir, "work")
+        self.workdir = os.path.join(self.data_dir, "cache", "work")
         os.makedirs(self.workdir, exist_ok=True)
-        self.srcdir = os.path.join(self.data_dir, "src")
+        self.srcdir = os.path.join(self.data_dir, "cache", "src")
         os.makedirs(self.srcdir, exist_ok=True)
 
         self._init_logging()
@@ -197,7 +213,7 @@ class BaseRecipe(object):
                 self.archive_name_change[0], self.archive_name_change[1]
             )
         self.download_path = os.path.join(
-            os.path.expanduser("~"), "Downloads", self.archive
+            self.data_dir, "cache", "downloads", self.archive
         )
 
         # Exit early if we already have the archive.
@@ -205,7 +221,11 @@ class BaseRecipe(object):
             self.logger.debug(f"Archive already downloaded.")
             return True
 
-        self.logger.info(f"Downloading {self.url} to {self.download_path}...")
+        if not os.path.exists(os.path.join(self.data_dir, "cache", "downloads")):
+            os.makedirs(os.path.join(self.data_dir, "cache", "downloads"))
+
+        self.logger.info(f"Downloading {self.url}")
+        self.logger.info(f"         to {self.download_path}...")
 
         if self.url.startswith("ftp"):
             try:
@@ -281,32 +301,94 @@ class BaseRecipe(object):
                 # Create the target install paths, if it doesn't already exist.
                 os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
 
-                # Make sure it actually exists.
-                if not os.path.exists(src_path):
-                    self.logger.error(
-                        f"Required target files for installation do not exist:\n\t{src_path}"
-                    )
-                    return False
-
                 # Remove prior installation, if exists.
                 if os.path.isdir(dst_path):
                     shutil.rmtree(dst_path)
                 elif os.path.isfile(dst_path):
                     os.remove(dst_path)
 
-                self.logger.debug(f"Copying: {src_path}")
-                self.logger.debug(f"     to: {dst_path}")
+                for src_filepath in glob.glob(src_path):
+                    # Make sure it actually exists.
+                    if not os.path.exists(src_filepath):
+                        self.logger.error(
+                            f"Required target files for installation do not exist:\n\t{src_filepath}"
+                        )
+                        return False
 
-                # Now copy the file or directory.
-                if os.path.isdir(src_path):
-                    dir_util.copy_tree(src_path, dst_path)
-                else:
-                    shutil.copyfile(src_path, dst_path)
+                    self.logger.debug(f"Copying: {src_filepath}")
+                    self.logger.debug(f"     to: {dst_path}")
+
+                    # Now copy the file or directory.
+                    if os.path.isdir(src_filepath):
+                        dir_util.copy_tree(src_filepath, dst_path)
+                    else:
+                        shutil.copyfile(src_filepath, dst_path)
 
         self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
 
-    def _build(self) -> bool:
+    def _run_script(self, target, name, script) -> bool:
+        """
+        Run a script in the current working directory.
+        """
+        # Create a build script.
+        if platform.system() == "Windows":
+            script_name = f"_{name}.bat"
+            newline = "\r\n"
+        else:
+            script_name = f"_{name}.sh"
+            newline = "\n"
+
+        with open(os.path.join(os.getcwd(), script_name), "w", newline=newline) as fd:
+            # Evaluate "".format() syntax in the build script
+            var_includes = os.path.join(self.installdir, target, "include").replace(
+                "\\", "/"
+            )
+            var_libs = os.path.join(self.installdir, target, "lib").replace("\\", "/")
+            var_install = os.path.join(self.installdir).replace("\\", "/")
+            var_build = os.path.join(self.builds[target]).replace("\\", "/")
+            var_target = target
+
+            script = script.format(
+                includes=var_includes,
+                libs=var_libs,
+                install=var_install,
+                build=var_build,
+                target=var_target,
+            )
+
+            # Write the build commands to a file
+            build_lines = script.splitlines()
+            for line in build_lines:
+                fd.write(line.strip() + "\n")
+
+        if platform.system() != "Windows":
+            st = os.stat(script_name)
+            os.chmod(script_name, st.st_mode | stat.S_IEXEC)
+
+        # Run the build script.
+        process = subprocess.Popen(
+            os.path.join(os.getcwd(), script_name),
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        with process.stdout:
+            for line in iter(process.stdout.readline, b""):
+                self.logger.debug(line.decode("utf-8").strip())
+        process.wait()
+        if process.returncode != 0:
+            self.logger.warning(f"{self.name}-{self.version} {target} build failed!")
+            self.logger.warning(f"Command:")
+            for line in script.splitlines():
+                self.logger.warning(line)
+            self.logger.warning(f"Exit code: {process.returncode}")
+            self.logger.error(f'"{name}" script failed for {target} build')
+            return False
+
+        return True
+
+    def _build(self, force: bool = False) -> bool:
         """
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
@@ -351,137 +433,89 @@ class BaseRecipe(object):
                 ) as patchmark:
                     patchmark.write("patched")
 
-        for build in self.build_script:
+        for target in self.build_script:
             already_built = True
 
             # Check for prior completed build output.
             self.logger.info(
-                f"Attempting to build {self.name}-{self.version} for {build}"
+                f"Attempting to build {self.name}-{self.version} for {target}"
             )
-            self.builds[build] = os.path.join(
-                self.workdir, f"{os.path.split(self.extracted_source_path)[-1]}-{build}"
+            self.builds[target] = os.path.join(
+                self.workdir, target, f"{os.path.split(self.extracted_source_path)[-1]}"
             )
-
-            if os.path.exists(self.builds[build]):
-                self.logger.debug("Checking for prior build output...")
-                for install_path in self.install_paths[build]:
-                    for install_item in self.install_paths[build][install_path]:
-                        self.logger.debug(f"Checking for {install_item}")
-
-                        if not os.path.exists(
-                            os.path.join(
-                                self.installdir,
-                                build,
-                                install_path,
-                                os.path.basename(install_item),
-                            )
-                        ):
-                            self.logger.debug(f"{install_item} not found.")
-                            already_built = False
-                            break
-
-                if already_built == True:
-                    # It looks like there was a successful prior build. Skip.
-                    self.logger.info(
-                        f"{self.name}-{self.version} {build} build output already exists."
-                    )
-                    continue
-                else:
-                    # It appears that the previous build is missing the desired build output.
-                    # Maybe the previous build failed?
-                    # Probably should delete the incomplete build directory and try again.
-                    self.logger.debug(f"Removing dirty old {build} build directory:")
-                    self.logger.debug(f"   {self.builds[build]}")
-                    shutil.rmtree(self.builds[build])
-
-                    # Make our own copy of the extracted source so we don't dirty the original.
-                    self.logger.debug(
-                        f"Creating new {build} build directory from extracted sources:"
-                    )
-                    self.logger.debug(f"   {self.builds[build]}")
-                    shutil.copytree(self.extracted_source_path, self.builds[build])
-            else:
-                # Make our own copy of the extracted source so we don't dirty the original.
-                self.logger.debug(
-                    f"Creating {build} build directory from extracted sources:"
-                )
-                self.logger.debug(f"\t{self.builds[build]}")
-                shutil.copytree(self.extracted_source_path, self.builds[build])
-
-            #
-            # Run the build.
-            #
-            cwd = os.getcwd()
-            os.chdir(self.builds[build])
 
             # Add each tool from the toolchain to the PATH environment variable.
             for tool in self.toolchain:
                 for path_mod in self.toolchain[tool].path_mods[
                     self.toolchain[tool].installed
-                ][build]:
+                ][target]:
                     os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
 
-            # Create a build script.
-            if platform.system() == "Windows":
-                script_name = "build.bat"
-                newline = "\r\n"
+            cwd = os.getcwd()
+            build_path_exists = os.path.exists(self.builds[target])
+
+            if build_path_exists:
+                if force:
+                    # Remove previous built, start over.
+                    self.logger.info(
+                        f"--force: Removing previous {target} build directory:"
+                    )
+                    self.logger.info(f"   {self.builds[target]}")
+                    shutil.rmtree(self.builds[target])
+                    build_path_exists = False
+
+            if not build_path_exists:
+                os.makedirs(os.path.join(self.workdir, target), exist_ok=True)
+
+                # Make our own copy of the extracted source so we don't dirty the original.
+                self.logger.debug(
+                    f"Creating new {target} build directory from extracted sources:"
+                )
+                self.logger.debug(f"   {self.builds[target]}")
+                shutil.copytree(self.extracted_source_path, self.builds[target])
+
+                os.chdir(self.builds[target])
+
+                # Run "configure" script, if exists.
+                if "configure" in self.build_script[target].keys():
+                    if not self._run_script(
+                        target, "configure", self.build_script[target]["configure"]
+                    ):
+                        self.logger.error(
+                            f"{self.name}-{self.version} {target} build failed."
+                        )
+                        os.chdir(cwd)
+                        return False
+
             else:
-                script_name = "build.sh"
-                newline = "\n"
+                os.chdir(self.builds[target])
 
-            with open(
-                os.path.join(os.getcwd(), script_name), "w", newline=newline
-            ) as fd:
-                # Evaluate "".format() syntax in the build script
-                var_includes = os.path.join(self.installdir, build, "include").replace(
-                    "\\", "/"
-                )
-                var_libs = os.path.join(self.installdir, build, "lib").replace(
-                    "\\", "/"
-                )
-                var_install = os.path.join(self.installdir).replace("\\", "/")
-                var_build = os.path.join(self.builds[build]).replace("\\", "/")
+            # Run "make" script, if exists.
+            if "make" in self.build_script[target].keys():
+                if not self._run_script(
+                    target, "make", self.build_script[target]["make"]
+                ):
+                    self.logger.error(
+                        f"{self.name}-{self.version} {target} build failed."
+                    )
+                    os.chdir(cwd)
+                    return False
 
-                self.build_script[build] = self.build_script[build].format(
-                    includes=var_includes,
-                    libs=var_libs,
-                    install=var_install,
-                    build=var_build,
-                )
+            # Run "install" script, if exists.
+            if "install" in self.build_script[target].keys():
+                if not self._run_script(
+                    target, "install", self.build_script[target]["install"]
+                ):
+                    self.logger.error(
+                        f"{self.name}-{self.version} {target} build failed."
+                    )
+                    os.chdir(cwd)
+                    return False
 
-                # Write the build commands to a file
-                build_lines = self.build_script[build].splitlines()
-                for line in build_lines:
-                    fd.write(line.strip() + "\n")
-
-            if platform.system() != "Windows":
-                st = os.stat(script_name)
-                os.chmod(script_name, st.st_mode | stat.S_IEXEC)
-
-            # Run the build script.
-            process = subprocess.Popen(
-                os.path.join(os.getcwd(), script_name),
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            with process.stdout:
-                for line in iter(process.stdout.readline, b""):
-                    self.logger.debug(line.decode("utf-8").strip())
-            process.wait()
-            if process.returncode != 0:
-                self.logger.warning(f"{self.name}-{self.version} {build} build failed!")
-                self.logger.warning(f"Command:")
-                for line in self.build_script[build].splitlines():
-                    self.logger.warning(line)
-                self.logger.warning(f"Exit code: {process.returncode}")
-                os.chdir(cwd)
-                return False
-
-            self.logger.info(f"{self.name}-{self.version} {build} build succeeded.")
+            self.logger.info(f"{self.name}-{self.version} {target} build succeeded.")
             os.chdir(cwd)
 
-            if self._install(build) == False:
+            if self._install(target) == False:
                 return False
 
         return True

@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://curl.haxx.se/download/curl-7.65.3.zip"
     install_paths = {
         "x86": {
+            "license/curl": ["COPYING"],
             "include": [os.path.join("include", "curl")],
             "lib": [
                 os.path.join("lib", "Release", "libcurl.dll"),
@@ -36,6 +37,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/curl": ["COPYING"],
             "include": [os.path.join("include", "curl")],
             "lib": [
                 os.path.join("lib", "Release", "libcurl.dll"),

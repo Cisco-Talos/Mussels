@@ -30,10 +30,12 @@ class Recipe(BaseRecipe):
     url = "ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.tar.gz"
     install_paths = {
         "x86": {
+            "license/pthreads-win32": ["COPYING*"],
             "include": ["pthread.h", "sched.h"],
             "lib": ["pthreadVC2.dll", "pthreadVC2.lib"],
         },
         "x64": {
+            "license/pthreads-win32": ["COPYING*"],
             "include": ["pthread.h", "sched.h"],
             "lib": ["pthreadVC2.dll", "pthreadVC2.lib"],
         },

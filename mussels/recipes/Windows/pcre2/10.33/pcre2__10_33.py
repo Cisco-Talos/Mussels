@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://ftp.pcre.org/pub/pcre/pcre2-10.33.zip"
     install_paths = {
         "x86": {
+            "license/openssl": ["COPYING"],
             "include": [os.path.join("pcre2.h")],
             "lib": [
                 os.path.join("Release", "pcre2-8.dll"),
@@ -36,6 +37,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/openssl": ["COPYING"],
             "include": [os.path.join("pcre2.h")],
             "lib": [
                 os.path.join("Release", "pcre2-8.dll"),

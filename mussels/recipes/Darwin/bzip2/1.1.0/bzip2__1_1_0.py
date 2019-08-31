@@ -24,37 +24,24 @@ class Recipe(BaseRecipe):
     Recipe to build bzip2.
     """
 
-    name = "bzip2-dev"
+    name = "bzip2"
     version = "1.1.0"
     url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gz"
-    install_paths = {
-        "host": {
-            "include": ["bzlib.h"],
-            "lib": [
-                os.path.join("libbz2.1.1.0.dylib"),
-                os.path.join("libbz2.1.dylib"),
-                os.path.join("libbz2.a"),
-            ],
-            "bin": [
-                os.path.join("bunzip2"),
-                os.path.join("bzcat"),
-                os.path.join("bzcmp"),
-                os.path.join("bzdiff"),
-                os.path.join("bzegrep"),
-                os.path.join("bzfgrep"),
-                os.path.join("bzip2"),
-                os.path.join("bzip2recover"),
-                os.path.join("bzless"),
-                os.path.join("bzmore"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/bzip2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = []
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake .
-            cmake --build . --config Release
-        """
+        "host": {
+            "configure": """
+                cmake . \
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+            """,
+            "make": """
+                cmake --build . --config Release
+            """,
+            "install": """
+                make install
+            """,
+        }
     }

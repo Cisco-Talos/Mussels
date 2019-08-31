@@ -30,6 +30,7 @@ class Recipe(BaseRecipe):
     url = "https://www.clamav.net/downloads/production/clamav-0.101.2.tar.gz"
     install_paths = {
         "x86": {
+            "license/clamav": ["COPYING*"],
             "include": [
                 os.path.join("libclamav", "clamav.h"),
                 os.path.join("win32", "clamav-types.h"),
@@ -61,6 +62,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/clamav": ["COPYING*"],
             "include": [
                 os.path.join("libclamav", "clamav.h"),
                 os.path.join("win32", "clamav-types.h"),

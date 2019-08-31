@@ -18,6 +18,7 @@ import os
 
 from mussels.recipe import BaseRecipe
 
+
 class Recipe(BaseRecipe):
     """
     Recipe to build libssh2.
@@ -26,35 +27,31 @@ class Recipe(BaseRecipe):
     name = "libssh2"
     version = "1.8.1"
     url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
-    install_paths = {
-        "host": {
-            "include": [
-                os.path.join("include", "libssh2.h"),
-                os.path.join("include", "libssh2_publickey.h"),
-                os.path.join("include", "libssh2_sftp.h"),
-            ],
-            "lib": [
-                os.path.join("src", "libssh2.1.0.1.dylib"),
-                os.path.join("src", "libssh2.1.dylib"),
-                os.path.join("src", "libssh2.dylib"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/libssh2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["openssl>=1.1.0", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake . \
-                -DCRYPTO_BACKEND=OpenSSL \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DOPENSSL_LIBRARIES="{libs}" \
-                -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
-                -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
-                -DENABLE_ZLIB_COMPRESSION=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/libz.a"
-            cmake --build . --config Release
-        """
+        "host": {
+            "configure": """
+                cmake . \
+                    -DCRYPTO_BACKEND=OpenSSL \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DOPENSSL_LIBRARIES="{libs}" \
+                    -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
+                    -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
+                    -DENABLE_ZLIB_COMPRESSION=ON \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+            """,
+            "make": """
+                cmake --build . --config Release
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libssh2.dylib"
+            """,
+        }
     }

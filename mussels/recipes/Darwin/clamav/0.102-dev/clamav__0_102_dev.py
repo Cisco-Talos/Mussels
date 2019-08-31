@@ -26,45 +26,48 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav"
-    version = "0.102"
+    version = "0.102.0"
     url = "https://github.com/Cisco-Talos/clamav-devel/archive/dev/0.102.zip"
     archive_name_change = ("0.102", "clamav-devel-dev-0.102")
     install_paths = {
         "host": {
-            "include": [
-                os.path.join("libclamav", "clamav.h"),
-                os.path.join("clamav-types.h"),
-            ],
-            "lib": [
-                os.path.join("libclamav", "libclamav.dylib"),
-                os.path.join("libfreshclam", "libfreshclam.dylib"),
-                os.path.join("libclamunrar", "libclamunrar.dylib"),
-                os.path.join("libclamunrar_iface", "libclamunrar_iface.dylib"),
-                os.path.join("mspack", "mspack.dylib"),
-            ],
-            "bin": [
-                os.path.join("clambc", "clambc"),
-                os.path.join("clamconf", "clamconf"),
-                os.path.join("clamd", "clamd"),
-                os.path.join("clamdscan", "clamdscan"),
-                os.path.join("clamscan", "clamscan"),
-                os.path.join("clamsubmit", "clamsubmit"),
-                os.path.join("freshclam", "freshclam"),
-                os.path.join("sigtool", "sigtool"),
-            ],
-            "etc": [
-                os.path.join("etc", "clamd.conf.sample"),
-                os.path.join("etc", "freshclam.conf.sample"),
-            ],
+            "license/clamav": ["COPYING*"],
+            "etc": ["etc/clamd.conf.sample", "etc/freshclam.conf.sample"],
+            "share/clamav": ["database/main.cvd", "database/daily.cvd"],
         }
     }
     platform = ["Darwin"]
-    dependencies = ["curl", "json_c", "libxml2", "openssl", "pcre2", "bzip2"]
+    dependencies = ["curl", "json_c", "libxml2", "openssl", "pcre2", "bzip2-1.0.7"]
     required_tools = ["make", "clang"]
     build_script = {
-        "host": """
-            chmod +x ./configure
-            ./configure --with-libcurl={install}/host --with-libjson={install}/host --with-xml={install}/host --with-openssl={install}/host --with-pcre={install}/host --with-libbz2-prefix={install}/host --enable-llvm --with-system-llvm=no
-            make
-        """
+        "host": {
+            "configure": """
+                chmod +x ./configure ./config/install-sh
+                ./configure \
+                    --with-libcurl={install}/{target} \
+                    --with-libjson={install}/{target} \
+                    --with-xml={install}/{target} \
+                    --with-openssl={install}/{target} \
+                    --with-pcre={install}/{target} \
+                    --with-zlib={install}/{target} \
+                    --with-libbz2-prefix={install}/{target} \
+                    --enable-llvm --with-system-llvm=no \
+                    --prefix="{install}/{target}" \
+                    --with-systemdsystemunitdir=no
+            """,
+            "make": """
+                make
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/clambc"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/clamconf"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/clamdscan"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/clamscan"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/clamsubmit"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/freshclam"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/bin/sigtool"
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/sbin/clamd"
+            """,
+        }
     }

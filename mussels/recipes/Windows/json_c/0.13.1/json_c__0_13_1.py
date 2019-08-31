@@ -29,6 +29,7 @@ class Recipe(BaseRecipe):
     url = "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.13.1.tar.gz"
     install_paths = {
         "x86": {
+            "license/json-c": ["COPYING"],
             "include/json-c": [
                 os.path.join("arraylist.h"),
                 os.path.join("bits.h"),
@@ -52,6 +53,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/json-c": ["COPYING"],
             "include/json-c": [
                 os.path.join("arraylist.h"),
                 os.path.join("bits.h"),

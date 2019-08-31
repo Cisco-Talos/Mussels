@@ -28,38 +28,21 @@ class Recipe(BaseRecipe):
     name = "json_c"
     version = "0.13.1"
     url = "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.13.1.tar.gz"
-    install_paths = {
-        "host": {
-            "include/json-c": [
-                os.path.join("arraylist.h"),
-                os.path.join("bits.h"),
-                os.path.join("debug.h"),
-                os.path.join("json.h"),
-                os.path.join("json_c_version.h"),
-                os.path.join("json_inttypes.h"),
-                os.path.join("json_object.h"),
-                os.path.join("json_object_iterator.h"),
-                os.path.join("json_pointer.h"),
-                os.path.join("json_tokener.h"),
-                os.path.join("json_util.h"),
-                os.path.join("json_visit.h"),
-                os.path.join("linkhash.h"),
-                os.path.join("printbuf.h"),
-                os.path.join("json_config.h"),
-            ],
-            "lib": [
-                os.path.join(".libs", "libjson-c.4.dylib"),
-                os.path.join(".libs", "libjson-c.dylib"),
-                os.path.join(".libs", "libjson-c.a"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/json-c": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = []
     required_tools = ["make", "clang"]
     build_script = {
-        "host": """
-            ./configure
-            make
-        """
+        "host": {
+            "configure": """
+                ./configure \
+                    --prefix="{install}/{target}"
+            """,
+            "make": """
+                make
+            """,
+            "install": """
+                make install
+            """,
+        }
     }

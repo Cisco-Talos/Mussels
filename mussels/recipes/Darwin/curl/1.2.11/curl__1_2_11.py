@@ -27,34 +27,36 @@ class Recipe(BaseRecipe):
     name = "curl"
     version = "7.64.0"
     url = "https://curl.haxx.se/download/curl-7.64.0.zip"
-    install_paths = {
-        "host": {
-            "include": [os.path.join("include", "curl")],
-            "lib": [
-                os.path.join("lib", "libcurl.dylib"),
-            ],
-        },
-    }
+    install_paths = {"host": {"license/curl": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake . \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DCMAKE_USE_OPENSSL=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DOPENSSL_LIBRARIES="{libs}" \
-                -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
-                -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
-                -DLIBSSH2_INCLUDE_DIR="{includes}" \
-                -DLIBSSH2_LIBRARY="{libs}/libssh2.dylib" \
-                -DUSE_NGHTTP2=ON \
-                -DNGHTTP2_INCLUDE_DIR="{includes}" \
-                -DNGHTTP2_LIBRARY="{libs}/libnghttp2.dylib"
-            cmake --build . --config Release
-        """,
+        "host": {
+            "configure": """
+                cmake . \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DCMAKE_USE_OPENSSL=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DOPENSSL_LIBRARIES="{libs}" \
+                    -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
+                    -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
+                    -DLIBSSH2_INCLUDE_DIR="{includes}" \
+                    -DLIBSSH2_LIBRARY="{libs}/libssh2.dylib" \
+                    -DUSE_NGHTTP2=ON \
+                    -DNGHTTP2_INCLUDE_DIR="{includes}" \
+                    -DNGHTTP2_LIBRARY="{libs}/libnghttp2.dylib" \
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+            """,
+            "make": """
+                cmake --build . --config Release
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libcurl.dylib"
+            """,
+        }
     }

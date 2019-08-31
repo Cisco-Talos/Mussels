@@ -26,6 +26,7 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav_deps"
-    version = "0.102"
+    version = "0.102.0"
     is_collection = True
+    platform = ["Darwin"]
     dependencies = ["curl", "json_c", "libxml2", "openssl", "pcre2", "bzip2"]

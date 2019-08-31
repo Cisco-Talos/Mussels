@@ -28,34 +28,33 @@ class Recipe(BaseRecipe):
     version = "1.36.0"
     url = "https://github.com/nghttp2/nghttp2/archive/v1.36.0.zip"
     archive_name_change = ("v", "nghttp2-")
-    install_paths = {
-        "host": {
-            "include": [os.path.join("lib", "includes", "nghttp2")],
-            "lib": [
-                os.path.join("lib", "libnghttp2.14.17.1.dylib"),
-                os.path.join("lib", "libnghttp2.14.dylib"),
-                os.path.join("lib", "libnghttp2.dylib"),
-                os.path.join("lib", "libnghttp2.a"),
-            ],
-        }
-    }
+    install_paths = {"host": {"license/nghttp2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["openssl>=1.0.1", "zlib>=1.2.3", "libxml2>=2.9.9"]
     required_tools = ["cmake", "clang"]
     build_script = {
-        "host": """
-            cmake . \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_ROOT_DIR="{install}" \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DOPENSSL_LIBRARIES="{libs}" \
-                -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
-                -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
-                -DLIBXML2_INCLUDE_DIR="{includes}" \
-                -DLIBXML2_LIBRARY="{libs}/libxml2.dylib" \
-                -DZLIB_ROOT="{includes}" \
-                -DZLIB_LIBRARY="{libs}/libz.a"
-            cmake --build . --config Release
-        """
+        "host": {
+            "configure": """
+                cmake . \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_ROOT_DIR="{install}" \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DOPENSSL_LIBRARIES="{libs}" \
+                    -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
+                    -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
+                    -DLIBXML2_INCLUDE_DIR="{includes}" \
+                    -DLIBXML2_LIBRARY="{libs}/libxml2.dylib" \
+                    -DZLIB_ROOT="{includes}" \
+                    -DZLIB_LIBRARY="{libs}/libz.a" \
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+            """,
+            "make": """
+                cmake --build . --config Release
+            """,
+            "install": """
+                make install
+                install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libnghttp2.dylib"
+            """,
+        }
     }

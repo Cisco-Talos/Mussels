@@ -41,7 +41,7 @@ from mussels.utils.click import MusselsModifier, ShortNames
 
 logging.basicConfig()
 module_logger = logging.getLogger("mussels")
-coloredlogs.install(level="DEBUG")
+coloredlogs.install(level="DEBUG", fmt="%(asctime)s %(name)s %(levelname)s %(message)s")
 module_logger.setLevel(logging.DEBUG)
 
 #
@@ -213,7 +213,13 @@ def recipe_show(recipe: str, version: str, verbose: bool):
     is_flag=True,
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
-def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool):
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Re-build a recipe, even if already built. [optional]",
+)
+def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, force: bool):
     """
     Download, extract, build, and install a recipe.
     """
@@ -222,7 +228,9 @@ def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool):
 
     results = []
 
-    success = my_mussels.build_recipe(recipe, version, cookbook, results, dry_run)
+    success = my_mussels.build_recipe(
+        recipe, version, cookbook, results, dry_run, force
+    )
     if success == False:
         sys.exit(1)
 
@@ -249,8 +257,16 @@ def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool):
     is_flag=True,
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Re-build a recipe, even if already built. [optional]",
+)
 @click.pass_context
-def build_alias(ctx, recipe: str, version: str, cookbook: str, dry_run: bool):
+def build_alias(
+    ctx, recipe: str, version: str, cookbook: str, dry_run: bool, force: bool
+):
     """
     Download, extract, build, and install a recipe.
 

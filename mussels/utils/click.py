@@ -35,4 +35,3 @@ class ShortNames(click.Group):
         elif len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail("Too many matches: %s" % ", ".join(sorted(matches)))
-

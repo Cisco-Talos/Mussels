@@ -30,6 +30,7 @@ class Recipe(BaseRecipe):
     url = "ftp://xmlsoft.org/libxml2/libxml2-2.9.9.tar.gz"
     install_paths = {
         "x86": {
+            "license/libxml2": ["COPYING"],
             "include": ["libxml.h", os.path.join("include", "libxml")],
             "lib": [
                 os.path.join("win32", "bin.msvc", "libxml2.dll"),
@@ -37,6 +38,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/libxml2": ["COPYING"],
             "include": ["libxml.h", os.path.join("include", "libxml")],
             "lib": [
                 os.path.join("win32", "bin.msvc", "libxml2.dll"),
