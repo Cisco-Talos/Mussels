@@ -26,6 +26,6 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav_deps"
-    version = "0.101.2"
+    version = "0.101.4"
     is_collection = True
     dependencies = ["curl", "json_c", "libxml2", "openssl", "pcre2", "bzip2"]

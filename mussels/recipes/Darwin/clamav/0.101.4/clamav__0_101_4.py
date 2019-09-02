@@ -26,8 +26,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav"
-    version = "0.101.2"
-    url = "https://www.clamav.net/downloads/production/clamav-0.101.2.tar.gz"
+    version = "0.101.4"
+    url = "https://www.clamav.net/downloads/production/clamav-0.101.4.tar.gz"
     install_paths = {
         "host": {
             "license/clamav": ["COPYING*"],

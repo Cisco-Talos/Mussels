@@ -25,8 +25,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "openssl"
-    version = "1.1.1b"
-    url = "https://www.openssl.org/source/openssl-1.1.1b.tar.gz"
+    version = "1.1.1c"
+    url = "https://www.openssl.org/source/openssl-1.1.1c.tar.gz"
     install_paths = {
         "x86": {
             "license/openssl": ["LICENSE"],
@@ -54,23 +54,23 @@ class Recipe(BaseRecipe):
     required_tools = ["nasm", "perl", "visualstudio>=2017"]
     build_script = {
         "x86": {
-            "configure" : """
+            "configure": """
                 CALL vcvarsall.bat x86 -vcvars_ver=14.1
                 CALL perl Configure VC-WIN32 zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlibstatic.lib"
             """,
-            "make" : """
+            "make": """
                 CALL vcvarsall.bat x86 -vcvars_ver=14.1
                 CALL nmake
-            """
+            """,
         },
         "x64": {
-            "configure" : """
+            "configure": """
                 CALL vcvarsall.bat amd64 -vcvars_ver=14.1
                 CALL perl Configure VC-WIN64A zlib --with-zlib-include="{includes}" --with-zlib-lib="{libs}/zlibstatic.lib"
             """,
-            "make" : """
+            "make": """
                 CALL vcvarsall.bat amd64 -vcvars_ver=14.1
                 CALL nmake
-            """
+            """,
         },
     }

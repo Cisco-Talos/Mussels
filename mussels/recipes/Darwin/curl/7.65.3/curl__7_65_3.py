@@ -25,8 +25,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "curl"
-    version = "7.64.0"
-    url = "https://curl.haxx.se/download/curl-7.64.0.zip"
+    version = "7.65.3"
+    url = "https://curl.haxx.se/download/curl-7.65.3.zip"
     install_paths = {"host": {"license/curl": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]

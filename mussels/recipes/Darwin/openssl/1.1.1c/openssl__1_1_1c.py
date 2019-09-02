@@ -25,8 +25,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "openssl"
-    version = "1.1.1b"
-    url = "https://www.openssl.org/source/openssl-1.1.1b.tar.gz"
+    version = "1.1.1c"
+    url = "https://www.openssl.org/source/openssl-1.1.1c.tar.gz"
     install_paths = {"host": {"license/openssl": ["LICENSE"]}}
     platform = ["Darwin"]
     dependencies = ["zlib"]

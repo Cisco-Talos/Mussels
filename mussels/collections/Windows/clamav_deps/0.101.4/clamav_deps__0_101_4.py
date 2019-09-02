@@ -26,7 +26,7 @@ class Recipe(BaseRecipe):
     """
 
     name = "clamav_deps"
-    version = "0.101.2"
+    version = "0.101.4"
     is_collection = True
     platform = ["Windows"]
     dependencies = ["openssl<1.1.1"]

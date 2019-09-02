@@ -16,7 +16,7 @@ limitations under the License.
 
 import os
 
-from recipes.recipe import BaseRecipe
+from mussels.recipe import BaseRecipe
 
 
 class Recipe(BaseRecipe):
@@ -30,6 +30,7 @@ class Recipe(BaseRecipe):
     archive_name_change = ("v", "nghttp2-")
     install_paths = {
         "x86": {
+            "license/nghttp2": ["COPYING"],
             "include": [os.path.join("lib", "includes", "nghttp2")],
             "lib": [
                 os.path.join("lib", "Release", "nghttp2.dll"),
@@ -37,6 +38,7 @@ class Recipe(BaseRecipe):
             ],
         },
         "x64": {
+            "license/nghttp2": ["COPYING"],
             "include": [os.path.join("lib", "includes", "nghttp2")],
             "lib": [
                 os.path.join("lib", "Release", "nghttp2.dll"),
@@ -44,31 +46,40 @@ class Recipe(BaseRecipe):
             ],
         },
     }
+    platform = ["Windows"]
     dependencies = ["openssl>=1.0.1", "zlib>=1.2.3"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
-        "x86": """
-            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_ROOT_DIR="{install}" \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DZLIB_ROOT="{includes}" \
-                -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
-            CALL cmake.exe --build . --config Release
-        """,
-        "x64": """
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_ROOT_DIR="{install}" \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DZLIB_ROOT="{includes}" \
-                -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
-            CALL cmake.exe --build . --config Release
-        """,
+        "x86": {
+            "configure": """
+                CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_ROOT_DIR="{install}" \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DZLIB_ROOT="{includes}" \
+                    -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
+            """,
+            "make": """
+                CALL cmake.exe --build . --config Release
+            """,
+        },
+        "x64": {
+            "configure": """
+                CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_ROOT_DIR="{install}" \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DZLIB_ROOT="{includes}" \
+                    -DZLIB_LIBRARY="{libs}/zlibstatic.lib"
+            """,
+            "make": """
+                CALL cmake.exe --build . --config Release
+            """,
+        },
     }

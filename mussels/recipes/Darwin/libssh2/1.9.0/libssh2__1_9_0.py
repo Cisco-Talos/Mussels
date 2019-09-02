@@ -25,8 +25,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "libssh2"
-    version = "1.8.1"
-    url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
+    version = "1.9.0"
+    url = "https://www.libssh2.org/download/libssh2-1.9.0.tar.gz"
     install_paths = {"host": {"license/libssh2": ["COPYING"]}}
     platform = ["Darwin"]
     dependencies = ["openssl>=1.1.0", "zlib"]
@@ -44,7 +44,8 @@ class Recipe(BaseRecipe):
                     -DENABLE_ZLIB_COMPRESSION=ON \
                     -DZLIB_INCLUDE_DIR="{includes}" \
                     -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
-                    -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+                    -DCMAKE_INSTALL_PREFIX="{install}/{target}" \
+                    -DBUILD_TESTING=OFF
             """,
             "make": """
                 cmake --build . --config Release

@@ -25,8 +25,8 @@ class Recipe(BaseRecipe):
     """
 
     name = "libssh2"
-    version = "1.8.1"
-    url = "https://www.libssh2.org/download/libssh2-1.8.1.tar.gz"
+    version = "1.9.0"
+    url = "https://www.libssh2.org/download/libssh2-1.9.0.tar.gz"
     install_paths = {
         "x86": {
             "license/libssh2": ["COPYING"],
@@ -64,7 +64,7 @@ class Recipe(BaseRecipe):
     }
     build_script = {
         "x86": {
-            "configure" : """
+            "configure": """
                 CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
                     -DCRYPTO_BACKEND=OpenSSL \
                     -DBUILD_SHARED_LIBS=ON \
@@ -75,14 +75,15 @@ class Recipe(BaseRecipe):
                     -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
                     -DENABLE_ZLIB_COMPRESSION=ON \
                     -DZLIB_INCLUDE_DIR="{includes}" \
-                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DBUILD_TESTING=OFF
             """,
-            "make" : """
+            "make": """
                 CALL cmake.exe --build . --config Release
-            """
+            """,
         },
         "x64": {
-            "configure" : """
+            "configure": """
                 CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
                     -DCRYPTO_BACKEND=OpenSSL \
                     -DBUILD_SHARED_LIBS=ON \
@@ -93,10 +94,11 @@ class Recipe(BaseRecipe):
                     -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
                     -DENABLE_ZLIB_COMPRESSION=ON \
                     -DZLIB_INCLUDE_DIR="{includes}" \
-                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DBUILD_TESTING=OFF
             """,
-            "make" : """
+            "make": """
                 CALL cmake.exe --build . --config Release
-            """
+            """,
         },
     }
