@@ -262,7 +262,7 @@ class Mussels:
         version: str,
         cookbook: str,
         toolchain: dict,
-        force: bool = False,
+        clean: bool = False,
     ) -> dict:
         """
         Build a specific recipe.
@@ -328,7 +328,7 @@ class Mussels:
             result["time elapsed"] = time.time() - start
             return result
 
-        if not builder._build(force):
+        if not builder._build(clean):
             self.logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
         else:
             self.logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
@@ -461,7 +461,7 @@ class Mussels:
         cookbook: str,
         results: list,
         dry_run: bool = False,
-        force: bool = False,
+        clean: bool = False,
     ) -> bool:
         """
         Execute a build of a recipe.
@@ -626,7 +626,7 @@ class Mussels:
                         recipe_nvc.version,
                         recipe_nvc.cookbook,
                         toolchain,
-                        force,
+                        clean,
                     )
                     results.append(result)
                     if not result["success"]:

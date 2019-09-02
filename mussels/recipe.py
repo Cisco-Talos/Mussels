@@ -91,7 +91,7 @@ class BaseRecipe(object):
     # build_script is a dictionary containing build scripts for each build target.
     # There are 3 types of scripts and each are optional:
     # - "configure": To be run the first time you build, before the "make" script.
-    #                Subsequent builds will not re-configure unless you use `-f` / `--force`.
+    #                Subsequent builds will not re-configure unless you use `-c` / `--clean`.
     # - "make":      To be run each time you build, if the "configure" script succeeded.
     # - "Install":   To be run each time you build, if the "make" script succeeded.
     #
@@ -304,7 +304,10 @@ class BaseRecipe(object):
                         return False
 
                     dst_path = os.path.join(
-                        self.installdir, build, install_path, os.path.basename(src_filepath)
+                        self.installdir,
+                        build,
+                        install_path,
+                        os.path.basename(src_filepath),
                     )
 
                     # Remove prior installation, if exists.
@@ -389,7 +392,7 @@ class BaseRecipe(object):
 
         return True
 
-    def _build(self, force: bool = False) -> bool:
+    def _build(self, clean: bool = False) -> bool:
         """
         First, patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
@@ -456,10 +459,10 @@ class BaseRecipe(object):
             build_path_exists = os.path.exists(self.builds[target])
 
             if build_path_exists:
-                if force:
+                if clean:
                     # Remove previous built, start over.
                     self.logger.info(
-                        f"--force: Removing previous {target} build directory:"
+                        f"--clean: Removing previous {target} build directory:"
                     )
                     self.logger.info(f"   {self.builds[target]}")
                     shutil.rmtree(self.builds[target])

@@ -214,8 +214,8 @@ def recipe_show(recipe: str, version: str, verbose: bool):
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--clean",
+    "-c",
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
@@ -303,8 +303,8 @@ def clean_all():
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--clean",
+    "-c",
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
