@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import platform
+import shutil
 import sys
 import time
 from typing import *
@@ -858,6 +859,54 @@ class Mussels:
 
         if not found:
             self.logger.warning(f'No cookbook matching name: "{cookbook_match}"')
+
+    def clean_cache(self):
+        """
+        Clear the cache files.
+        """
+        self.logger.info(f"Clearing cache directory ( {os.path.join(self.app_data_dir, 'cache')} )...")
+
+        if os.path.exists(os.path.join(self.app_data_dir, "cache")):
+            shutil.rmtree(os.path.join(self.app_data_dir, "cache"))
+            self.logger.info(f"Cache directory cleared.")
+        else:
+            self.logger.info(f"No cache directory to clear.")
+
+    def clean_install(self):
+        """
+        Clear the install files.
+        """
+        self.logger.info(f"Clearing install directory ( {os.path.join(self.app_data_dir, 'install')} )...")
+
+        if os.path.exists(os.path.join(self.app_data_dir, "install")):
+            shutil.rmtree(os.path.join(self.app_data_dir, "install"))
+            self.logger.info(f"Install directory cleared.")
+        else:
+            self.logger.info(f"No install directory to clear.")
+
+    def clean_logs(self):
+        """
+        Clear the log files.
+        """
+        self.logger.info(f"Clearing logs directory ( {os.path.join(self.app_data_dir, 'logs')} )...")
+
+        if os.path.exists(os.path.join(self.app_data_dir, "logs")):
+            shutil.rmtree(os.path.join(self.app_data_dir, "logs"))
+            self.logger.info(f"Logs directory cleared.")
+        else:
+            self.logger.info(f"No logs directory to clear.")
+
+    def clean_all(self):
+        """
+        Clear all Mussels files.
+        """
+        self.logger.info(f"Clearing Mussels directory ( {os.path.join(self.app_data_dir)} )...")
+
+        if os.path.exists(os.path.join(self.app_data_dir)):
+            shutil.rmtree(os.path.join(self.app_data_dir))
+            self.logger.info(f"Mussels directory cleared.")
+        else:
+            self.logger.info(f"No Mussels directory to clear.")
 
     def config_trust_cookbook(self, cookbook):
         """

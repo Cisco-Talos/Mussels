@@ -237,6 +237,51 @@ def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, force:
     sys.exit(0)
 
 
+@cli.group(cls=ShortNames, help="Commands to clean up.")
+def clean():
+    pass
+
+
+@clean.command("cache")
+def clean_cache():
+    """
+    Clear the cache files.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.clean_cache()
+
+
+@clean.command("install")
+def clean_install():
+    """
+    Clear the install files.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.clean_install()
+
+
+@clean.command("logs")
+def clean_logs():
+    """
+    Clear the logs files.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.clean_logs()
+
+
+@clean.command("all")
+def clean_all():
+    """
+    Clear the all files.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.clean_all()
+
+
 #
 # Command Aliases
 #
@@ -309,7 +354,7 @@ def show_alias(ctx, recipe: str, version: str, verbose: bool):
 @click.pass_context
 def update_alias(ctx):
     """
-    Show details about a specific recipe.
+    Update local copy of cookbooks (using Git).
 
     This is just an alias for `recipe show`.
     """
