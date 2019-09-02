@@ -14,7 +14,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
-    entry_points={"console_scripts": ["mussels = mussels.cli:cli"]},
+    entry_points={
+        "console_scripts": ["mussels = mussels.cli:cli", "msl = mussels.cli:cli"]
+    },
     install_requires=[
         "click>=7.0",
         "coloredlogs>=10.0",

@@ -225,7 +225,8 @@ The following are issues or features on the to-do list to implement or repair.
   - A release package would include install files for the recipe and all dependencies.
   - A release package should include license & configuration files/directories for the recipe and each dependency.
 
-- There should be an option to build just one architecture (eg. "x86", or "cross-..."). The default should either be "host" or, for Windows, the current system architecture. This will be very important for anyone who wants to make recipes that have a cross-compile build architecture.
+- There should be an option to build just one architecture (eg. "x86", or "cross-..."). This will be very important for anyone who wants to make recipes that have a cross-compile build architecture.
+  - The default should either be "host" or, for Windows, the current system architecture.
 
 - Add build `--package` option that copies the items located in directories such as "lib", "bin", "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
   - Recipes should define a list of files in dictionary variable named `distribute` so the `--package` option knows what files to collect.
@@ -237,7 +238,6 @@ The following are issues or features on the to-do list to implement or repair.
 - Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dry-run` option.
   - Feature must include a `-y`/`--yes` override for non-interactive builds.
 
-- Add feature to clone recipes from cookbook to local directory.
 - Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
 - Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
 - Start documentation about cookbooks and how to get new cookbooks added to the index.

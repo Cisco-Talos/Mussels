@@ -320,15 +320,15 @@ class Mussels:
                 return result
 
         try:
-            builder = self.recipes[recipe][version][cookbook](
-                toolchain, self.app_data_dir
-            )
+            recipe_class = self.recipes[recipe][version][cookbook]
         except KeyError:
             self.logger.error(f"FAILED to find recipe: {recipe}-{version}!")
             result["time elapsed"] = time.time() - start
             return result
 
-        if not builder._build(clean):
+        recipe_object = recipe_class(toolchain=toolchain, data_dir=self.app_data_dir)
+
+        if not recipe_object._build(clean):
             self.logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
         else:
             self.logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
@@ -639,36 +639,36 @@ class Mussels:
             return False
         return True
 
+    def print_recipe_details(self, recipe: str, version: dict, verbose: bool):
+        """
+        Print recipe information.
+        """
+        version_num = version["version"]
+        cookbooks = version["cookbooks"]
+        self.logger.info(f"    {recipe} v{version_num};  from: {cookbooks}")
+
+        if verbose:
+            self.logger.info("")
+            for cookbook in cookbooks:
+                self.logger.info(f"        Cookbook: {cookbook}")
+
+                book_recipe = self.recipes[recipe][version_num][cookbook]
+                self.logger.info(
+                    f"            dependencies:   {book_recipe.dependencies}"
+                )
+                self.logger.info(
+                    f"            required tools: {book_recipe.required_tools}"
+                )
+                self.logger.info(
+                    f"            target arch:    {list(book_recipe.build_script.keys())}"
+                )
+
+            self.logger.info("")
+
     def show_recipe(self, recipe_match: str, version_match: str, verbose: bool = False):
         """
         Search recipes for a specific recipe and print recipe details.
         """
-
-        def print_recipe_details(recipe: str, version: dict):
-            """
-            Print recipe information.
-            """
-            version_num = version["version"]
-            cookbooks = version["cookbooks"]
-            self.logger.info(f"    {recipe} v{version_num};  from: {cookbooks}")
-
-            if verbose:
-                self.logger.info("")
-                for cookbook in cookbooks:
-                    self.logger.info(f"        Cookbook: {cookbook}")
-
-                    book_recipe = self.recipes[recipe][version_num][cookbook]
-                    self.logger.info(
-                        f"            dependencies:   {book_recipe.dependencies}"
-                    )
-                    self.logger.info(
-                        f"            required tools: {book_recipe.required_tools}"
-                    )
-                    self.logger.info(
-                        f"            target arch:    {list(book_recipe.build_script.keys())}"
-                    )
-
-                self.logger.info("")
 
         found = False
 
@@ -686,7 +686,7 @@ class Mussels:
 
                     # Show info for every version
                     for version in self.sorted_recipes[recipe]:
-                        print_recipe_details(recipe, version)
+                        self.print_recipe_details(recipe, version, verbose)
                     break
                 else:
                     # Attempt to match the version too
@@ -694,7 +694,7 @@ class Mussels:
                         if fnmatch.fnmatch(version, version_match):
                             found = True
 
-                            print_recipe_details(recipe, version)
+                            self.print_recipe_details(recipe, version, verbose)
                             break
                     if found:
                         break
@@ -705,6 +705,165 @@ class Mussels:
                 self.logger.warning(
                     f'No recipe matching name: "{recipe_match}", version: "{version_match}"'
                 )
+
+    def clone_recipe(self, recipe: str, version: str, cookbook: str, destination: str):
+        """
+        Search recipes for a specific recipe and copy the file to the CWD.
+        """
+
+        def get_cookbook(recipe: str, recipe_version: dict) -> str:
+            """
+            Return the cookbook name, if only one cookbook provides the recipe-version.
+            If more then one cookbook provides the recipe-version, explain the options and return an empty string.
+            """
+            cookbook = ""
+
+            num_cookbooks = len(recipe_version["cookbooks"])
+            if num_cookbooks == 0:
+                self.logger.error(
+                    f"Recipe {recipe}:{version} not provided by any cookbook!(?!)"
+                )
+
+            elif num_cookbooks == 1:
+                cookbook = recipe_version["cookbooks"][0]
+
+            else:
+                self.logger.error(
+                    f'Clone failed: No cookbook specified, and multiple cookbooks provide recipe "{recipe}={recipe_version["version"]}".'
+                )
+                self.logger.error(
+                    f"Please retry with a specific cookbook using the `-c` or `--cookbook` option:"
+                )
+                self.logger.info(f"")
+
+                self.print_recipe_details(recipe, recipe_version, verbose=True)
+
+            return cookbook
+
+        found = False
+
+        if version == "":
+            if cookbook == "":
+                self.logger.info(f'Attempting to clone recipe: "{recipe}"...')
+            else:
+                self.logger.info(
+                    f'Attempting to clone recipe: "{cookbook}: {recipe}"...'
+                )
+        else:
+            if cookbook == "":
+                self.logger.info(f'Attempting to clone recipe: "{recipe}={version}"...')
+            else:
+                self.logger.info(
+                    f'Attempting to clone recipe: "{cookbook}:{recipe}={version}"...'
+                )
+
+        try:
+            recipe_versions = self.sorted_recipes[recipe]
+        except KeyError:
+            self.logger.error(f'Clone failed: No such recipe "{recipe}"')
+            return False
+
+        # Identify highest available version, for future reference.
+        highest_recipe_version = recipe_versions[0]
+
+        #
+        # Now repeat the above if/else logic to select the exact recipe requested.
+        #
+
+        if version == "":
+            if cookbook == "":
+                # neither version nor cookbook was specified.
+                self.logger.info(
+                    f"No version or cookbook specified, will select highest available version."
+                )
+                version = highest_recipe_version["version"]
+
+                cookbook = get_cookbook(version, highest_recipe_version)
+
+                if cookbook == "":
+                    return False
+
+            else:
+                # cookbook specified, but version wasn't.
+                self.logger.info(
+                    f'No version specified, will select highest version provided by cookbook: "{cookbook}".'
+                )
+
+                selected_recipe_version = {}
+
+                for recipe_version in recipe_versions:
+                    if cookbook in recipe_version["cookbooks"]:
+                        selected_recipe_version = recipe_version
+                        break
+
+                if selected_recipe_version == {}:
+                    self.logger.error(
+                        f'Clone failed: Requested recipe "{recipe}" could not be found in cookbook: "{cookbook}".'
+                    )
+                    return False
+
+                version = selected_recipe_version["version"]
+
+                if (
+                    selected_recipe_version["version"]
+                    != highest_recipe_version["version"]
+                ):
+                    self.logger.warning(
+                        f'The version selected from cookbook "{cookbook}" is not the highest version available.'
+                    )
+                    self.logger.warning(
+                        f"A newer version appears to be available from other sources:"
+                    )
+                    self.logger.info(f"")
+                    self.print_recipe_details(
+                        recipe, highest_recipe_version, verbose=True
+                    )
+
+        else:
+            # version specified
+            if cookbook == "":
+                self.logger.info(
+                    f"No cookbook specified, will select recipe only if version is provided by only one cookbook."
+                )
+
+                selected_recipe_version = {}
+
+                for recipe_version in recipe_versions:
+                    if version == recipe_version["version"]:
+
+                        cookbook = get_cookbook(recipe, recipe_version)
+                        break
+
+                if cookbook == "":
+                    return False
+
+            else:
+                # version and cookbook specified.
+                pass
+
+        if destination == "":
+            destination = os.getcwd()
+
+        try:
+            recipe_class = self.recipes[recipe][version][cookbook]
+        except KeyError:
+            self.logger.error(
+                f'Clone failed: Requested recipe "{cookbook}: {recipe} = {version}" could not be found.'
+            )
+            return False
+
+        recipe_object = recipe_class(toolchain={}, data_dir=self.app_data_dir)
+
+        clone_path = recipe_object._clone(destination=destination)
+        if clone_path == "":
+            return False
+
+        self.logger.info(
+            f'Successfully cloned recipe "{cookbook}:{recipe}={version}" to:'
+        )
+        self.logger.info(f"    {clone_path}")
+
+        return True
 
     def list_recipes(self, verbose: bool = False):
         """
@@ -864,7 +1023,9 @@ class Mussels:
         """
         Clear the cache files.
         """
-        self.logger.info(f"Clearing cache directory ( {os.path.join(self.app_data_dir, 'cache')} )...")
+        self.logger.info(
+            f"Clearing cache directory ( {os.path.join(self.app_data_dir, 'cache')} )..."
+        )
 
         if os.path.exists(os.path.join(self.app_data_dir, "cache")):
             shutil.rmtree(os.path.join(self.app_data_dir, "cache"))
@@ -876,7 +1037,9 @@ class Mussels:
         """
         Clear the install files.
         """
-        self.logger.info(f"Clearing install directory ( {os.path.join(self.app_data_dir, 'install')} )...")
+        self.logger.info(
+            f"Clearing install directory ( {os.path.join(self.app_data_dir, 'install')} )..."
+        )
 
         if os.path.exists(os.path.join(self.app_data_dir, "install")):
             shutil.rmtree(os.path.join(self.app_data_dir, "install"))
@@ -888,7 +1051,9 @@ class Mussels:
         """
         Clear the log files.
         """
-        self.logger.info(f"Clearing logs directory ( {os.path.join(self.app_data_dir, 'logs')} )...")
+        self.logger.info(
+            f"Clearing logs directory ( {os.path.join(self.app_data_dir, 'logs')} )..."
+        )
 
         if os.path.exists(os.path.join(self.app_data_dir, "logs")):
             shutil.rmtree(os.path.join(self.app_data_dir, "logs"))
@@ -900,7 +1065,9 @@ class Mussels:
         """
         Clear all Mussels files.
         """
-        self.logger.info(f"Clearing Mussels directory ( {os.path.join(self.app_data_dir)} )...")
+        self.logger.info(
+            f"Clearing Mussels directory ( {os.path.join(self.app_data_dir)} )..."
+        )
 
         if os.path.exists(os.path.join(self.app_data_dir)):
             shutil.rmtree(os.path.join(self.app_data_dir))

@@ -196,6 +196,24 @@ def recipe_show(recipe: str, version: str, verbose: bool):
     my_mussels.show_recipe(recipe, version, verbose)
 
 
+@recipe.command("clone")
+@click.argument("recipe", required=True)
+@click.option(
+    "--version", "-v", default="", help="Specific version to clone. [optional]"
+)
+@click.option(
+    "--cookbook", "-c", default="", help="Specific cookbook to clone. [optional]"
+)
+@click.option("--dest", "-d", default="", help="Destination directory. [optional]")
+def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
+    """
+    Copy a recipe to the current working directory or to a specific directory.
+    """
+    my_mussels = Mussels()
+
+    my_mussels.clone_recipe(recipe, version, cookbook, dest)
+
+
 @recipe.command("build")
 @click.argument("recipe", required=False, default="all")
 @click.option(
@@ -205,7 +223,7 @@ def recipe_show(recipe: str, version: str, verbose: bool):
     help="Version of recipe to build. May not be combined with @version in recipe name. [optional]",
 )
 @click.option(
-    "--cookbook", "-c", default="", help="Specific cookbook to use . [optional]"
+    "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
 @click.option(
     "--dry-run",
@@ -219,7 +237,7 @@ def recipe_show(recipe: str, version: str, verbose: bool):
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
-def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, force: bool):
+def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, clean: bool):
     """
     Download, extract, build, and install a recipe.
     """
@@ -229,7 +247,7 @@ def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, force:
     results = []
 
     success = my_mussels.build_recipe(
-        recipe, version, cookbook, results, dry_run, force
+        recipe, version, cookbook, results, dry_run, clean
     )
     if success == False:
         sys.exit(1)
@@ -294,7 +312,7 @@ def clean_all():
     help="Version of recipe to build. May not be combined with @version in recipe name. [optional]",
 )
 @click.option(
-    "--cookbook", "-c", default="", help="Specific cookbook to use . [optional]"
+    "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
 @click.option(
     "--dry-run",
@@ -310,7 +328,7 @@ def clean_all():
 )
 @click.pass_context
 def build_alias(
-    ctx, recipe: str, version: str, cookbook: str, dry_run: bool, force: bool
+    ctx, recipe: str, version: str, cookbook: str, dry_run: bool, clean: bool
 ):
     """
     Download, extract, build, and install a recipe.

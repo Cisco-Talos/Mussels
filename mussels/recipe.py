@@ -53,6 +53,8 @@ class BaseRecipe(object):
 
     url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
 
+    patches = ""  # relative path of directory containing patches.
+
     # archive_name_change is a tuple of strings to replace.
     # For example:
     #     ("v", "nghttp2-")
@@ -127,61 +129,44 @@ class BaseRecipe(object):
     # when writing build_script's using the f-string `f` prefix to help remember the
     # names of variables.
     data_dir = ""
-    installdir = ""
+    install_dir = ""
 
     def __init__(self, toolchain: dict, data_dir: str = ""):
         """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
         """
+        self.toolchain = toolchain
+
         if data_dir == "":
             # No temp dir provided, build in the current working directory.
             self.data_dir = os.getcwd()
         else:
             self.data_dir = os.path.abspath(data_dir)
-        os.makedirs(self.data_dir, exist_ok=True)
 
-        self.installdir = os.path.join(self.data_dir, "install")
-        os.makedirs(self.installdir, exist_ok=True)
-
-        self.logsdir = os.path.join(self.data_dir, "logs", "recipes")
-        os.makedirs(self.logsdir, exist_ok=True)
-        self.workdir = os.path.join(self.data_dir, "cache", "work")
-        os.makedirs(self.workdir, exist_ok=True)
-        self.srcdir = os.path.join(self.data_dir, "cache", "src")
-        os.makedirs(self.srcdir, exist_ok=True)
-
-        self._init_logging()
-
-        self.toolchain = toolchain
-
-        # Skip download & build steps for collections.
-        if self.is_collection == False:
-            # Download and build if necessary.
-            if self._download_archive() == False:
-                raise (
-                    Exception(
-                        f"Failed to download source archive for {self.name}-{self.version}"
-                    )
-                )
-
-            # Extract to the data_dir.
-            if self._extract_archive() == False:
-                raise (
-                    Exception(
-                        f"Failed to extract source archive for {self.name}-{self.version}"
-                    )
-                )
+        self.install_dir = os.path.join(self.data_dir, "install")
+        self.downloads_dir = os.path.join(self.data_dir, "cache", "downloads")
+        self.logs_dir = os.path.join(self.data_dir, "logs", "recipes")
+        self.work_dir = os.path.join(self.data_dir, "cache", "work")
+        self.src_dir = os.path.join(self.data_dir, "cache", "src")
 
         module_file = sys.modules[self.__class__.__module__].__file__
-        self.patches = os.path.join(
-            os.path.split(os.path.abspath(module_file))[0], "patches"
-        )
+        self.module_file = os.path.abspath(module_file)
+        self.module_dir = os.path.split(self.module_file)[0]
+
+        if self.patches == "":
+            self.patch_dir = os.path.join(self.module_dir, "patches")
+        else:
+            self.patch_dir = os.path.join(self.module_dir, self.patches)
+
+        self._init_logging()
 
     def _init_logging(self):
         """
         Initializes the logging parameters
         """
+        os.makedirs(self.logs_dir, exist_ok=True)
+
         self.logger = logging.getLogger(f"{self.name}-{self.version}")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
@@ -191,7 +176,7 @@ class BaseRecipe(object):
         )
 
         self.log_file = os.path.join(
-            self.logsdir,
+            self.logs_dir,
             f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(
                 ":", "_"
             ),
@@ -206,6 +191,8 @@ class BaseRecipe(object):
         """
         Use the URL to download the archive if it doesn't already exist in the Downloads directory.
         """
+        os.makedirs(self.downloads_dir, exist_ok=True)
+
         # Determine download path from URL &  possible archive name change.
         self.archive = self.url.split("/")[-1]
         if self.archive_name_change[0] != "":
@@ -220,9 +207,6 @@ class BaseRecipe(object):
         if os.path.exists(self.download_path):
             self.logger.debug(f"Archive already downloaded.")
             return True
-
-        if not os.path.exists(os.path.join(self.data_dir, "cache", "downloads")):
-            os.makedirs(os.path.join(self.data_dir, "cache", "downloads"))
 
         self.logger.info(f"Downloading {self.url}")
         self.logger.info(f"         to {self.download_path}...")
@@ -250,7 +234,7 @@ class BaseRecipe(object):
         """
         if self.download_path.endswith(".tar.gz"):
             # Un-tar
-            self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-7])
+            self.extracted_source_path = os.path.join(self.src_dir, self.archive[:-7])
             if os.path.exists(self.extracted_source_path):
                 self.logger.debug(f"Archive already extracted.")
                 return True
@@ -260,11 +244,11 @@ class BaseRecipe(object):
             )
 
             tar = tarfile.open(self.download_path, "r:gz")
-            tar.extractall(self.srcdir)
+            tar.extractall(self.src_dir)
             tar.close()
         elif self.download_path.endswith(".zip"):
             # Un-zip
-            self.extracted_source_path = os.path.join(self.srcdir, self.archive[:-4])
+            self.extracted_source_path = os.path.join(self.src_dir, self.archive[:-4])
             if os.path.exists(self.extracted_source_path):
                 self.logger.debug(f"Archive already extracted.")
                 return True
@@ -274,61 +258,12 @@ class BaseRecipe(object):
             )
 
             zip_ref = zipfile.ZipFile(self.download_path, "r")
-            zip_ref.extractall(self.srcdir)
+            zip_ref.extractall(self.src_dir)
             zip_ref.close()
         else:
             self.logger.error(f"Unexpected archive extension!")
             return False
 
-        return True
-
-    def _install(self, build):
-        """
-        Copy the headers and libs to an install directory.
-        """
-        self.logger.info(
-            f"Copying {self.name}-{self.version} install files to: {self.installdir}."
-        )
-
-        for install_path in self.install_paths[build]:
-
-            for install_item in self.install_paths[build][install_path]:
-                src_path = os.path.join(self.builds[build], install_item)
-
-                for src_filepath in glob.glob(src_path):
-                    # Make sure it actually exists.
-                    if not os.path.exists(src_filepath):
-                        self.logger.error(
-                            f"Required target files for installation do not exist:\n\t{src_filepath}"
-                        )
-                        return False
-
-                    dst_path = os.path.join(
-                        self.installdir,
-                        build,
-                        install_path,
-                        os.path.basename(src_filepath),
-                    )
-
-                    # Remove prior installation, if exists.
-                    if os.path.isdir(dst_path):
-                        shutil.rmtree(dst_path)
-                    elif os.path.isfile(dst_path):
-                        os.remove(dst_path)
-
-                    # Create the target install paths, if it doesn't already exist.
-                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
-
-                    self.logger.debug(f"Copying: {src_filepath}")
-                    self.logger.debug(f"     to: {dst_path}")
-
-                    # Now copy the file or directory.
-                    if os.path.isdir(src_filepath):
-                        dir_util.copy_tree(src_filepath, dst_path)
-                    else:
-                        shutil.copyfile(src_filepath, dst_path)
-
-        self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
 
     def _run_script(self, target, name, script) -> bool:
@@ -345,11 +280,11 @@ class BaseRecipe(object):
 
         with open(os.path.join(os.getcwd(), script_name), "w", newline=newline) as fd:
             # Evaluate "".format() syntax in the build script
-            var_includes = os.path.join(self.installdir, target, "include").replace(
+            var_includes = os.path.join(self.install_dir, target, "include").replace(
                 "\\", "/"
             )
-            var_libs = os.path.join(self.installdir, target, "lib").replace("\\", "/")
-            var_install = os.path.join(self.installdir).replace("\\", "/")
+            var_libs = os.path.join(self.install_dir, target, "lib").replace("\\", "/")
+            var_install = os.path.join(self.install_dir).replace("\\", "/")
             var_build = os.path.join(self.builds[target]).replace("\\", "/")
             var_target = target
 
@@ -392,18 +327,67 @@ class BaseRecipe(object):
 
         return True
 
+    def _clone(self, destination: str) -> str:
+        """
+        Copy the recipe file to the provided directory.
+        """
+        recipe_basename = os.path.basename(self.module_file)
+        patches_basename = os.path.basename(self.patch_dir)
+
+        try:
+            shutil.copyfile(
+                self.module_file, os.path.join(destination, recipe_basename)
+            )
+
+            if os.path.exists(self.patch_dir):
+                shutil.copytree(
+                    self.patch_dir, os.path.join(destination, patches_basename)
+                )
+        except Exception as exc:
+            self.logger.error(f"Clone failed.  Exception: {exc}")
+            return ""
+
+        return os.path.join(destination, recipe_basename)
+
+    def _prepare_for_build(self) -> bool:
+        """
+        Initialize directories
+        Collect source materials
+        """
+        os.makedirs(self.work_dir, exist_ok=True)
+        os.makedirs(self.src_dir, exist_ok=True)
+
+        # Download and build if necessary.
+        if not self._download_archive():
+            self.logger.error(
+                f"Failed to download source archive for {self.name}-{self.version}"
+            )
+            return False
+
+        # Extract to the data_dir.
+        if not self._extract_archive():
+            self.logger.error(
+                f"Failed to extract source archive for {self.name}-{self.version}"
+            )
+            return False
+
+        return True
+
     def _build(self, clean: bool = False) -> bool:
         """
-        First, patch source materials if not already patched.
+        Patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
         """
-        if self.is_collection == True:
+        if self.is_collection:
             self.logger.debug(
                 f"Build completed for recipe collection {self.name}-{self.version}"
             )
             return True
 
-        if not os.path.isdir(self.patches):
+        if not self._prepare_for_build():
+            return False
+
+        if not os.path.isdir(self.patch_dir):
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
@@ -415,10 +399,10 @@ class BaseRecipe(object):
                 self.logger.info(
                     f"Applying patches to {self.name}-{self.version} source directory..."
                 )
-                for patchfile in os.listdir(self.patches):
+                for patchfile in os.listdir(self.patch_dir):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
                         self.logger.info(f"Attempting to apply patch: {patchfile}")
-                        pset = patch.fromfile(os.path.join(self.patches, patchfile))
+                        pset = patch.fromfile(os.path.join(self.patch_dir, patchfile))
                         patched = pset.apply(1, root=self.extracted_source_path)
                         if not patched:
                             self.logger.error(f"Patch failed!")
@@ -428,7 +412,7 @@ class BaseRecipe(object):
                             f"Copying new file {patchfile} to {self.name}-{self.version} source directory..."
                         )
                         shutil.copyfile(
-                            os.path.join(self.patches, patchfile),
+                            os.path.join(self.patch_dir, patchfile),
                             os.path.join(self.extracted_source_path, patchfile),
                         )
 
@@ -445,7 +429,9 @@ class BaseRecipe(object):
                 f"Attempting to build {self.name}-{self.version} for {target}"
             )
             self.builds[target] = os.path.join(
-                self.workdir, target, f"{os.path.split(self.extracted_source_path)[-1]}"
+                self.work_dir,
+                target,
+                f"{os.path.split(self.extracted_source_path)[-1]}",
             )
 
             # Add each tool from the toolchain to the PATH environment variable.
@@ -469,7 +455,7 @@ class BaseRecipe(object):
                     build_path_exists = False
 
             if not build_path_exists:
-                os.makedirs(os.path.join(self.workdir, target), exist_ok=True)
+                os.makedirs(os.path.join(self.work_dir, target), exist_ok=True)
 
                 # Make our own copy of the extracted source so we don't dirty the original.
                 self.logger.debug(
@@ -519,7 +505,58 @@ class BaseRecipe(object):
             self.logger.info(f"{self.name}-{self.version} {target} build succeeded.")
             os.chdir(cwd)
 
-            if self._install(target) == False:
+            if not self._install(target):
                 return False
 
+        return True
+
+    def _install(self, build):
+        """
+        Copy the headers and libs to an install directory.
+        """
+        os.makedirs(self.install_dir, exist_ok=True)
+
+        self.logger.info(
+            f"Copying {self.name}-{self.version} install files to: {self.install_dir}."
+        )
+
+        for install_path in self.install_paths[build]:
+
+            for install_item in self.install_paths[build][install_path]:
+                src_path = os.path.join(self.builds[build], install_item)
+
+                for src_filepath in glob.glob(src_path):
+                    # Make sure it actually exists.
+                    if not os.path.exists(src_filepath):
+                        self.logger.error(
+                            f"Required target files for installation do not exist:\n\t{src_filepath}"
+                        )
+                        return False
+
+                    dst_path = os.path.join(
+                        self.install_dir,
+                        build,
+                        install_path,
+                        os.path.basename(src_filepath),
+                    )
+
+                    # Remove prior installation, if exists.
+                    if os.path.isdir(dst_path):
+                        shutil.rmtree(dst_path)
+                    elif os.path.isfile(dst_path):
+                        os.remove(dst_path)
+
+                    # Create the target install paths, if it doesn't already exist.
+                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
+
+                    self.logger.debug(f"Copying: {src_filepath}")
+                    self.logger.debug(f"     to: {dst_path}")
+
+                    # Now copy the file or directory.
+                    if os.path.isdir(src_filepath):
+                        dir_util.copy_tree(src_filepath, dst_path)
+                    else:
+                        shutil.copyfile(src_filepath, dst_path)
+
+        self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
         return True
