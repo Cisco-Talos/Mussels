@@ -49,22 +49,30 @@ class Recipe(BaseRecipe):
     dependencies = ["bzip2", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
-        "x86": """
-            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
-                -DBUILD_SHARED_LIBS=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
-                -DBZIP2_INCLUDE_DIR="{includes}" \
-                -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
-            CALL cmake.exe --build . --config Release
-        """,
-        "x64": """
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
-                -DBUILD_SHARED_LIBS=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
-                -DBZIP2_INCLUDE_DIR="{includes}" \
-                -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
-            CALL cmake.exe --build . --config Release
-        """,
+        "x86": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DBZIP2_INCLUDE_DIR="{includes}" \
+                    -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
+        "x64": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DBZIP2_INCLUDE_DIR="{includes}" \
+                    -DBZIP2_LIBRARY_RELEASE="{libs}/libbz2.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
     }

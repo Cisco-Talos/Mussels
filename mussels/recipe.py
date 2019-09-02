@@ -294,18 +294,6 @@ class BaseRecipe(object):
 
             for install_item in self.install_paths[build][install_path]:
                 src_path = os.path.join(self.builds[build], install_item)
-                dst_path = os.path.join(
-                    self.installdir, build, install_path, os.path.basename(install_item)
-                )
-
-                # Create the target install paths, if it doesn't already exist.
-                os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
-
-                # Remove prior installation, if exists.
-                if os.path.isdir(dst_path):
-                    shutil.rmtree(dst_path)
-                elif os.path.isfile(dst_path):
-                    os.remove(dst_path)
 
                 for src_filepath in glob.glob(src_path):
                     # Make sure it actually exists.
@@ -314,6 +302,19 @@ class BaseRecipe(object):
                             f"Required target files for installation do not exist:\n\t{src_filepath}"
                         )
                         return False
+
+                    dst_path = os.path.join(
+                        self.installdir, build, install_path, os.path.basename(src_filepath)
+                    )
+
+                    # Remove prior installation, if exists.
+                    if os.path.isdir(dst_path):
+                        shutil.rmtree(dst_path)
+                    elif os.path.isfile(dst_path):
+                        os.remove(dst_path)
+
+                    # Create the target install paths, if it doesn't already exist.
+                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
 
                     self.logger.debug(f"Copying: {src_filepath}")
                     self.logger.debug(f"     to: {dst_path}")

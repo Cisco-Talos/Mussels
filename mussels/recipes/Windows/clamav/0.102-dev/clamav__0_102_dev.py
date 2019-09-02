@@ -109,23 +109,37 @@ class Recipe(BaseRecipe):
     ]
     required_tools = ["visualstudio>=2017"]
     build_script = {
-        "x86": """
-        robocopy "{install}" "%CD%\\clamdeps" /MIR
-        rename "%CD%\\clamdeps\\x86" "Win32"
-        call vcvarsall.bat x86 -vcvars_ver=14.1
-        setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
-        cd win32
-        call configure.bat
-        call devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"
-        set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"
-        """,
-        "x64": """
-        robocopy "{install}" "%CD%\\clamdeps" /MIR
-        call vcvarsall.bat x64 -vcvars_ver=14.1
-        setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
-        cd win32
-        call configure.bat
-        call devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
-        set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"
-        """,
+        "x86": {
+            "configure" : """
+                robocopy "{install}" "%CD%\\clamdeps" /MIR
+                rename "%CD%\\clamdeps\\x86" "Win32"
+                call vcvarsall.bat x86 -vcvars_ver=14.1
+                setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
+                cd win32
+                call configure.bat
+            """,
+            "make" : """
+                call vcvarsall.bat x86 -vcvars_ver=14.1
+                setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
+                cd win32
+                call devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"
+                set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|Win32" /useenv /ProjectConfig "Release|Win32"
+            """
+        },
+        "x64": {
+            "configure" : """
+                robocopy "{install}" "%CD%\\clamdeps" /MIR
+                call vcvarsall.bat x64 -vcvars_ver=14.1
+                setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
+                cd win32
+                call configure.bat
+            """,
+            "make" : """
+                call vcvarsall.bat x64 -vcvars_ver=14.1
+                setx CLAM_DEPENDENCIES "%CD%\\clamdeps"
+                cd win32
+                call devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
+                set CL=/DWINDOWS_IGNORE_PACKING_MISMATCH && call devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"
+            """
+        },
     }

@@ -58,31 +58,45 @@ class Recipe(BaseRecipe):
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
         "x86": """
-            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
-                -DCRYPTO_BACKEND=OpenSSL \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DDLL_LIBEAY32="{libs}/libcrypto-1_1.dll" \
-                -DDLL_SSLEAY32="{libs}/libssl-1_1.dll" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DENABLE_ZLIB_COMPRESSION=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
-            CALL cmake.exe --build . --config Release
         """,
         "x64": """
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
-                -DCRYPTO_BACKEND=OpenSSL \
-                -DBUILD_SHARED_LIBS=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DDLL_LIBEAY32="{libs}/libcrypto-1_1-x64.dll" \
-                -DDLL_SSLEAY32="{libs}/libssl-1_1-x64.dll" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DENABLE_ZLIB_COMPRESSION=ON \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
-            CALL cmake.exe --build . --config Release
         """,
+    }
+    build_script = {
+        "x86": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
+                    -DCRYPTO_BACKEND=OpenSSL \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DDLL_LIBEAY32="{libs}/libcrypto-1_1.dll" \
+                    -DDLL_SSLEAY32="{libs}/libssl-1_1.dll" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DENABLE_ZLIB_COMPRESSION=ON \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
+        "x64": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
+                    -DCRYPTO_BACKEND=OpenSSL \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DDLL_LIBEAY32="{libs}/libcrypto-1_1-x64.dll" \
+                    -DDLL_SSLEAY32="{libs}/libssl-1_1-x64.dll" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DENABLE_ZLIB_COMPRESSION=ON \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
     }

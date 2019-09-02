@@ -49,38 +49,46 @@ class Recipe(BaseRecipe):
     dependencies = ["openssl", "nghttp2>=1.0.0", "libssh2", "zlib"]
     required_tools = ["cmake", "visualstudio>=2017"]
     build_script = {
-        "x86": """
-            CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DCMAKE_USE_OPENSSL=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
-                -DLIBSSH2_INCLUDE_DIR="{includes}" \
-                -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
-                -DUSE_NGHTTP2=ON \
-                -DNGHTTP2_INCLUDE_DIR="{includes}" \
-                -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
-            CALL cmake.exe --build . --config Release
-        """,
-        "x64": """
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
-                -DCMAKE_CONFIGURATION_TYPES=Release \
-                -DBUILD_SHARED_LIBS=ON \
-                -DCMAKE_USE_OPENSSL=ON \
-                -DOPENSSL_INCLUDE_DIR="{includes}" \
-                -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
-                -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
-                -DZLIB_INCLUDE_DIR="{includes}" \
-                -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
-                -DLIBSSH2_INCLUDE_DIR="{includes}" \
-                -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
-                -DUSE_NGHTTP2=ON \
-                -DNGHTTP2_INCLUDE_DIR="{includes}" \
-                -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
-            CALL cmake.exe --build . --config Release
-        """,
+        "x86": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DCMAKE_USE_OPENSSL=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DLIBSSH2_INCLUDE_DIR="{includes}" \
+                    -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
+                    -DUSE_NGHTTP2=ON \
+                    -DNGHTTP2_INCLUDE_DIR="{includes}" \
+                    -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
+        "x64": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
+                    -DCMAKE_CONFIGURATION_TYPES=Release \
+                    -DBUILD_SHARED_LIBS=ON \
+                    -DCMAKE_USE_OPENSSL=ON \
+                    -DOPENSSL_INCLUDE_DIR="{includes}" \
+                    -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+                    -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+                    -DZLIB_INCLUDE_DIR="{includes}" \
+                    -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+                    -DLIBSSH2_INCLUDE_DIR="{includes}" \
+                    -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
+                    -DUSE_NGHTTP2=ON \
+                    -DNGHTTP2_INCLUDE_DIR="{includes}" \
+                    -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
     }

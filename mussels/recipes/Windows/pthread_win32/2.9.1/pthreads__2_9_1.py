@@ -44,12 +44,16 @@ class Recipe(BaseRecipe):
     dependencies = []
     required_tools = ["visualstudio>=2017"]
     build_script = {
-        "x86": """
-            CALL vcvarsall.bat x86 -vcvars_ver=14.1
-            CALL nmake realclean VC
-        """,
-        "x64": """
-            CALL vcvarsall.bat amd64 -vcvars_ver=14.1
-            CALL nmake realclean VC
-        """,
+        "x86": {
+            "make" : """
+                CALL vcvarsall.bat x86 -vcvars_ver=14.1
+                CALL nmake realclean VC
+            """
+        },
+        "x64": {
+            "make" : """
+                CALL vcvarsall.bat amd64 -vcvars_ver=14.1
+                CALL nmake realclean VC
+            """
+        },
     }

@@ -50,16 +50,28 @@ class Recipe(BaseRecipe):
     dependencies = []
     required_tools = ["visualstudio>=2017"]
     build_script = {
-        "x86": """
-            CALL vcvarsall.bat x86 -vcvars_ver=14.1
-            CD win32
-            CALL cscript configure.js zlib=no incdir="{includes}" libdir="{libs}" sodir="{libs}" iconv=no static=no
-            CALL nmake /f Makefile.msvc
-        """,
-        "x64": """
-            CALL vcvarsall.bat amd64 -vcvars_ver=14.1
-            CD win32
-            CALL cscript configure.js zlib=no incdir="{includes}" libdir="{libs}" sodir="{libs}" iconv=no static=no
-            CALL nmake /f Makefile.msvc
-        """,
+        "x86": {
+            "configure" : """
+                CALL vcvarsall.bat x86 -vcvars_ver=14.1
+                CD win32
+                CALL cscript configure.js zlib=no incdir="{includes}" libdir="{libs}" sodir="{libs}" iconv=no static=no
+            """,
+            "make" : """
+                CALL vcvarsall.bat x86 -vcvars_ver=14.1
+                CD win32
+                CALL nmake /f Makefile.msvc
+            """
+        },
+        "x64": {
+            "configure" : """
+                CALL vcvarsall.bat amd64 -vcvars_ver=14.1
+                CD win32
+                CALL cscript configure.js zlib=no incdir="{includes}" libdir="{libs}" sodir="{libs}" iconv=no static=no
+            """,
+            "make" : """
+                CALL vcvarsall.bat amd64 -vcvars_ver=14.1
+                CD win32
+                CALL nmake /f Makefile.msvc
+            """
+        },
     }

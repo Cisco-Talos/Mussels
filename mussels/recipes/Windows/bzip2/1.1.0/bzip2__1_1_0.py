@@ -26,7 +26,7 @@ class Recipe(BaseRecipe):
 
     name = "bzip2"
     version = "1.1.0"
-    url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gzs"
+    url = "https://gitlab.com/federicomenaquintero/bzip2/-/archive/master/bzip2-master.tar.gz"
     install_paths = {
         "x86": {
             "license/bzip2": ["COPYING"],
@@ -43,12 +43,20 @@ class Recipe(BaseRecipe):
     dependencies = []
     required_tools = ["cmake", "visualstudio==2017"]
     build_script = {
-        "x86": """
-            CALL cmake.exe -G "Visual Studio 15 2017" -T v141
-            CALL cmake.exe --build . --config Release
-        """,
-        "x64": """
-            CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141
-            CALL cmake.exe --build . --config Release
-        """,
+        "x86": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017" -T v141
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
+        "x64": {
+            "configure" : """
+                CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141
+            """,
+            "make" : """
+                CALL cmake.exe --build . --config Release
+            """
+        },
     }
