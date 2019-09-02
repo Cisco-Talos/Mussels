@@ -1,4 +1,5 @@
 __pycache__
+.mypy_cache
+.pytest_cache
 .vscode
-out
 mussels.egg-info
