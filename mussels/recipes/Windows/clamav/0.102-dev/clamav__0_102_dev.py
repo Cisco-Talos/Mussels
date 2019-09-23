@@ -105,7 +105,7 @@ class Recipe(BaseRecipe):
         "libxml2",
         "openssl",
         "pcre2",
-        "bzip2-1.0.7",
+        "bzip2-1.0.8",
     ]
     required_tools = ["visualstudio>=2017"]
     build_script = {
