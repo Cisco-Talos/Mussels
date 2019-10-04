@@ -380,4 +380,5 @@ def update_alias(ctx):
 
 
 if __name__ == "__main__":
+    sys.argv[0] = "mussels"
     cli(sys.argv[1:])
