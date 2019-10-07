@@ -30,6 +30,15 @@ import sys
 import time
 from typing import *
 
+if platform.system() == "Windows":
+    if not r"c:\program files\git\cmd" in os.environ["PATH"].lower():
+         os.environ["PATH"] = os.environ["PATH"] + r";C:\Program Files\Git\cmd"
+    if not r"c:\program files\git\mingw64\bin" in os.environ["PATH"].lower():
+         os.environ["PATH"] = os.environ["PATH"] + r";C:\Program Files\Git\mingw64\bin"
+    if not r"c:\program files\git\usr\bin" in os.environ["PATH"].lower():
+         os.environ["PATH"] = os.environ["PATH"] + r";C:\Program Files\Git\usr\bin"
+    if not r"c:\program files\git\bin" in os.environ["PATH"].lower():
+         os.environ["PATH"] = os.environ["PATH"] + r";C:\Program Files\Git\bin"
 import git
 
 import mussels.bookshelf
