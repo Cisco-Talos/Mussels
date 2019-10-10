@@ -213,20 +213,14 @@ limitations under the License.
 
 The following are issues or features on the to-do list to implement or repair.
 
-- Add ability to specify "Debug" or "Release" builds
-  - Debug builds should also include copying .pdb files to the out/install directory (Windows)
+- Convert Python class-based recipes to JSON to simplify recipe definitions, and reduce the barrier to entry.
 
-- Add ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
-  - It may make sense to create the platform toolset as a tool which adds a build script variable.
-    - Should tools have the ability to add new build script variables?
+- Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
+- Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
+- Start documentation about cookbooks and how to get new cookbooks added to the index.
 
-- Add ability to package release materials (zip/tarball per "application")
-  - An "application" would be a recipe that includes "bin" install materials.
-  - A release package would include install files for the recipe and all dependencies.
-  - A release package should include license & configuration files/directories for the recipe and each dependency.
-
-- There should be an option to build just one architecture (eg. "x86", or "cross-..."). This will be very important for anyone who wants to make recipes that have a cross-compile build architecture.
-  - The default should either be "host" or, for Windows, the current system architecture.
+- Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dry-run` option.
+  - Feature must include a `-y`/`--yes` override for non-interactive builds.
 
 - Add build `--package` option that copies the items located in directories such as "lib", "bin", "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
   - Recipes should define a list of files in dictionary variable named `distribute` so the `--package` option knows what files to collect.
@@ -235,12 +229,12 @@ The following are issues or features on the to-do list to implement or repair.
       - "application" if the recipe is the primary build target.
     - This feature must support globbing, so you can specify a directory or all files within the directory.
 
-- Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dry-run` option.
-  - Feature must include a `-y`/`--yes` override for non-interactive builds.
+- Add ability to specify "Debug" or "Release" builds
+  - Debug builds should also include copying .pdb files to the out/install directory (Windows)
 
-- Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
-- Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
-- Start documentation about cookbooks and how to get new cookbooks added to the index.
+- Add ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
+  - It may make sense to create the platform toolset as a tool which adds a build script variable.
+    - Should tools have the ability to add new build script variables?
 
 - Add capability for recipes to have "static" dependencies.
   - Static dependencies would be built in addition to normal (shared) dependencies, meaning that two recipes in a dependency chain could depend on different versions of the same library without conflicting.
