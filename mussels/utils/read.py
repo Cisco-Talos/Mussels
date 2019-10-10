@@ -26,6 +26,7 @@ def recipes(recipe_path):
     """
     Collect all Recipes in a directory.
     """
+    minimum_version = "0.1"
     recipes = defaultdict(dict)
     platform_ = platform.system()
 
@@ -39,7 +40,10 @@ def recipes(recipe_path):
             ):
                 _module = loader.find_module(module_name).load_module(module_name)
                 if "Recipe" in dir(_module):
-                    if platform_ in _module.Recipe.platform:
+                    if (
+                        hasattr(_module.Recipe, "mussels_version")
+                        and _module.Recipe.mussels_version >= minimum_version
+                    ):
                         recipes[_module.Recipe.name][
                             _module.Recipe.version
                         ] = _module.Recipe
@@ -51,6 +55,7 @@ def tools(tool_path):
     """
     Collect all Tools in a directory.
     """
+    minimum_version = "0.1"
     tools = defaultdict(dict)
     platform_ = platform.system()
 
@@ -64,7 +69,9 @@ def tools(tool_path):
             ):
                 _module = loader.find_module(module_name).load_module(module_name)
                 if "Tool" in dir(_module):
-                    if platform_ in _module.Tool.platform:
+                    if (
+                        hasattr(_module.Tool, "mussels_version")
+                        and _module.Tool.mussels_version >= minimum_version
+                    ):
                         tools[_module.Tool.name][_module.Tool.version] = _module.Tool
-
     return tools

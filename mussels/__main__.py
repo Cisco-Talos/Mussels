@@ -171,14 +171,21 @@ def recipe():
 @click.option(
     "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
 )
-def recipe_list(verbose: bool):
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="List all recipes, including those for other platforms. [optional]",
+)
+def recipe_list(verbose: bool, all: bool):
     """
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
     """
     my_mussels = Mussels()
 
-    my_mussels.list_recipes(verbose)
+    my_mussels.list_recipes(verbose, all)
 
 
 @recipe.command("show")
@@ -187,13 +194,20 @@ def recipe_list(verbose: bool):
 @click.option(
     "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
 )
-def recipe_show(recipe: str, version: str, verbose: bool):
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Show all recipe variants, including those for other platforms. [optional]",
+)
+def recipe_show(recipe: str, version: str, verbose: bool, all: bool):
     """
     Show details about a specific recipe.
     """
     my_mussels = Mussels()
 
-    my_mussels.show_recipe(recipe, version, verbose)
+    my_mussels.show_recipe(recipe, version, verbose, all)
 
 
 @recipe.command("clone")
@@ -225,6 +239,7 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
 @click.option(
     "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
+@click.option("--target", "-t", default="host", help="Target architecture. [optional]")
 @click.option(
     "--dry-run",
     "-d",
@@ -237,7 +252,9 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
-def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, clean: bool):
+def recipe_build(
+    recipe: str, version: str, cookbook: str, target: str, dry_run: bool, clean: bool
+):
     """
     Download, extract, build, and install a recipe.
     """
@@ -247,7 +264,7 @@ def recipe_build(recipe: str, version: str, cookbook: str, dry_run: bool, clean:
     results = []
 
     success = my_mussels.build_recipe(
-        recipe, version, cookbook, results, dry_run, clean
+        recipe, version, cookbook, target, results, dry_run, clean
     )
     if success == False:
         sys.exit(1)
@@ -314,6 +331,7 @@ def clean_all():
 @click.option(
     "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
+@click.option("--target", "-t", default="host", help="Target architecture. [optional]")
 @click.option(
     "--dry-run",
     "-d",
@@ -328,7 +346,13 @@ def clean_all():
 )
 @click.pass_context
 def build_alias(
-    ctx, recipe: str, version: str, cookbook: str, dry_run: bool, clean: bool
+    ctx,
+    recipe: str,
+    version: str,
+    cookbook: str,
+    target: str,
+    dry_run: bool,
+    clean: bool,
 ):
     """
     Download, extract, build, and install a recipe.
@@ -343,9 +367,16 @@ def build_alias(
 @click.option(
     "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
 )
-def list_alias(ctx, verbose: bool):
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="List all recipes, including those for other platforms. [optional]",
+)
+def list_alias(ctx, verbose: bool, all: bool):
     """
-    List all known recipes.
+    List a list of recipes you can build on this platform.
 
     This is just an alias for `recipe list`.
     """
@@ -359,7 +390,14 @@ def list_alias(ctx, verbose: bool):
 @click.option(
     "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
 )
-def show_alias(ctx, recipe: str, version: str, verbose: bool):
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Show all recipe variants, including those for other platforms. [optional]",
+)
+def show_alias(ctx, recipe: str, version: str, verbose: bool, all: bool):
     """
     Show details about a specific recipe.
 

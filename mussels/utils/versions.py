@@ -17,6 +17,7 @@ limitations under the License.
 """
 
 from collections import defaultdict, namedtuple
+import platform
 
 NVC = namedtuple("NVC", "name version cookbook")
 
@@ -54,10 +55,11 @@ def sort_cookbook_by_version(items) -> defaultdict:
     return sorted_items
 
 
-def sort_all_recipes_by_version(items) -> defaultdict:
+def sort_all_recipes_by_version(items) -> tuple:
     """
     Sort items, and determine the highest versions.
     """
+    all_sorted_items: defaultdict = defaultdict(list)
     sorted_items: defaultdict = defaultdict(list)
 
     for item in items:
@@ -69,9 +71,106 @@ def sort_all_recipes_by_version(items) -> defaultdict:
                 "version": version,
                 "cookbooks": list(items[item][version].keys()),
             }
-            sorted_items[item].append(item_version)
+            found_recipe_platform = False
+            for cookbook in item_version["cookbooks"]:
+                recipe_definition = items[item][version][cookbook]
+                for each_platform in recipe_definition.platforms:
+                    if platform_is(each_platform):
+                        sorted_items[item].append(item_version)
+                        found_recipe_platform = True
+                        break
+            all_sorted_items[item].append(item_version)
 
-    return sorted_items
+    return (sorted_items, all_sorted_items)
+
+
+PLATFORMS = {
+    "posix": [
+        "linux",
+        "darwin",
+        "macos",
+        "osx",
+        "freebsd",
+        "openbsd",
+        "sunos",
+        "aix",
+        "hp-ux",
+    ],
+    "unix": ["darwin", "macos", "osx", "freebsd", "openbsd", "sunos", "aix", "hp-ux"],
+}
+
+
+def platform_matches(requested_platform: str, specific_platform) -> bool:
+    """
+    Compare two platforms.
+    Common platforms:
+    - Windows
+    - macos / darwin / osx
+    - linux
+    - unix (macos, sunos, bsd unix's)
+    - *nix / posix (not windows)
+    :return: True  if current platform matches requested platform.
+    :return: False otherwise.
+    """
+    specific_platform = specific_platform.lower()
+    requested_platform = requested_platform.lower()
+
+    if requested_platform == specific_platform:
+        return True
+
+    elif (
+        requested_platform == "mac"
+        or requested_platform == "macos"
+        or requested_platform == "osx"
+    ) and specific_platform == "darwin":
+        return True
+
+    if (requested_platform == "unix") and (
+        specific_platform == "darwin"
+        or specific_platform == "sunos"
+        or "bsd" in specific_platform
+    ):
+        return True
+
+    elif requested_platform == "*nix" or requested_platform == "posix":
+        if specific_platform != "windows":
+            return True
+
+    else:
+        return False
+
+    return False
+
+
+def platform_is(requested_platform: str) -> bool:
+    """
+    Compare requested platform with current platform.
+    Common platforms:
+    - Win / Windows
+    - Mac / macOS / Darwin
+    - Linux
+    - Unix (Mac, SunOS, BSD unix's)
+    - *nix / posix (Not Windows)
+    :return: True  if current platform matches requested platform.
+    :return: False otherwise.
+    """
+    return platform_matches(requested_platform, platform.system())
+
+
+def pick_platform(requested_platform: str, platform_options: list) -> str:
+    """
+    Given a list of platforms, pick the one that most closely matches the current platform.
+    Prefer exact, allow superset.
+    :return: string name of selected platform.
+    """
+    if requested_platform in platform_options:
+        return requested_platform
+
+    for option in platform_options:
+        if platform_matches(option, requested_platform):
+            return option
+
+    return ""
 
 
 def compare_versions(version_a: str, version_b: str) -> int:
@@ -117,12 +216,12 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
 
     If no versions remain that satisfy build qualifications, an exception will be raised.
 
-    :return: dict describing the highest qualified version:
-        {
-            name"->str,
+    :return: named tuple describing the highest qualified version:
+        NVC(
+            "name"->str,
             "version"->str,
-            "cookbook"->str
-        }
+            "cookbook"->str,
+        )
     """
 
     nvc = {"name": "", "version": "", "cookbook": ""}
@@ -330,3 +429,4 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
         )
 
     return NVC(nvc["name"], nvc["version"], nvc["cookbook"])
+
