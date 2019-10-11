@@ -110,7 +110,7 @@ class Mussels:
             "ERROR": logging.ERROR,
         }
 
-        self.logger = logging.getLogger("mussels.Mussels")
+        self.logger = logging.getLogger("Mussels")
         self.logger.setLevel(levels[level])
 
         formatter = logging.Formatter(
@@ -120,11 +120,11 @@ class Mussels:
 
         if not os.path.exists(os.path.split(self.log_file)[0]):
             os.makedirs(os.path.split(self.log_file)[0])
-        filehandler = logging.FileHandler(filename=self.log_file)
-        filehandler.setLevel(levels[level])
-        filehandler.setFormatter(formatter)
+        self.filehandler = logging.FileHandler(filename=self.log_file)
+        self.filehandler.setLevel(levels[level])
+        self.filehandler.setFormatter(formatter)
 
-        self.logger.addHandler(filehandler)
+        self.logger.addHandler(self.filehandler)
 
     def _load_config(self, filename, config) -> bool:
         """
@@ -560,6 +560,12 @@ class Mussels:
             recipe_str = f"local:{recipe_str}"
         else:
             recipe_str = f"{cookbook}:{recipe_str}"
+
+        if target == "":
+            if platform.system() == "Windows":
+                target = "x64" if os.environ["PROCESSOR_ARCHITECTURE"] == "AMD64" else "x86"
+            else:
+                target = "host"
 
         batches = self._get_build_batches(
             recipe_str, platform=platform.system(), target=target
@@ -1185,6 +1191,9 @@ class Mussels:
             f"Clearing logs directory ( {os.path.join(self.app_data_dir, 'logs')} )..."
         )
 
+        self.filehandler.close()
+        self.logger.removeHandler(self.filehandler)
+
         if os.path.exists(os.path.join(self.app_data_dir, "logs")):
             shutil.rmtree(os.path.join(self.app_data_dir, "logs"))
             self.logger.info(f"Logs directory cleared.")
@@ -1195,6 +1204,10 @@ class Mussels:
         """
         Clear all Mussels files.
         """
+        self.clean_cache()
+        self.clean_install()
+        self.clean_logs()
+
         self.logger.info(
             f"Clearing Mussels directory ( {os.path.join(self.app_data_dir)} )..."
         )

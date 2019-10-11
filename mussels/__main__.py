@@ -239,7 +239,7 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
 @click.option(
     "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
-@click.option("--target", "-t", default="host", help="Target architecture. [optional]")
+@click.option("--target", "-t", default="", help="Target architecture. [optional]")
 @click.option(
     "--dry-run",
     "-d",
@@ -331,7 +331,7 @@ def clean_all():
 @click.option(
     "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
 )
-@click.option("--target", "-t", default="host", help="Target architecture. [optional]")
+@click.option("--target", "-t", default="", help="Target architecture. [optional]")
 @click.option(
     "--dry-run",
     "-d",
