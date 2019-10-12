@@ -79,7 +79,7 @@ class Recipe(BaseRecipe):
                                 -DCMAKE_CONFIGURATION_TYPES=Release \
                                 -DBUILD_SHARED_LIBS=ON \
                                 -DOPENSSL_ROOT_DIR="{install}" \
-                                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                                -DOPENSSL_INCLUDE_DIRS="{includes}" \
                                 -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
                                 -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
                                 -DZLIB_ROOT="{includes}" \
@@ -102,11 +102,11 @@ class Recipe(BaseRecipe):
                                 -DCMAKE_CONFIGURATION_TYPES=Release \
                                 -DBUILD_SHARED_LIBS=ON \
                                 -DOPENSSL_ROOT_DIR="{install}" \
-                                -DOPENSSL_INCLUDE_DIR="{includes}" \
+                                -DOPENSSL_INCLUDE_DIRS="{includes}" \
                                 -DOPENSSL_LIBRARIES="{libs}" \
                                 -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
                                 -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
-                                -DLIBXML2_INCLUDE_DIR="{includes}" \
+                                -DLIBXML2_INCLUDE_DIRS="{includes}" \
                                 -DLIBXML2_LIBRARY="{libs}/libxml2.dylib" \
                                 -DZLIB_ROOT="{includes}" \
                                 -DZLIB_LIBRARY="{libs}/libz.a" \

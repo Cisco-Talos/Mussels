@@ -25,6 +25,8 @@ class Recipe(BaseRecipe):
     Recipe to build clamav.
     """
 
+    mussels_version = "0.1"
+
     name = "clamav_deps"
     version = "0.101.4"
     is_collection = True
