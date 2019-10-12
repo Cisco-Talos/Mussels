@@ -183,9 +183,9 @@ def recipe_list(verbose: bool, all: bool):
     Print the list of all known recipes.
     An asterisk indicates default (highest) version.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=all)
 
-    my_mussels.list_recipes(verbose, all)
+    my_mussels.list_recipes(verbose)
 
 
 @recipe.command("show")
@@ -205,9 +205,9 @@ def recipe_show(recipe: str, version: str, verbose: bool, all: bool):
     """
     Show details about a specific recipe.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=all)
 
-    my_mussels.show_recipe(recipe, version, verbose, all)
+    my_mussels.show_recipe(recipe, version, verbose)
 
 
 @recipe.command("clone")

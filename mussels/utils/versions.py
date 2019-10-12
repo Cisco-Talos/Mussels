@@ -55,35 +55,6 @@ def sort_cookbook_by_version(items) -> defaultdict:
     return sorted_items
 
 
-def sort_all_recipes_by_version(items) -> tuple:
-    """
-    Sort items, and determine the highest versions.
-    """
-    all_sorted_items: defaultdict = defaultdict(list)
-    sorted_items: defaultdict = defaultdict(list)
-
-    for item in items:
-        versions_list = list(items[item].keys())
-        versions_list.sort(key=version_keys)
-        versions_list.reverse()
-        for version in versions_list:
-            item_version = {
-                "version": version,
-                "cookbooks": list(items[item][version].keys()),
-            }
-            found_recipe_platform = False
-            for cookbook in item_version["cookbooks"]:
-                recipe_definition = items[item][version][cookbook]
-                for each_platform in recipe_definition.platforms:
-                    if platform_is(each_platform):
-                        sorted_items[item].append(item_version)
-                        found_recipe_platform = True
-                        break
-            all_sorted_items[item].append(item_version)
-
-    return (sorted_items, all_sorted_items)
-
-
 PLATFORMS = {
     "posix": [
         "linux",

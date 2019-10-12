@@ -46,7 +46,7 @@ from mussels.utils import read
 from mussels.utils.versions import (
     NVC,
     sort_cookbook_by_version,
-    sort_all_recipes_by_version,
+    version_keys,
     get_item_version,
     platform_is,
     platform_matches,
@@ -55,24 +55,18 @@ from mussels.utils.versions import (
 
 
 class Mussels:
-    r"""
-      __    __     __  __     ______     ______     ______     __         ______
-     /\ "-./  \   /\ \/\ \   /\  ___\   /\  ___\   /\  ___\   /\ \       /\  ___\
-     \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \
-      \ \_\ \ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \/\_____\
-       \/_/  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/
-    """
     config: dict = {}
     cookbooks: defaultdict = defaultdict(dict)
 
     recipes: defaultdict = defaultdict(dict)
-    sorted_recipes: defaultdict = defaultdict(list)
+    sorted_recipes: dict = {}
 
     tools: defaultdict = defaultdict(dict)
-    sorted_tools: defaultdict = defaultdict(list)
+    sorted_tools: dict = {}
 
     def __init__(
         self,
+        load_all_recipes: bool = False,
         data_dir: str = os.path.join(str(Path.home()), ".mussels"),
         log_file: str = os.path.join(
             str(Path.home()), ".mussels", "logs", "mussels.log"
@@ -94,7 +88,7 @@ class Mussels:
 
         self._load_config("config.json", self.config)
         self._load_config("cookbooks.json", self.cookbooks)
-        self._load_recipes()
+        self._load_recipes(all=load_all_recipes)
 
     def _init_logging(self, level="DEBUG"):
         """
@@ -234,7 +228,62 @@ class Mussels:
 
         return True
 
-    def _load_recipes(self) -> bool:
+    def _sort_items_by_version(
+        self, items: defaultdict, all: bool, has_target: bool = False
+    ) -> dict:
+        """
+        Sort recipes, and determine the highest versions.
+        Only includes trusted recipes for current platform.
+        """
+        sorted_items: dict = {}
+
+        for item in items:
+            versions_list = list(items[item].keys())
+            versions_list.sort(key=version_keys)
+            versions_list.reverse()
+
+            sorted_item_list = []
+
+            for version in versions_list:
+                found_good_version = False
+                item_version = {"version": version, "cookbooks": {}}
+
+                for each_cookbook in items[item][version].keys():
+                    if not all and not self.cookbooks[each_cookbook]["trusted"]:
+                        continue
+
+                    if has_target:
+                        cookbook: dict = {}
+                    else:
+                        cookbook: list = []
+
+                    for each_platform in items[item][version][each_cookbook].platforms:
+                        if not all and not platform_is(each_platform):
+                            continue
+
+                        if has_target:
+                            cookbook[each_platform] = [
+                                target
+                                for target in items[item][version][each_cookbook]
+                                .platforms[each_platform]
+                                .keys()
+                            ]
+                        else:
+                            cookbook.append(each_platform)
+
+                        found_good_version = True
+
+                    item_version["cookbooks"][each_cookbook] = cookbook
+
+                if found_good_version:
+                    sorted_item_list.append(item_version)
+
+            if len(sorted_item_list) > 0:
+                sorted_items[item] = sorted_item_list
+
+        return sorted_items
+
+    def _load_recipes(self, all: bool = False) -> bool:
         """
         Load the recipes and tools.
         """
@@ -248,12 +297,10 @@ class Mussels:
                 f"Local `mussels` directory found, but failed to load any recipes or tools."
             )
 
-        self.sorted_recipes, self.all_sorted_recipes = sort_all_recipes_by_version(
-            self.recipes
+        self.sorted_recipes = self._sort_items_by_version(
+            self.recipes, all=all, has_target=True
         )
-        self.sorted_tools, self.all_sorted_tools = sort_all_recipes_by_version(
-            self.tools
-        )
+        self.sorted_tools = self._sort_items_by_version(self.tools, all=all)
 
         if len(self.sorted_recipes) == 0:
             self.logger.warning(
@@ -400,22 +447,18 @@ class Mussels:
                     for each_platform in recipe_class.platforms:
                         if platform_matches(each_platform, platform):
                             variant = recipe_class.platforms[each_platform]
-                            try:
+                            if target in variant.keys():
                                 build_target = variant[target]
-                            except Exception:
-                                self.logger.warning(
-                                    f"Matching recipe {cookbook}:{name}-{version} does not provide build instructions for the target architecture: {target}"
-                                )
-                                continue
 
-                            for tool in build_target["required_tools"]:
-                                try:
-                                    get_item_version(tool, self.sorted_tools)
-                                except Exception:
-                                    raise Exception(
-                                        f'No tool definition "{tool}" found. Required by {cookbook}:{name}-{version}.'
-                                    )
-                            break
+                                if "required_tools" in build_target.keys():
+                                    for tool in build_target["required_tools"]:
+                                        try:
+                                            get_item_version(tool, self.sorted_tools)
+                                        except Exception:
+                                            raise Exception(
+                                                f'No tool definition "{tool}" found. Required by {cookbook}:{name}-{version}.'
+                                            )
+                                break
         return nvc
 
     def _identify_build_recipes(
@@ -439,10 +482,18 @@ class Mussels:
 
         recipes.append(recipe)
 
+        # Verify that recipe supports current platform.
         platform_options = self.recipes[recipe_nvc.name][recipe_nvc.version][
             recipe_nvc.cookbook
         ].platforms.keys()
         matching_platform = pick_platform(platform, platform_options)
+        if matching_platform == "":
+            # recipe doesn't support current platform.
+            # TODO: see if next recipe does.
+            pass
+
+        # verify that recipe supports requested target architecture
+
         dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
             recipe_nvc.cookbook
         ].platforms[matching_platform][target]["dependencies"]
@@ -563,7 +614,9 @@ class Mussels:
 
         if target == "":
             if platform.system() == "Windows":
-                target = "x64" if os.environ["PROCESSOR_ARCHITECTURE"] == "AMD64" else "x86"
+                target = (
+                    "x64" if os.environ["PROCESSOR_ARCHITECTURE"] == "AMD64" else "x86"
+                )
             else:
                 target = "host"
 
@@ -585,11 +638,15 @@ class Mussels:
 
                 for each_platform in recipe_class.platforms:
                     if platform_is(each_platform):
-                        for tool in recipe_class.platforms[each_platform][target][
+                        if (
                             "required_tools"
-                        ]:
-                            tool_nvc = get_item_version(tool, self.sorted_tools)
-                            preferred_tool_versions.add(tool_nvc)
+                            in recipe_class.platforms[each_platform][target].keys()
+                        ):
+                            for tool in recipe_class.platforms[each_platform][target][
+                                "required_tools"
+                            ]:
+                                tool_nvc = get_item_version(tool, self.sorted_tools)
+                                preferred_tool_versions.add(tool_nvc)
 
         # Check if required tools are installed
         missing_tools = []
@@ -702,20 +759,26 @@ class Mussels:
                     self.logger.info(
                         f"   {idx:2} [{i}:{j:2}]: {recipe_nvc.cookbook}:{recipe_nvc.name}-{recipe_nvc.version}"
                     )
-                    self.logger.debug(f"      Tool(s):")
-                    for tool in self.recipes[recipe_nvc.name][recipe_nvc.version][
-                        recipe_nvc.cookbook
-                    ].platforms[matching_platform][target]["required_tools"]:
-                        tool_nvc = get_item_version(tool, self.sorted_tools)
-                        if tool_nvc.version != "":
-                            self.logger.debug(
-                                f"        {tool_nvc.cookbook}:{tool_nvc.name}-{tool_nvc.version}"
-                            )
-                        else:
-                            self.logger.debug(
-                                f"        {tool_nvc.cookbook}:{tool_nvc.name}"
-                            )
-                    continue
+                    if (
+                        "required_tools"
+                        in self.recipes[recipe_nvc.name][recipe_nvc.version][
+                            recipe_nvc.cookbook
+                        ].platforms[matching_platform][target]
+                    ):
+                        self.logger.debug(f"      Tool(s):")
+                        for tool in self.recipes[recipe_nvc.name][recipe_nvc.version][
+                            recipe_nvc.cookbook
+                        ].platforms[matching_platform][target]["required_tools"]:
+                            tool_nvc = get_item_version(tool, self.sorted_tools)
+                            if tool_nvc.version != "":
+                                self.logger.debug(
+                                    f"        {tool_nvc.cookbook}:{tool_nvc.name}-{tool_nvc.version}"
+                                )
+                            else:
+                                self.logger.debug(
+                                    f"        {tool_nvc.cookbook}:{tool_nvc.name}"
+                                )
+                        continue
 
                 if failure:
                     self.logger.warning(
@@ -783,23 +846,12 @@ class Mussels:
                             break
             self.logger.info("")
 
-    def show_recipe(
-        self,
-        recipe_match: str,
-        version_match: str,
-        verbose: bool = False,
-        all: bool = False,
-    ):
+    def show_recipe(self, recipe_match: str, version_match: str, verbose: bool = False):
         """
         Search recipes for a specific recipe and print recipe details.
         """
 
         found = False
-
-        if all:
-            sorted_recipes = self.all_sorted_recipes
-        else:
-            sorted_recipes = self.sorted_recipes
 
         if version_match == "":
             self.logger.info(f'Searching for recipe matching name: "{recipe_match}"...')
@@ -808,18 +860,18 @@ class Mussels:
                 f'Searching for recipe matching name: "{recipe_match}", version: "{version_match}"...'
             )
         # Attempt to match the recipe name
-        for recipe in sorted_recipes:
+        for recipe in self.sorted_recipes:
             if fnmatch.fnmatch(recipe, recipe_match):
                 if version_match == "":
                     found = True
 
                     # Show info for every version
-                    for version in sorted_recipes[recipe]:
+                    for version in self.sorted_recipes[recipe]:
                         self.print_recipe_details(recipe, version, verbose, all)
                     break
                 else:
                     # Attempt to match the version too
-                    for version in sorted_recipes[recipe]:
+                    for version in self.sorted_recipes[recipe]:
                         if fnmatch.fnmatch(version, version_match):
                             found = True
 
@@ -996,25 +1048,20 @@ class Mussels:
 
         return True
 
-    def list_recipes(self, verbose: bool = False, all: bool = False):
+    def list_recipes(self, verbose: bool = False):
         """
         Print out a list of all recipes and all collections.
         """
         has_collections = False
 
-        if all:
-            sorted_recipes = self.all_sorted_recipes
-        else:
-            sorted_recipes = self.sorted_recipes
-
         self.logger.info("Recipes:")
-        for recipe in sorted_recipes:
-            newest_version = sorted_recipes[recipe][0]["version"]
+        for recipe in self.sorted_recipes:
+            newest_version = self.sorted_recipes[recipe][0]["version"]
             cookbooks = list(self.recipes[recipe][newest_version].keys())
             if not self.recipes[recipe][newest_version][cookbooks[0]].is_collection:
                 if not verbose:
                     outline = f"    {recipe:10} "
-                    for i, version in enumerate(sorted_recipes[recipe]):
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
                             outline += f" {version['version']}*"
                         else:
@@ -1023,7 +1070,7 @@ class Mussels:
                     self.logger.info(outline)
                 else:
                     outline = f"    {recipe:10} "
-                    for i, version in enumerate(sorted_recipes[recipe]):
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
                             outline += f" {version['version']} {version['cookbooks']}*"
                         else:
@@ -1031,8 +1078,8 @@ class Mussels:
                     outline += ""
                     self.logger.info(outline)
 
-        for recipe in sorted_recipes:
-            newest_version = sorted_recipes[recipe][0]["version"]
+        for recipe in self.sorted_recipes:
+            newest_version = self.sorted_recipes[recipe][0]["version"]
             cookbooks = list(self.recipes[recipe][newest_version].keys())
             if self.recipes[recipe][newest_version][cookbooks[0]].is_collection:
                 if not has_collections:
@@ -1042,7 +1089,7 @@ class Mussels:
 
                 if not verbose:
                     outline = f"    {recipe:10} "
-                    for i, version in enumerate(sorted_recipes[recipe]):
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
                             outline += f" {version['version']}*"
                         else:
@@ -1051,7 +1098,7 @@ class Mussels:
                     self.logger.info(outline)
                 else:
                     outline = f"    {recipe:10} "
-                    for i, version in enumerate(sorted_recipes[recipe]):
+                    for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
                             outline += f" {version['version']} {version['cookbooks']}*"
                         else:
