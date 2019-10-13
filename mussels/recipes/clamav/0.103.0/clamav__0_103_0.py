@@ -30,7 +30,8 @@ class Recipe(BaseRecipe):
     name = "clamav"
     version = "0.102.0"
     is_collection = False
-    url = "https://www.clamav.net/downloads/production/clamav-0.102.0.tar.gz"
+    url = "https://github.com/Cisco-Talos/clamav-devel/archive/dev/0.102.zip"
+    archive_name_change = ("0.102", "clamav-devel-dev-0.102")
     platforms = {
         "Windows": {
             "x86": {

@@ -28,9 +28,9 @@ class Recipe(BaseRecipe):
     mussels_version = "0.1"
 
     name = "bzip2"
-    version = "1.0.7"
+    version = "1.0.8"
     is_collection = False
-    url = "https://sourceware.org/pub/bzip2/bzip2-1.0.7.tar.gz"
+    url = "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"
     # archive_name_change: tuple = ("", "")
     platforms = {
         "Windows": {
