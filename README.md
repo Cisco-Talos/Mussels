@@ -237,7 +237,8 @@ The following are issues or features on the to-do list to implement or repair.
     - Should tools have the ability to add new build script variables?
 
 - Add capability for recipes to have "static" dependencies.
-  - Static dependencies would be built in addition to normal (shared) dependencies, meaning that two recipes in a dependency chain could depend on different versions of the same library without conflicting.
+  - Static dependencies would be built in addition to normal (shared) dependencies, meaning that two recipes in a dependency chain could depend on different versions and from different cookbooks of the same library without conflicting.
   - For compiled and linked software, any recipe which uses a static dependency must use a recipe that builds a static library and it must statically link the the static library.
+  - Recipes could be able to provide "incompatible_with" lists to indicate other libraries that will cause a conflict, unless the recipe is static. Example incompatibility: libjson-c must not be included with libjson-gnu or jansson, unless all but one (or all) are static. This feature would help people avoid symbol collisions that will cause crashes during runtime.
 
 - Improve test coverage.

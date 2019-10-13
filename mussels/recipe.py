@@ -180,7 +180,7 @@ class BaseRecipe(object):
                 return True
 
             self.logger.info(
-                f"Extracting Tarball {self.archive} to {self.extracted_source_path}..."
+                f"Extracting archive {self.archive} to {self.extracted_source_path} ..."
             )
 
             tar = tarfile.open(self.download_path, "r:gz")

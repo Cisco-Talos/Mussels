@@ -195,6 +195,37 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
         )
     """
 
+    def select_cookbook_version(nvc, item_version) -> bool:
+        cookbook_selected = False
+
+        # Prefer local over all else, enabling monkey-patching of recipes.
+        if "local" in item_version["cookbooks"]:
+            nvc["version"] = item_version["version"]
+            nvc["cookbook"] = "local"
+            cookbook_selected = True
+        else:
+            if nvc["cookbook"] == "":
+                # Any cookbook will do.
+                for cookbook in item_version["cookbooks"]:
+                    nvc["version"] = item_version["version"]
+                    nvc["cookbook"] = cookbook
+                    cookbook_selected = True
+                    break
+            else:
+                # Check for requested cookbook.
+                for cookbook in item_version["cookbooks"]:
+                    if cookbook == nvc["cookbook"]:
+                        nvc["version"] = item_version["version"]
+                        cookbook_selected = True
+                        break
+
+        # Remove all other cookbooks for this item version.
+        if cookbook_selected:
+            item_version["cookbooks"] = {
+                nvc["cookbook"]: item_version["cookbooks"][nvc["cookbook"]]
+            }
+        return cookbook_selected
+
     nvc = {"name": "", "version": "", "cookbook": ""}
 
     requested_item = item_name
@@ -216,20 +247,7 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
             if cmp >= 0:
                 # Version is good.
                 if item_selected != True:
-                    if nvc["cookbook"] == "":
-                        # Any cookbook will do.
-                        for cookbook in item_version["cookbooks"]:
-                            nvc["version"] = item_version["version"]
-                            nvc["cookbook"] = cookbook
-                            item_selected = True
-                            break
-                    else:
-                        # Check for requested cookbook.
-                        for cookbook in item_version["cookbooks"]:
-                            if cookbook == nvc["cookbook"]:
-                                nvc["version"] = item_version["version"]
-                                item_selected = True
-                                break
+                    item_selected = select_cookbook_version(nvc, item_version)
             else:
                 # Version is too low. Remove it, and subsequent versions.
                 sorted_items[name] = sorted_items[name][:i]
@@ -245,20 +263,7 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
             if cmp > 0:
                 # Version is good.
                 if item_selected != True:
-                    if nvc["cookbook"] == "":
-                        # Any cookbook will do.
-                        for cookbook in item_version["cookbooks"]:
-                            nvc["version"] = item_version["version"]
-                            nvc["cookbook"] = cookbook
-                            item_selected = True
-                            break
-                    else:
-                        # Check for requested cookbook.
-                        for cookbook in item_version["cookbooks"]:
-                            if cookbook == nvc["cookbook"]:
-                                nvc["version"] = item_version["version"]
-                                item_selected = True
-                                break
+                    item_selected = select_cookbook_version(nvc, item_version)
             else:
                 # Version is too low. Remove it, and subsequent versions.
                 sorted_items[name] = sorted_items[name][:i]
@@ -269,66 +274,48 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
         name, version = item_name.split("<=")
         nvc["name"] = name.strip()
         version = version.strip()
-        try:
-            first = sorted_items[name][0]
-        except:
-            raise Exception(
-                f"No versions available to satisfy requirement for {item_name}"
-            )
-        while (compare_versions(first["version"], version) > 0) or (
-            nvc["cookbook"] != "" and nvc["cookbook"] not in first["cookbooks"]
-        ):
-            # Remove a version from the sorted_items.
-            sorted_items[name].remove(first)
 
-            try:
-                first = sorted_items[name][0]
-            except:
-                raise Exception(
-                    f"No versions available to satisfy requirement for {requested_item}"
-                )
-        try:
-            nvc["version"] = sorted_items[name][0]["version"]
-            if nvc["cookbook"] == "":
-                nvc["cookbook"] = sorted_items[name][0]["cookbooks"][0]
-        except:
-            raise Exception(
-                f"No versions available to satisfy requirement for {item_name}"
-            )
-        item_selected = True
+        # First, prune down to highest tolerable version
+        if len(sorted_items[name]) > 0:
+            while (
+                len(sorted_items[name]) > 0
+                and compare_versions(sorted_items[name][0]["version"], version) > 0
+            ):
+                # Remove a version from the sorted_items.
+                sorted_items[name].remove(sorted_items[name][0])
+
+        # Then, prune down to the highest version provided by a the requested cookbook
+        if len(sorted_items[name]) > 0:
+            while len(sorted_items[name]) > 0 and not item_selected:
+                item_selected = select_cookbook_version(nvc, sorted_items[name][0])
+
+                if not item_selected:
+                    # Remove a version from the sorted_items.
+                    sorted_items[name].remove(sorted_items[name][0])
 
     elif "<" in item_name:
         # LT requirement found.
         name, version = item_name.split("<")
         nvc["name"] = name.strip()
         version = version.strip()
-        try:
-            first = sorted_items[name][0]
-        except:
-            raise Exception(
-                f"No versions available to satisfy requirement for {requested_item}"
-            )
-        while (compare_versions(first["version"], version) >= 0) or (
-            nvc["cookbook"] != "" and nvc["cookbook"] not in first["cookbooks"]
-        ):
-            # Remove a version from the sorted_items.
-            sorted_items[name].remove(first)
 
-            try:
-                first = sorted_items[name][0]
-            except:
-                raise Exception(
-                    f"No versions available to satisfy requirement for {requested_item}"
-                )
-        try:
-            nvc["version"] = sorted_items[name][0]["version"]
-            if nvc["cookbook"] == "":
-                nvc["cookbook"] = sorted_items[name][0]["cookbooks"][0]
-        except:
-            raise Exception(
-                f"No versions available to satisfy requirement for {requested_item}"
-            )
-        item_selected = True
+        # First, prune down to highest tolerable version
+        if len(sorted_items[name]) > 0:
+            while (
+                len(sorted_items[name]) > 0
+                and compare_versions(sorted_items[name][0]["version"], version) >= 0
+            ):
+                # Remove a version from the sorted_items.
+                sorted_items[name].remove(sorted_items[name][0])
+
+        # Then, prune down to the highest version provided by a the requested cookbook
+        if len(sorted_items[name]) > 0:
+            while len(sorted_items[name]) > 0 and not item_selected:
+                item_selected = select_cookbook_version(nvc, sorted_items[name][0])
+
+                if not item_selected:
+                    # Remove a version from the sorted_items.
+                    sorted_items[name].remove(sorted_items[name][0])
 
     else:
         eq_cond = False
@@ -353,46 +340,19 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
             item_selected = False
             for item_version in sorted_items[nvc["name"]]:
                 if version == item_version["version"]:
-                    if nvc["cookbook"] == "":
-                        for cookbook in item_version["cookbooks"]:
-                            item_selected = True
-                            nvc["cookbook"] = cookbook
-                            sorted_items[nvc["name"]] = [item_version]
-                            break
-                    else:
-                        if nvc["cookbook"] in item_version["cookbooks"]:
-                            item_selected = True
-                            item_version["cookbooks"] = [nvc["cookbook"]]
-                            sorted_items[nvc["name"]] = [item_version]
-                            break
-                if item_selected:
-                    break
+                    item_selected = select_cookbook_version(nvc, item_version)
+                    if item_selected:
+                        sorted_items[nvc["name"]] = [item_version]
+                        break
 
         else:
             # No version requirement found.
             nvc["name"] = item_name.strip()
 
-            if nvc["cookbook"] == "":
-                # No specific cookbook requirement foud either.
-                for item_version in sorted_items[nvc["name"]]:
-                    for cookbook in item_version["cookbooks"]:
-                        item_selected = True
-                        nvc["version"] = item_version["version"]
-                        nvc["cookbook"] = cookbook
-                        break
-                    if nvc["cookbook"] != "":
-                        break
-            else:
-                # Try to find a version provided by the requested cookbook
-                for item_version in sorted_items[nvc["name"]]:
-                    for cookbook in item_version["cookbooks"]:
-                        if cookbook == nvc["cookbook"]:
-                            item_selected = True
-                            nvc["version"] = item_version["version"]
-                            nvc["cookbook"] = cookbook
-                            break
-                    if nvc["cookbook"] != "":
-                        break
+            for item_version in sorted_items[nvc["name"]]:
+                item_selected = select_cookbook_version(nvc, item_version)
+                if item_selected:
+                    break
 
     if not item_selected:
         raise Exception(
@@ -400,4 +360,17 @@ def get_item_version(item_name: str, sorted_items: dict) -> NVC:
         )
 
     return NVC(nvc["name"], nvc["version"], nvc["cookbook"])
+
+
+def nvc_str(name, version, cookbook: str = ""):
+    def nv_str(name, version):
+        if version != "":
+            return f"{name}-{version}"
+        else:
+            return name
+
+    if cookbook != "":
+        return f"{cookbook}:{nv_str(name, version)}"
+    else:
+        return nv_str(name, version)
 

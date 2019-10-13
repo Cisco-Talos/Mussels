@@ -23,9 +23,9 @@ class TestClass(unittest.TestCase):
     def setUp(self):
         self.sorted_items = {
             "wheeple": [
-                {"version": "2.0.0", "cookbooks": ["tectonic"]},
-                {"version": "1.0.1", "cookbooks": ["tectonic"]},
-                {"version": "1.0.0", "cookbooks": ["tectonic"]},
+                {"version": "2.0.0", "cookbooks": {"tectonic": None}},
+                {"version": "1.0.1", "cookbooks": {"tectonic": None}},
+                {"version": "1.0.0", "cookbooks": {"tectonic": None}},
             ]
         }
 
