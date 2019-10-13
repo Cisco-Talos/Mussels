@@ -38,7 +38,7 @@ import requests
 import urllib.request
 import patch
 
-from mussels.utils.versions import pick_platform
+from mussels.utils.versions import pick_platform, nvc_str
 
 
 class BaseRecipe(object):
@@ -107,7 +107,7 @@ class BaseRecipe(object):
         """
         os.makedirs(self.logs_dir, exist_ok=True)
 
-        self.logger = logging.getLogger(f"{self.name}-{self.version}")
+        self.logger = logging.getLogger(f"{nvc_str(self.name, self.version)}")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
@@ -117,7 +117,7 @@ class BaseRecipe(object):
 
         self.log_file = os.path.join(
             self.logs_dir,
-            f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(
+            f"{nvc_str(self.name, self.version)}.{datetime.datetime.now()}.log".replace(
                 ":", "_"
             ),
         )
@@ -257,7 +257,9 @@ class BaseRecipe(object):
                 self.logger.debug(line.decode("utf-8").strip())
         process.wait()
         if process.returncode != 0:
-            self.logger.warning(f"{self.name}-{self.version} {target} build failed!")
+            self.logger.warning(
+                f"{nvc_str(self.name, self.version)} {target} build failed!"
+            )
             self.logger.warning(f"Command:")
             for line in script.splitlines():
                 self.logger.warning(line)
@@ -305,14 +307,14 @@ class BaseRecipe(object):
         # Download and build if necessary.
         if not self._download_archive():
             self.logger.error(
-                f"Failed to download source archive for {self.name}-{self.version}"
+                f"Failed to download source archive for {nvc_str(self.name, self.version)}"
             )
             return False
 
         # Extract to the data_dir.
         if not self._extract_archive():
             self.logger.error(
-                f"Failed to extract source archive for {self.name}-{self.version}"
+                f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
             )
             return False
 
@@ -325,7 +327,7 @@ class BaseRecipe(object):
         """
         if self.is_collection:
             self.logger.debug(
-                f"Build completed for recipe collection {self.name}-{self.version}"
+                f"Build completed for recipe collection {nvc_str(self.name, self.version)}"
             )
             return True
 
@@ -336,13 +338,15 @@ class BaseRecipe(object):
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
-            self.logger.debug(f"Patch directory found for {self.name}-{self.version}.")
+            self.logger.debug(
+                f"Patch directory found for {nvc_str(self.name, self.version)}."
+            )
             if not os.path.exists(
                 os.path.join(self.extracted_source_path, "_mussles.patched")
             ):
                 # Not yet patched. Apply patches.
                 self.logger.info(
-                    f"Applying patches to {self.name}-{self.version} source directory..."
+                    f"Applying patches to {nvc_str(self.name, self.version)} source directory..."
                 )
                 for patchfile in os.listdir(self.patch_dir):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
@@ -354,7 +358,7 @@ class BaseRecipe(object):
                             return False
                     else:
                         self.logger.info(
-                            f"Copying new file {patchfile} to {self.name}-{self.version} source directory..."
+                            f"Copying new file {patchfile} to {nvc_str(self.name, self.version)} source directory..."
                         )
                         shutil.copyfile(
                             os.path.join(self.patch_dir, patchfile),
@@ -371,7 +375,7 @@ class BaseRecipe(object):
         build_scripts = self.platforms[self.platform][self.target]["build_script"]
 
         self.logger.info(
-            f"Attempting to build {self.name}-{self.version} for {self.target}"
+            f"Attempting to build {nvc_str(self.name, self.version)} for {self.target}"
         )
         self.builds[self.target] = os.path.join(
             self.work_dir,
@@ -419,7 +423,7 @@ class BaseRecipe(object):
                     self.target, "configure", build_scripts["configure"]
                 ):
                     self.logger.error(
-                        f"{self.name}-{self.version} {self.target} build failed."
+                        f"{nvc_str(self.name, self.version)} {self.target} build failed."
                     )
                     os.chdir(cwd)
                     return False
@@ -431,7 +435,7 @@ class BaseRecipe(object):
         if "make" in build_scripts.keys():
             if not self._run_script(self.target, "make", build_scripts["make"]):
                 self.logger.error(
-                    f"{self.name}-{self.version} {self.target} build failed."
+                    f"{nvc_str(self.name, self.version)} {self.target} build failed."
                 )
                 os.chdir(cwd)
                 return False
@@ -440,12 +444,14 @@ class BaseRecipe(object):
         if "install" in build_scripts.keys():
             if not self._run_script(self.target, "install", build_scripts["install"]):
                 self.logger.error(
-                    f"{self.name}-{self.version} {self.target} build failed."
+                    f"{nvc_str(self.name, self.version)} {self.target} build failed."
                 )
                 os.chdir(cwd)
                 return False
 
-        self.logger.info(f"{self.name}-{self.version} {self.target} build succeeded.")
+        self.logger.info(
+            f"{nvc_str(self.name, self.version)} {self.target} build succeeded."
+        )
         os.chdir(cwd)
 
         if not self._install():
@@ -460,7 +466,7 @@ class BaseRecipe(object):
         os.makedirs(self.install_dir, exist_ok=True)
 
         self.logger.info(
-            f"Copying {self.name}-{self.version} install files to: {self.install_dir}."
+            f"Copying {nvc_str(self.name, self.version)} install files to: {self.install_dir}."
         )
 
         install_paths = self.platforms[self.platform][self.target]["install_paths"]
@@ -503,5 +509,7 @@ class BaseRecipe(object):
                     else:
                         shutil.copyfile(src_filepath, dst_path)
 
-        self.logger.info(f"{self.name}-{self.version} {self.target} install succeeded.")
+        self.logger.info(
+            f"{nvc_str(self.name, self.version)} {self.target} install succeeded."
+        )
         return True

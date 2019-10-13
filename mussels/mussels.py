@@ -394,7 +394,7 @@ class Mussels:
         try:
             recipe_class = self.recipes[recipe][version][cookbook]
         except KeyError:
-            self.logger.error(f"FAILED to find recipe: {recipe}-{version}!")
+            self.logger.error(f"FAILED to find recipe: {nvc_str(recipe, version)}!")
             result["time elapsed"] = time.time() - start
             return result
 
@@ -406,9 +406,9 @@ class Mussels:
         )
 
         if not recipe_object._build(clean):
-            self.logger.error(f"FAILURE: {recipe}-{version} build failed!\n")
+            self.logger.error(f"FAILURE: {nvc_str(recipe, version)} build failed!\n")
         else:
-            self.logger.info(f"Success: {recipe}-{version} build succeeded. :)\n")
+            self.logger.info(f"Success: {nvc_str(recipe, version)} build succeeded. :)\n")
             result["success"] = True
 
         result["time elapsed"] = time.time() - start
@@ -454,7 +454,7 @@ class Mussels:
                                             get_item_version(tool, self.sorted_tools)
                                         except Exception:
                                             raise Exception(
-                                                f'No tool definition "{tool}" found. Required by {cookbook}:{name}-{version}.'
+                                                f'No tool definition "{tool}" found. Required by {nvc_str(name, version, cookbook)}.'
                                             )
                                 break
         return nvc
@@ -571,7 +571,7 @@ class Mussels:
         num_cookbooks = len(recipe_version["cookbooks"].keys())
         if num_cookbooks == 0:
             self.logger.error(
-                f"Recipe {recipe}:{recipe_version['version']} not provided by any cookbook!(?!)"
+                f"Recipe {nvc_str(recipe, recipe_version['version'])} not provided by any cookbook!(?!)"
             )
 
         elif num_cookbooks == 1:
@@ -581,10 +581,7 @@ class Mussels:
             if "local" in recipe_version["cookbooks"]:
                 # Always prefer to use a local recipe.
                 cookbook = "local"
-            elif (
-                preferred_book != ""
-                and preferred_book in recipe_version["cookbooks"]
-            ):
+            elif preferred_book != "" and preferred_book in recipe_version["cookbooks"]:
                 # 2nd choice is the "preferred" cookbook, which was probably the same cookbook as the target recipe.
                 cookbook = preferred_book
             else:
@@ -639,24 +636,16 @@ class Mussels:
             for result in results:
                 if result["success"]:
                     self.logger.info(
-                        f"Successful build of {result['name']}-{result['version']} completed in {datetime.timedelta(0, result['time elapsed'])}."
+                        f"Successful build of {nvc_str(result['name'], result['version'])} completed in {datetime.timedelta(0, result['time elapsed'])}."
                     )
                 else:
                     self.logger.error(
-                        f"Failure building {result['name']}-{result['version']}, terminated after {datetime.timedelta(0, result['time elapsed'])}"
+                        f"Failure building {nvc_str(result['name'], result['version'])}, terminated after {datetime.timedelta(0, result['time elapsed'])}"
                     )
 
         batches: List[dict] = []
 
-        recipe_str = recipe
-
-        if version != "":
-            recipe_str = f"{recipe}=={version}"
-
-        if cookbook == "":
-            recipe_str = f"local:{recipe_str}"
-        else:
-            recipe_str = f"{cookbook}:{recipe_str}"
+        recipe_str = nvc_str(recipe, version, cookbook)
 
         if target == "":
             if platform.system() == "Windows":
@@ -720,27 +709,29 @@ class Mussels:
                     alt_versions = self.sorted_tools[tool_nvc.name][1:]
 
                     for alt_version in alt_versions:
-                        alt_version_cookbook = self._select_cookbook(tool_nvc.name, alt_version, cookbook)
-                        alt_tool = self.tools[tool_nvc.name][
-                            alt_version["version"]
-                        ][alt_version_cookbook](self.app_data_dir)
+                        alt_version_cookbook = self._select_cookbook(
+                            tool_nvc.name, alt_version, cookbook
+                        )
+                        alt_tool = self.tools[tool_nvc.name][alt_version["version"]][
+                            alt_version_cookbook
+                        ](self.app_data_dir)
 
                         if alt_tool.detect():
                             # Found a compatible version to use.
                             tool_found = True
                             toolchain[tool_nvc.name] = alt_tool
 
-                            # Select the version so it will be the default.
+                            # Select the exact version (pruning all other options) so it will be the default.
                             get_item_version(
-                                f"{alt_version['cookbooks'][0]}:{tool_nvc.name}={alt_version['version']}",
+                                f"{nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)}",
                                 self.sorted_tools,
                             )
                             self.logger.info(
-                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version)} found."
+                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version, alt_version_cookbook)} found."
                             )
                         else:
                             self.logger.warning(
-                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version)} not found."
+                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version, alt_version_cookbook)} not found."
                             )
 
                 if not tool_found:
@@ -785,7 +776,7 @@ class Mussels:
 
                 if dry_run:
                     self.logger.info(
-                        f"   {idx:2} [{i}:{j:2}]: {recipe_nvc.cookbook}:{recipe_nvc.name}-{recipe_nvc.version}"
+                        f"   {idx:2} [{i}:{j:2}]: {nvc_str(recipe_nvc.name, recipe_nvc.version, recipe_nvc.cookbook)}"
                     )
                     if (
                         "required_tools"
@@ -805,7 +796,7 @@ class Mussels:
 
                 if failure:
                     self.logger.warning(
-                        f"Skipping  {recipe_nvc.cookbook}:{recipe_nvc.name}-{recipe_nvc.version} build due to prior failure."
+                        f"Skipping  {nvc_str(recipe_nvc.name, recipe_nvc.version, recipe_nvc.cookbook)} build due to prior failure."
                     )
                 else:
                     result = self._build_recipe(
@@ -925,7 +916,7 @@ class Mussels:
             num_cookbooks = len(recipe_version["cookbooks"].keys())
             if num_cookbooks == 0:
                 self.logger.error(
-                    f"Recipe {recipe}:{version} not provided by any cookbook!(?!)"
+                    f"Recipe {nvc_str(recipe, version)} not provided by any cookbook!(?!)"
                 )
 
             elif num_cookbooks == 1:
@@ -933,7 +924,7 @@ class Mussels:
 
             else:
                 self.logger.error(
-                    f'Clone failed: No cookbook specified, and multiple cookbooks provide recipe "{recipe}-{recipe_version["version"]}".'
+                    f'Clone failed: No cookbook specified, and multiple cookbooks provide recipe "{nvc_str(recipe, recipe_version["version"])}"'
                 )
                 self.logger.error(
                     f"Please retry with a specific cookbook using the `-c` or `--cookbook` option:"

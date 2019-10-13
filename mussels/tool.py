@@ -37,7 +37,7 @@ import zipfile
 
 from io import StringIO
 
-from mussels.utils.versions import platform_is
+from mussels.utils.versions import platform_is, nvc_str
 
 
 class BaseTool(object):
@@ -63,10 +63,7 @@ class BaseTool(object):
             self.logs_dir = os.path.join(os.path.abspath(data_dir), "logs", "tools")
         os.makedirs(self.logs_dir, exist_ok=True)
 
-        if self.version != "":
-            self.name_version = f"{self.name}-{self.version}"
-        else:
-            self.name_version = self.name
+        self.name_version = nvc_str(self.name, self.version)
 
         self._init_logging()
 
