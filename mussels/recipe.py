@@ -38,6 +38,8 @@ import requests
 import urllib.request
 import patch
 
+from mussels.utils.versions import pick_platform, nvc_str
+
 
 class BaseRecipe(object):
     """
@@ -53,8 +55,6 @@ class BaseRecipe(object):
 
     url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
 
-    patches = ""  # relative path of directory containing patches.
-
     # archive_name_change is a tuple of strings to replace.
     # For example:
     #     ("v", "nghttp2-")
@@ -63,80 +63,18 @@ class BaseRecipe(object):
     # This hack is necessary because archives with changed names will extract to their original directory name.
     archive_name_change: tuple = ("", "")
 
-    install_paths: dict = {
-        # "x86": {
-        #     "include" : [],      # "Destination directory": ["list", "of", "source", "items"],
-        #     "lib" : [],          # Will copy source item to destination directory,
-        # },
-        # "x64": {
-        #     "include" : [        # Examples:
-        #         "blarghus.h",    #   Copy file to x64\\include\\blarghus.h
-        #         "iface/blarghus" #   Copy directory to x64\\include\\blarghus
-        #     ],
-        #     "lib" : [
-        #         "x64/blah.dll"   #   Copy DLL to x64\\lib\\blah.dll
-        #         "x64/blah.lib"   #   Copy LIB to x64\\lib\\blah.lib
-        #     ],
-        # },
-    }
-
-    platform: list = []
-
-    # Dependencies on other Mussels builds.
-    # str format:  name@version.
-    #    "@version" is optional.
-    #    If version is omitted, the default (highest) will be selected.
-    dependencies: list = []
-
-    required_tools: list = []  # List of tools required by the build commands.
-
-    # build_script is a dictionary containing build scripts for each build target.
-    # There are 3 types of scripts and each are optional:
-    # - "configure": To be run the first time you build, before the "make" script.
-    #                Subsequent builds will not re-configure unless you use `-c` / `--clean`.
-    # - "make":      To be run each time you build, if the "configure" script succeeded.
-    # - "Install":   To be run each time you build, if the "make" script succeeded.
-    #
-    # Variables in "".format() syntax will be evaluated at build time.
-    # Paths must have unix style forward slash (`/`) path separators.
-    #
-    # Variable options include:
-    # - install:        The base install directory for build output.
-    # - includes:       The install/{build}/include directory.
-    # - libs:           The install/{build}/lib directory.
-    # - build:          The build directory for a given build.
-    build_script: dict = {
-        # "x86": """
-        # """,
-        # "x64": """
-        # """,
-        # "host": {
-        #     "configure": """
-        #         ./configure
-        #     """,
-        #     "make": """
-        #         make
-        #     """,
-        #     "install": """
-        #         make install PREFIX=`pwd`/install
-        #     """,
-        # },
-    }
+    platforms: dict = {}  # Dictionary of recipe instructions for each platform.
 
     builds: dict = {}  # Dictionary of build paths.
 
-    # The following will be defined during the build and exist here for convenience
-    # when writing build_script's using the f-string `f` prefix to help remember the
-    # names of variables.
-    data_dir = ""
-    install_dir = ""
-
-    def __init__(self, toolchain: dict, data_dir: str = ""):
+    def __init__(self, toolchain: dict, platform: str, target: str, data_dir: str = ""):
         """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
         """
         self.toolchain = toolchain
+        self.platform = platform
+        self.target = target
 
         if data_dir == "":
             # No temp dir provided, build in the current working directory.
@@ -154,10 +92,12 @@ class BaseRecipe(object):
         self.module_file = os.path.abspath(module_file)
         self.module_dir = os.path.split(self.module_file)[0]
 
-        if self.patches == "":
-            self.patch_dir = os.path.join(self.module_dir, "patches")
+        if "patches" in self.platforms[self.platform][self.target]:
+            self.patch_dir = os.path.join(
+                self.module_dir, self.platforms[self.platform][self.target]["patches"]
+            )
         else:
-            self.patch_dir = os.path.join(self.module_dir, self.patches)
+            self.patch_dir = ""
 
         self._init_logging()
 
@@ -167,7 +107,7 @@ class BaseRecipe(object):
         """
         os.makedirs(self.logs_dir, exist_ok=True)
 
-        self.logger = logging.getLogger(f"{self.name}-{self.version}")
+        self.logger = logging.getLogger(f"{nvc_str(self.name, self.version)}")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
@@ -177,7 +117,7 @@ class BaseRecipe(object):
 
         self.log_file = os.path.join(
             self.logs_dir,
-            f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(
+            f"{nvc_str(self.name, self.version)}.{datetime.datetime.now()}.log".replace(
                 ":", "_"
             ),
         )
@@ -240,7 +180,7 @@ class BaseRecipe(object):
                 return True
 
             self.logger.info(
-                f"Extracting Tarball {self.archive} to {self.extracted_source_path}..."
+                f"Extracting archive {self.archive} to {self.extracted_source_path} ..."
             )
 
             tar = tarfile.open(self.download_path, "r:gz")
@@ -317,7 +257,9 @@ class BaseRecipe(object):
                 self.logger.debug(line.decode("utf-8").strip())
         process.wait()
         if process.returncode != 0:
-            self.logger.warning(f"{self.name}-{self.version} {target} build failed!")
+            self.logger.warning(
+                f"{nvc_str(self.name, self.version)} {target} build failed!"
+            )
             self.logger.warning(f"Command:")
             for line in script.splitlines():
                 self.logger.warning(line)
@@ -332,17 +274,22 @@ class BaseRecipe(object):
         Copy the recipe file to the provided directory.
         """
         recipe_basename = os.path.basename(self.module_file)
-        patches_basename = os.path.basename(self.patch_dir)
 
         try:
             shutil.copyfile(
                 self.module_file, os.path.join(destination, recipe_basename)
             )
 
-            if os.path.exists(self.patch_dir):
-                shutil.copytree(
-                    self.patch_dir, os.path.join(destination, patches_basename)
-                )
+            for each_platform in self.platforms:
+                for target in self.platforms:
+                    if "patches" in target:
+                        patch_dir = os.path.join(self.module_dir, target["patches"])
+                        patches_basename = os.path.basename(patch_dir)
+
+                        if os.path.exists(patch_dir):
+                            shutil.copytree(
+                                patch_dir, os.path.join(destination, patches_basename)
+                            )
         except Exception as exc:
             self.logger.error(f"Clone failed.  Exception: {exc}")
             return ""
@@ -360,14 +307,14 @@ class BaseRecipe(object):
         # Download and build if necessary.
         if not self._download_archive():
             self.logger.error(
-                f"Failed to download source archive for {self.name}-{self.version}"
+                f"Failed to download source archive for {nvc_str(self.name, self.version)}"
             )
             return False
 
         # Extract to the data_dir.
         if not self._extract_archive():
             self.logger.error(
-                f"Failed to extract source archive for {self.name}-{self.version}"
+                f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
             )
             return False
 
@@ -380,7 +327,7 @@ class BaseRecipe(object):
         """
         if self.is_collection:
             self.logger.debug(
-                f"Build completed for recipe collection {self.name}-{self.version}"
+                f"Build completed for recipe collection {nvc_str(self.name, self.version)}"
             )
             return True
 
@@ -391,13 +338,15 @@ class BaseRecipe(object):
             self.logger.debug(f"No patch directory found.")
         else:
             # Patches exists for this recipe.
-            self.logger.debug(f"Patch directory found for {self.name}-{self.version}.")
+            self.logger.debug(
+                f"Patch directory found for {nvc_str(self.name, self.version)}."
+            )
             if not os.path.exists(
                 os.path.join(self.extracted_source_path, "_mussles.patched")
             ):
                 # Not yet patched. Apply patches.
                 self.logger.info(
-                    f"Applying patches to {self.name}-{self.version} source directory..."
+                    f"Applying patches to {nvc_str(self.name, self.version)} source directory..."
                 )
                 for patchfile in os.listdir(self.patch_dir):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
@@ -409,7 +358,7 @@ class BaseRecipe(object):
                             return False
                     else:
                         self.logger.info(
-                            f"Copying new file {patchfile} to {self.name}-{self.version} source directory..."
+                            f"Copying new file {patchfile} to {nvc_str(self.name, self.version)} source directory..."
                         )
                         shutil.copyfile(
                             os.path.join(self.patch_dir, patchfile),
@@ -421,109 +370,111 @@ class BaseRecipe(object):
                 ) as patchmark:
                     patchmark.write("patched")
 
-        for target in self.build_script:
-            already_built = True
+        already_built = True
 
-            # Check for prior completed build output.
-            self.logger.info(
-                f"Attempting to build {self.name}-{self.version} for {target}"
-            )
-            self.builds[target] = os.path.join(
-                self.work_dir,
-                target,
-                f"{os.path.split(self.extracted_source_path)[-1]}",
-            )
+        build_scripts = self.platforms[self.platform][self.target]["build_script"]
 
-            # Add each tool from the toolchain to the PATH environment variable.
-            for tool in self.toolchain:
-                for path_mod in self.toolchain[tool].path_mods[
-                    self.toolchain[tool].installed
-                ][target]:
-                    os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
+        self.logger.info(
+            f"Attempting to build {nvc_str(self.name, self.version)} for {self.target}"
+        )
+        self.builds[self.target] = os.path.join(
+            self.work_dir,
+            self.target,
+            f"{os.path.split(self.extracted_source_path)[-1]}",
+        )
 
-            cwd = os.getcwd()
-            build_path_exists = os.path.exists(self.builds[target])
+        # Add each tool from the toolchain to the PATH environment variable.
+        for tool in self.toolchain:
+            platform_options = self.toolchain[tool].platforms.keys()
+            matching_platform = pick_platform(platform.system(), platform_options)
+            for path_mod in self.toolchain[tool].platforms[matching_platform][
+                "path_mods"
+            ][self.toolchain[tool].installed][self.target]:
+                os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
 
-            if build_path_exists:
-                if clean:
-                    # Remove previous built, start over.
-                    self.logger.info(
-                        f"--clean: Removing previous {target} build directory:"
-                    )
-                    self.logger.info(f"   {self.builds[target]}")
-                    shutil.rmtree(self.builds[target])
-                    build_path_exists = False
+        cwd = os.getcwd()
+        build_path_exists = os.path.exists(self.builds[self.target])
 
-            if not build_path_exists:
-                os.makedirs(os.path.join(self.work_dir, target), exist_ok=True)
-
-                # Make our own copy of the extracted source so we don't dirty the original.
-                self.logger.debug(
-                    f"Creating new {target} build directory from extracted sources:"
+        if build_path_exists:
+            if clean:
+                # Remove previous built, start over.
+                self.logger.info(
+                    f"--clean: Removing previous {self.target} build directory:"
                 )
-                self.logger.debug(f"   {self.builds[target]}")
-                shutil.copytree(self.extracted_source_path, self.builds[target])
+                self.logger.info(f"   {self.builds[self.target]}")
+                shutil.rmtree(self.builds[self.target])
+                build_path_exists = False
 
-                os.chdir(self.builds[target])
+        if not build_path_exists:
+            os.makedirs(os.path.join(self.work_dir, self.target), exist_ok=True)
 
-                # Run "configure" script, if exists.
-                if "configure" in self.build_script[target].keys():
-                    if not self._run_script(
-                        target, "configure", self.build_script[target]["configure"]
-                    ):
-                        self.logger.error(
-                            f"{self.name}-{self.version} {target} build failed."
-                        )
-                        os.chdir(cwd)
-                        return False
+            # Make our own copy of the extracted source so we don't dirty the original.
+            self.logger.debug(
+                f"Creating new {self.target} build directory from extracted sources:"
+            )
+            self.logger.debug(f"   {self.builds[self.target]}")
+            shutil.copytree(self.extracted_source_path, self.builds[self.target])
 
-            else:
-                os.chdir(self.builds[target])
+            os.chdir(self.builds[self.target])
 
-            # Run "make" script, if exists.
-            if "make" in self.build_script[target].keys():
+            # Run "configure" script, if exists.
+            if "configure" in build_scripts.keys():
                 if not self._run_script(
-                    target, "make", self.build_script[target]["make"]
+                    self.target, "configure", build_scripts["configure"]
                 ):
                     self.logger.error(
-                        f"{self.name}-{self.version} {target} build failed."
+                        f"{nvc_str(self.name, self.version)} {self.target} build failed."
                     )
                     os.chdir(cwd)
                     return False
 
-            # Run "install" script, if exists.
-            if "install" in self.build_script[target].keys():
-                if not self._run_script(
-                    target, "install", self.build_script[target]["install"]
-                ):
-                    self.logger.error(
-                        f"{self.name}-{self.version} {target} build failed."
-                    )
-                    os.chdir(cwd)
-                    return False
+        else:
+            os.chdir(self.builds[self.target])
 
-            self.logger.info(f"{self.name}-{self.version} {target} build succeeded.")
-            os.chdir(cwd)
-
-            if not self._install(target):
+        # Run "make" script, if exists.
+        if "make" in build_scripts.keys():
+            if not self._run_script(self.target, "make", build_scripts["make"]):
+                self.logger.error(
+                    f"{nvc_str(self.name, self.version)} {self.target} build failed."
+                )
+                os.chdir(cwd)
                 return False
+
+        # Run "install" script, if exists.
+        if "install" in build_scripts.keys():
+            if not self._run_script(self.target, "install", build_scripts["install"]):
+                self.logger.error(
+                    f"{nvc_str(self.name, self.version)} {self.target} build failed."
+                )
+                os.chdir(cwd)
+                return False
+
+        self.logger.info(
+            f"{nvc_str(self.name, self.version)} {self.target} build succeeded."
+        )
+        os.chdir(cwd)
+
+        if not self._install():
+            return False
 
         return True
 
-    def _install(self, build):
+    def _install(self):
         """
         Copy the headers and libs to an install directory.
         """
         os.makedirs(self.install_dir, exist_ok=True)
 
         self.logger.info(
-            f"Copying {self.name}-{self.version} install files to: {self.install_dir}."
+            f"Copying {nvc_str(self.name, self.version)} install files to: {self.install_dir}."
         )
 
-        for install_path in self.install_paths[build]:
+        install_paths = self.platforms[self.platform][self.target]["install_paths"]
 
-            for install_item in self.install_paths[build][install_path]:
-                src_path = os.path.join(self.builds[build], install_item)
+        for install_path in install_paths:
+
+            for install_item in install_paths[install_path]:
+                src_path = os.path.join(self.builds[self.target], install_item)
 
                 for src_filepath in glob.glob(src_path):
                     # Make sure it actually exists.
@@ -535,7 +486,7 @@ class BaseRecipe(object):
 
                     dst_path = os.path.join(
                         self.install_dir,
-                        build,
+                        self.target,
                         install_path,
                         os.path.basename(src_filepath),
                     )
@@ -558,5 +509,7 @@ class BaseRecipe(object):
                     else:
                         shutil.copyfile(src_filepath, dst_path)
 
-        self.logger.info(f"{self.name}-{self.version} {build} install succeeded.")
+        self.logger.info(
+            f"{nvc_str(self.name, self.version)} {self.target} install succeeded."
+        )
         return True

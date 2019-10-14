@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mussels",
-    version="0.0.1",
+    version="0.1.0",
     author="Micah Snyder",
     author_email="micasnyd@cisco.com",
     copyright="Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
@@ -15,7 +15,10 @@ setuptools.setup(
     url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
     entry_points={
-        "console_scripts": ["mussels = mussels.__main__:cli", "msl = mussels.__main__:cli"]
+        "console_scripts": [
+            "mussels = mussels.__main__:cli",
+            "msl = mussels.__main__:cli",
+        ]
     },
     install_requires=[
         "click>=7.0",

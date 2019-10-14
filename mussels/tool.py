@@ -37,6 +37,8 @@ import zipfile
 
 from io import StringIO
 
+from mussels.utils.versions import platform_is, nvc_str
+
 
 class BaseTool(object):
     """
@@ -44,26 +46,9 @@ class BaseTool(object):
     """
 
     name = "sample"
-    version = "0.0.1"
-
-    path_mods = {
-        "system": {
-            "x86": [os.path.join("expected", "install", "path")],
-            "x64": [os.path.join("expected", "install", "path")],
-        },
-        "local": {
-            "x86": [os.path.join("expected", "install", "path")],
-            "x64": [os.path.join("expected", "install", "path")],
-        },
-    }
-
-    file_checks = {
-        "system": [os.path.join("expected", "install", "path")],
-        "local": [os.path.join("expected", "install", "path")],
-    }
-
+    version = ""
+    platforms: dict = {}
     logs_dir = ""
-
     installed = ""
 
     def __init__(self, data_dir: str = ""):
@@ -78,13 +63,15 @@ class BaseTool(object):
             self.logs_dir = os.path.join(os.path.abspath(data_dir), "logs", "tools")
         os.makedirs(self.logs_dir, exist_ok=True)
 
+        self.name_version = nvc_str(self.name, self.version)
+
         self._init_logging()
 
     def _init_logging(self):
         """
         Initializes the logging parameters
         """
-        self.logger = logging.getLogger(f"{self.name}-{self.version}")
+        self.logger = logging.getLogger(f"{self.name_version}")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
@@ -94,9 +81,7 @@ class BaseTool(object):
 
         self.log_file = os.path.join(
             self.logs_dir,
-            f"{self.name}-{self.version}.{datetime.datetime.now()}.log".replace(
-                ":", "_"
-            ),
+            f"{self.name_version}.{datetime.datetime.now()}.log".replace(":", "_"),
         )
         filehandler = logging.FileHandler(filename=self.log_file)
         filehandler.setLevel(logging.DEBUG)
@@ -110,31 +95,36 @@ class BaseTool(object):
         """
         self.installed = ""
 
-        self.logger.info(f"Detecting tool: {self.name}-{self.version}...")
+        self.logger.info(f"Detecting tool: {self.name_version}...")
 
-        for install_location in self.file_checks:
-            missing_file = False
+        for each_platform in self.platforms:
+            if platform_is(each_platform):
+                for install_location in self.platforms[each_platform]["file_checks"]:
+                    missing_file = False
 
-            for filepath in self.file_checks[install_location]:
-                if os.path.exists(filepath):
-                    self.logger.info(
-                        f'{install_location}-install {self.name}-{self.version} file "{filepath}" found'
-                    )
-                else:
-                    self.logger.info(
-                        f'{install_location}-install {self.name}-{self.version} file "{filepath}" not found'
-                    )
-                    missing_file = True
+                    for filepath in self.platforms[each_platform]["file_checks"][
+                        install_location
+                    ]:
+                        if os.path.exists(filepath):
+                            self.logger.info(
+                                f'{install_location}-install {self.name_version} file "{filepath}" found'
+                            )
+                        else:
+                            self.logger.info(
+                                f'{install_location}-install {self.name_version} file "{filepath}" not found'
+                            )
+                            missing_file = True
 
-            if missing_file == False:
-                self.logger.info(
-                    f"{install_location}-install {self.name}-{self.version} detected!"
-                )
-                self.installed = install_location
+                    if missing_file == False:
+                        self.logger.info(
+                            f"{install_location}-install {self.name_version} detected!"
+                        )
+                        self.installed = install_location
+                        break
                 break
 
         if self.installed == "":
-            self.logger.warning(f"Failed to detect {self.name}-{self.version}.")
+            self.logger.warning(f"Failed to detect {self.name_version}.")
             return False
 
         return True

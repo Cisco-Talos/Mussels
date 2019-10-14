@@ -23,9 +23,9 @@ class TestClass(unittest.TestCase):
     def setUp(self):
         self.sorted_items = {
             "wheeple": [
-                {"version": "2.0.0", "cookbooks": ["tectonic"]},
-                {"version": "1.0.1", "cookbooks": ["tectonic"]},
-                {"version": "1.0.0", "cookbooks": ["tectonic"]},
+                {"version": "2.0.0", "cookbooks": {"tectonic": None}},
+                {"version": "1.0.1", "cookbooks": {"tectonic": None}},
+                {"version": "1.0.0", "cookbooks": {"tectonic": None}},
             ]
         }
 
@@ -39,9 +39,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "2.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "2.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_gt(self):
 
@@ -52,9 +52,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "2.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "2.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_gt_nexists(self):
 
@@ -77,9 +77,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "2.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "2.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_gte_nexists(self):
 
@@ -102,9 +102,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "1.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "1.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_lt_nexists(self):
 
@@ -127,9 +127,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "1.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "1.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_eq_1(self):
 
@@ -140,9 +140,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "1.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "1.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_eq_2(self):
 
@@ -153,9 +153,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "1.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "1.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_eq_3(self):
 
@@ -166,9 +166,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "1.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "1.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_eq_nexists(self):
 
@@ -191,9 +191,9 @@ class TestClass(unittest.TestCase):
         print("nvc:")
         print(json.dumps(nvc, indent=4))
 
-        assert nvc["name"] == "wheeple"
-        assert nvc["version"] == "2.0.0"
-        assert nvc["cookbook"] == "tectonic"
+        assert nvc.name == "wheeple"
+        assert nvc.version == "2.0.0"
+        assert nvc.cookbook == "tectonic"
 
     def test_get_item_version_book_eq_nexists(self):
 
