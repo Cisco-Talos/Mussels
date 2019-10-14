@@ -1,7 +1,7 @@
 """
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-This module provides the core Mussels class, used by the CLI interface defined in main.py
+This module provides the core Mussels class, used by the CLI interface defined in __main__.py
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -433,7 +433,7 @@ class Mussels:
             )
         """
         # Select the recipe
-        nvc = get_item_version(recipe, self.sorted_recipes)
+        nvc = get_item_version(recipe, self.sorted_recipes, target)
 
         # Use "get_item_version()" to prune the list of sorted_tools based on the required tools for the selected recipe.
         for name in self.sorted_recipes:
