@@ -101,7 +101,7 @@ class Recipe(BaseRecipe):
                     "make": """
                             make
                         """,
-                    "make": """
+                    "install": """
                             make install
                             install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libcrypto.1.1.dylib"
                             install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libssl.1.1.dylib"
