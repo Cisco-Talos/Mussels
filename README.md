@@ -110,36 +110,67 @@ Use the `--help` option to get information about any Mussels command.
 >
 > `mussels build --help`
 
+_Tip_: Use the `msl` shorcut, instead of `mussels` to save keystrokes.
+
+_Tip_: You may not be able to run `mussels` or the `msl` shortcut directly if your Python Scripts directory is not in your `PATH` environment variable. If you run into this issue, and do not wish to add the Scripts directory to your path, you can run Mussels like this:
+
+> `python -m mussels`
+
 ### Search for recipes and build recipes
+
+Download recipes from public sources:
+
+> `mussels update`
+
+or:
+
+> `msl update`
 
 View all available recipes:
 
-> `mussels list`
+> `msl list`
 >
-> `mussels list -V` (verbose)
+> `msl list -V` (verbose)
 
 Many Mussels commands may be shortened to save keystrokes. For example, the following are all equivalent:
 
-> `mussels list`
-> `mussels lis`
-> `mussels li`
-> `mussels l`
+> `msl list`
+> `msl lis`
+> `msl li`
+> `msl l`
 
 Show information about a specific recipe:
 
-> `mussels show openssl`
+> `msl show openssl`
 >
-> `mussels show openssl -V` (verbose)
+> `msl show openssl -V` (verbose)
 
 Perform a dry-run to view order in which dependency graph will be build a specific recipe:
 
-> `mussels build openssl -d`
+> `msl build openssl -d`
 
 Build a specific version of a recipe:
 
-> `mussels build openssl -v 1.1.0j`
+> `msl build openssl -v 1.1.0j`
 
 ### Create your own recipes
+
+A recipe is just a YAML file containing metadata about where to find, and how to build, a specific version of a given project.  The easiest way to create your own recipe is to copy an existing recipe.
+
+Use the `list` command to find a recipe you would like to use as a starting point:
+
+> `msl list -a -V`
+
+Once you've chosen a recipe, copy it to your current working directory with the `clone` command. For example:
+
+> `msl clone nghttp2`
+> `ls -la`
+
+_Tip_: If the recipe requires one or more patch sets to build, the corresponding patch directories will also be copied to your current working directory.
+
+Now rename the cloned recipe to whatever you like and start making changes! So long as you keep the `.yaml` extension, Mussels will still recognize it.
+
+_Tip_: When testing your recipes, the recipes must be in (in a subdirectory of) your current working directory for Mussels to find them.  Use `msl list -a -V` to display all current recipes.  Recipes found in the current working directory will show up as being provided by the "local" cookbook.  Use `msl show <recipe_name> -V` to view more information about a specific recipe.
 
 ### Create your own cookbook
 
@@ -149,9 +180,11 @@ Cookbooks are a way for users to curate recipes to build their project without r
 
 The Mussels project maintains [an index](mussels/bookshelf.py) of cookbooks provided by third-parties. Cookbook authors are encouraged to add their cookbook to the index by submitting a pull-request to the Mussels project. However, each cookbook's license must be compatible with the Apache v2.0 license used by Mussels in order to be included in the index.
 
-You don't need to add your cookbook to the public index in order to use it. Simply `cd` to your cookbook directory and execute `mussels` commands in that directory for it to detect the "local" cookbook.
+You don't need to add your cookbook to the public index in order to use it.
 
-Alternatively, use the `mussels config` commands to add the Git URL for your cookbook to the global mussels config so that Mussels will record your cookbook in the index on your local machine. Then run `mussels update` so that repository is cloned and the recipes are made available for use.
+_To use a local cookbook directory_: Simply `cd` to your cookbook directory and execute `mussels` commands in that directory for it to detect the "local" cookbook.
+
+_To use a private cookbook repository_: Run `msl cookbook add private <Git URL>` to add the Git URL for your cookbook to your global mussels config so that Mussels will record your cookbook in the index on your local machine. Then run `mussels update` so that repository is cloned and the recipes are made available for use.
 
 ## Contribute
 
@@ -169,9 +202,9 @@ If you find an issue with Mussels or the Mussels documentation, please submit an
 
 ### Development
 
-If you're able, consider making a fix yourself and submitting a pull request. Your help will be greatly appreciated.
+If you find a bug and you're able to craft a fix yourself, consider submitting the fix in pull request. Your help will be greatly appreciated.
 
-_By submitting a contribution to the Mussels project, you acknowledge and agree to assign Cisco Systems, Inc the copyright for the contribution._
+_By submitting a contribution to the Mussels project, you acknowledge and agree to assign Cisco Systems, Inc the copyright for the contribution. If you submit a significant contribution such as a new feature or capability or a large amount of code, you may be asked to sign a contributors license agreement comfirming that Cisco will have copyright license and patent license and that you are authorized to contribute the code._
 
 #### Mussels Development Setup
 
@@ -201,7 +234,7 @@ This project has not selected a specific Code-of-Conduct document at this time. 
 
 Mussels is licensed under the Apache License, Version 2.0 (the "License"). You may not use the Mussels project except in compliance with the License.
 
-A copy of the license is located [here](LICENSE), and is also available online, at [apache.org](http://www.apache.org/licenses/LICENSE-2.0).
+A copy of the license is located [here](LICENSE), and is also available online at [apache.org](http://www.apache.org/licenses/LICENSE-2.0).
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -213,8 +246,7 @@ limitations under the License.
 
 The following are issues or features on the to-do list to implement or repair.
 
-- Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
-- Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
+- Add documentation about how to create new recipes and tool definitions.
 - Start documentation about cookbooks and how to get new cookbooks added to the index.
 
 - Add ability to build recipes from:
