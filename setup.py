@@ -23,9 +23,11 @@ setuptools.setup(
     install_requires=[
         "click>=7.0",
         "coloredlogs>=10.0",
+        "colorama",
         "requests",
         "patch",
         "gitpython",
+        "pyyaml",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

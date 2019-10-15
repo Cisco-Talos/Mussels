@@ -6,10 +6,13 @@ r"""
  \ \ \-./\ \  \ \ \_\ \  \ \___  \  \ \___  \  \ \  __\   \ \ \____  \ \___  \
   \ \_\ \ \_\  \ \_____\  \/\_____\  \/\_____\  \ \_____\  \ \_____\  \/\_____\
    \/_/  \/_/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/   \/_____/
+"""
 
+_description = """
 A tool to download, build, and assemble application dependencies.
                                     Brought to you by the Clam AntiVirus Team.
-
+"""
+_copyright = """
 Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 """
 
@@ -44,10 +47,20 @@ module_logger = logging.getLogger("mussels")
 coloredlogs.install(level="DEBUG", fmt="%(asctime)s %(name)s %(levelname)s %(message)s")
 module_logger.setLevel(logging.DEBUG)
 
+from colorama import Fore, Back, Style
+
 #
 # CLI Interface
 #
-@click.group(cls=MusselsModifier, epilog=__doc__)
+@click.group(
+    cls=MusselsModifier,
+    epilog=Fore.BLUE
+    + __doc__
+    + Fore.GREEN
+    + _description
+    + Style.RESET_ALL
+    + _copyright,
+)
 def cli():
     pass
 
@@ -223,13 +236,13 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     """
     Copy a recipe to the current working directory or to a specific directory.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clone_recipe(recipe, version, cookbook, dest)
 
 
 @recipe.command("build")
-@click.argument("recipe", required=False, default="all")
+@click.argument("recipe", required=True)
 @click.option(
     "--version",
     "-v",
@@ -321,7 +334,7 @@ def clean_all():
 # Command Aliases
 #
 @cli.command("build")
-@click.argument("recipe", required=False, default="all")
+@click.argument("recipe", required=True)
 @click.option(
     "--version",
     "-v",

@@ -67,6 +67,8 @@ class BaseRecipe(object):
 
     builds: dict = {}  # Dictionary of build paths.
 
+    module_file: str = ""
+
     def __init__(self, toolchain: dict, platform: str, target: str, data_dir: str = ""):
         """
         Download the archive (if necessary) to the Downloads directory.
@@ -88,8 +90,6 @@ class BaseRecipe(object):
         self.work_dir = os.path.join(self.data_dir, "cache", "work")
         self.src_dir = os.path.join(self.data_dir, "cache", "src")
 
-        module_file = sys.modules[self.__class__.__module__].__file__
-        self.module_file = os.path.abspath(module_file)
         self.module_dir = os.path.split(self.module_file)[0]
 
         if "patches" in self.platforms[self.platform][self.target]:
@@ -239,7 +239,11 @@ class BaseRecipe(object):
             # Write the build commands to a file
             build_lines = script.splitlines()
             for line in build_lines:
-                fd.write(line.strip() + "\n")
+                line = line.strip()
+                if platform.system() == "Windows" and line.endswith("\\"):
+                    fd.write(line.rstrip("\\") + " ")
+                else:
+                    fd.write(line + "\n")
 
         if platform.system() != "Windows":
             st = os.stat(script_name)
@@ -268,33 +272,6 @@ class BaseRecipe(object):
             return False
 
         return True
-
-    def _clone(self, destination: str) -> str:
-        """
-        Copy the recipe file to the provided directory.
-        """
-        recipe_basename = os.path.basename(self.module_file)
-
-        try:
-            shutil.copyfile(
-                self.module_file, os.path.join(destination, recipe_basename)
-            )
-
-            for each_platform in self.platforms:
-                for target in self.platforms:
-                    if "patches" in target:
-                        patch_dir = os.path.join(self.module_dir, target["patches"])
-                        patches_basename = os.path.basename(patch_dir)
-
-                        if os.path.exists(patch_dir):
-                            shutil.copytree(
-                                patch_dir, os.path.join(destination, patches_basename)
-                            )
-        except Exception as exc:
-            self.logger.error(f"Clone failed.  Exception: {exc}")
-            return ""
-
-        return os.path.join(destination, recipe_basename)
 
     def _prepare_for_build(self) -> bool:
         """
