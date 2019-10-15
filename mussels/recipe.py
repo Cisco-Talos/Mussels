@@ -273,33 +273,6 @@ class BaseRecipe(object):
 
         return True
 
-    def _clone(self, destination: str) -> str:
-        """
-        Copy the recipe file to the provided directory.
-        """
-        recipe_basename = os.path.basename(self.module_file)
-
-        try:
-            shutil.copyfile(
-                self.module_file, os.path.join(destination, recipe_basename)
-            )
-
-            for each_platform in self.platforms:
-                for target in self.platforms:
-                    if "patches" in target:
-                        patch_dir = os.path.join(self.module_dir, target["patches"])
-                        patches_basename = os.path.basename(patch_dir)
-
-                        if os.path.exists(patch_dir):
-                            shutil.copytree(
-                                patch_dir, os.path.join(destination, patches_basename)
-                            )
-        except Exception as exc:
-            self.logger.error(f"Clone failed.  Exception: {exc}")
-            return ""
-
-        return os.path.join(destination, recipe_basename)
-
     def _prepare_for_build(self) -> bool:
         """
         Initialize directories

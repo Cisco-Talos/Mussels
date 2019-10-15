@@ -223,7 +223,7 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     """
     Copy a recipe to the current working directory or to a specific directory.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clone_recipe(recipe, version, cookbook, dest)
 

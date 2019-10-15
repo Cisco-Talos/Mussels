@@ -210,7 +210,9 @@ class Mussels:
 
                             if not "version" in yaml_file:
                                 self.logger.warning(f"Failed to load recipe: {fpath}")
-                                self.logger.warning(f"Missing required 'version' field.")
+                                self.logger.warning(
+                                    f"Missing required 'version' field."
+                                )
                                 continue
                             else:
                                 name = f"{name}_{yaml_file['version']}"
@@ -233,8 +235,12 @@ class Mussels:
                                 recipe_class.is_collection = False
 
                                 if not "url" in yaml_file:
-                                    self.logger.warning(f"Failed to load recipe: {fpath}")
-                                    self.logger.warning(f"Missing required 'url' field.")
+                                    self.logger.warning(
+                                        f"Failed to load recipe: {fpath}"
+                                    )
+                                    self.logger.warning(
+                                        f"Missing required 'url' field."
+                                    )
                                     continue
                                 else:
                                     recipe_class.url = yaml_file["url"]
@@ -247,12 +253,16 @@ class Mussels:
 
                             if not "platforms" in yaml_file:
                                 self.logger.warning(f"Failed to load recipe: {fpath}")
-                                self.logger.warning(f"Missing required 'platforms' field.")
+                                self.logger.warning(
+                                    f"Missing required 'platforms' field."
+                                )
                                 continue
                             else:
                                 recipe_class.platforms = yaml_file["platforms"]
 
-                            recipes[recipe_class.name][recipe_class.version] = recipe_class
+                            recipes[recipe_class.name][
+                                recipe_class.version
+                            ] = recipe_class
 
                         elif yaml_file["type"] == "tool":
                             if not "name" in yaml_file:
@@ -277,10 +287,11 @@ class Mussels:
                             if "version" in yaml_file:
                                 tool_class.version = yaml_file["version"]
 
-
                             if not "platforms" in yaml_file:
                                 self.logger.warning(f"Failed to load tool: {fpath}")
-                                self.logger.warning(f"Missing required 'platforms' field.")
+                                self.logger.warning(
+                                    f"Missing required 'platforms' field."
+                                )
                                 continue
                             else:
                                 tool_class.platforms = yaml_file["platforms"]
@@ -628,9 +639,12 @@ class Mussels:
 
         # verify that recipe supports requested target architecture
 
-        if "dependencies" in self.recipes[recipe_nvc.name][recipe_nvc.version][
-            recipe_nvc.cookbook
-        ].platforms[matching_platform][target]:
+        if (
+            "dependencies"
+            in self.recipes[recipe_nvc.name][recipe_nvc.version][
+                recipe_nvc.cookbook
+            ].platforms[matching_platform][target]
+        ):
             dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
                 recipe_nvc.cookbook
             ].platforms[matching_platform][target]["dependencies"]
@@ -640,7 +654,9 @@ class Mussels:
                     # select the recipe from the current cookbook.
                     dependency = f"{recipe_nvc.cookbook}:{dependency}"
 
-                recipes += self._identify_build_recipes(dependency, chain, platform, target)
+                recipes += self._identify_build_recipes(
+                    dependency, chain, platform, target
+                )
 
         return recipes
 
@@ -663,9 +679,12 @@ class Mussels:
             ].platforms.keys()
             matching_platform = pick_platform(platform, platform_options)
 
-            if "dependencies" in self.recipes[recipe_nvc.name][recipe_nvc.version][
-                recipe_nvc.cookbook
-            ].platforms[matching_platform][target]:
+            if (
+                "dependencies"
+                in self.recipes[recipe_nvc.name][recipe_nvc.version][
+                    recipe_nvc.cookbook
+                ].platforms[matching_platform][target]
+            ):
                 dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
                     recipe_nvc.cookbook
                 ].platforms[matching_platform][target]["dependencies"]
@@ -1183,10 +1202,42 @@ class Mussels:
             )
             return False
 
-        recipe_object = recipe_class(toolchain={}, data_dir=self.app_data_dir)
+        recipe_basename = os.path.basename(recipe_class.module_file)
+        clone_path = os.path.join(destination, recipe_basename)
 
-        clone_path = recipe_object._clone(destination=destination)
-        if clone_path == "":
+        try:
+            shutil.copyfile(
+                recipe_class.module_file, os.path.join(destination, recipe_basename)
+            )
+
+            patch_dirs_copied: list = []
+            for each_platform in recipe_class.platforms:
+                for target in recipe_class.platforms[each_platform]:
+                    if (
+                        "patches" in recipe_class.platforms[each_platform][target]
+                        and recipe_class.platforms[each_platform][target]["patches"] != ""
+                    ):
+                        patch_dir = os.path.join(
+                            os.path.split(recipe_class.module_file)[0],
+                            recipe_class.platforms[each_platform][target]["patches"],
+                        )
+                        if patch_dir in patch_dirs_copied:
+                            # Already got this one,
+                            continue
+
+                        if not os.path.exists(patch_dir):
+                            self.logger.warning(
+                                f"Unable to clone referenced patch directory: {patch_dir}"
+                            )
+                            self.logger.warning(f"Directory does not exist.")
+                        else:
+                            patches_basename = os.path.basename(patch_dir)
+                            shutil.copytree(
+                                patch_dir, os.path.join(destination, patches_basename)
+                            )
+                        patch_dirs_copied.append(patch_dir)
+        except Exception as exc:
+            self.logger.error(f"Clone failed.  Exception: {exc}")
             return False
 
         self.logger.info(
