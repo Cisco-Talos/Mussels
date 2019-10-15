@@ -807,6 +807,14 @@ class Mussels:
                         f"Failure building {nvc_str(result['name'], result['version'])}, terminated after {datetime.timedelta(0, result['time elapsed'])}"
                     )
 
+        if not recipe in self.sorted_recipes:
+            self.logger.error(f"The recipe does not exist, or at least does not exist for the current platform ({platform.system()}")
+            self.logger.error(f"To available recipes for your platform, run:   msl list")
+            self.logger.error(f"To all recipes for all platforms, run:         msl list -a")
+            self.logger.error(f"To download the latest recipes, run:           msl update")
+            return False
+
+
         batches: List[dict] = []
 
         recipe_str = nvc_str(recipe, version, cookbook)
@@ -991,7 +999,7 @@ class Mussels:
         """
         version_num = version["version"]
         cookbooks = version["cookbooks"].keys()
-        self.logger.info(f"    {recipe} v{version_num};  from: {cookbooks}")
+        self.logger.info(f"    {recipe}-{version_num};  provided by cookbook(s): {list(cookbooks)}")
 
         if verbose:
             self.logger.info("")
