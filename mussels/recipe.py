@@ -67,6 +67,8 @@ class BaseRecipe(object):
 
     builds: dict = {}  # Dictionary of build paths.
 
+    module_file: str = ""
+
     def __init__(self, toolchain: dict, platform: str, target: str, data_dir: str = ""):
         """
         Download the archive (if necessary) to the Downloads directory.
@@ -88,8 +90,6 @@ class BaseRecipe(object):
         self.work_dir = os.path.join(self.data_dir, "cache", "work")
         self.src_dir = os.path.join(self.data_dir, "cache", "src")
 
-        module_file = sys.modules[self.__class__.__module__].__file__
-        self.module_file = os.path.abspath(module_file)
         self.module_dir = os.path.split(self.module_file)[0]
 
         if "patches" in self.platforms[self.platform][self.target]:

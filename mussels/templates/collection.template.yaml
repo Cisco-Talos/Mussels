@@ -1,0 +1,46 @@
+# Copyright (C) 2019 <your name here>.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO: Replace "template" with your recipe name, and customize the other options accordingly.
+
+name: template_deps
+version: 1.2.3
+url: "hxxps://www.template.com/releases/v1.2.3.tar.gz"
+mussels_version: "0.1"
+type: collection
+platforms:
+  Darwin:
+    host:
+      dependencies:
+        - example>=1.2.3
+        - sample
+  FreeBSD:
+    host:
+      dependencies:
+        - example>=1.2.3
+        - sample
+  Linux:
+    host:
+      dependencies:
+        - example>=1.2.3
+        - sample
+  Windows:
+    x64:
+      dependencies:
+        - example>=1.2.3
+        - sample
+    x86:
+      dependencies:
+        - example>=1.2.3
+        - sample

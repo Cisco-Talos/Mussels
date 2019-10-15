@@ -1,0 +1,127 @@
+# Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: curl
+version: 7.66.0
+url: https://curl.haxx.se/download/curl-7.66.0.zip
+mussels_version: "0.1"
+type: recipe
+platforms:
+  Darwin:
+    host:
+      build_script:
+        configure: |
+          cmake . \
+            -DCMAKE_CONFIGURATION_TYPES=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_USE_OPENSSL=ON \
+            -DOPENSSL_INCLUDE_DIR="{includes}" \
+            -DOPENSSL_LIBRARIES="{libs}" \
+            -DOPENSSL_CRYPTO_LIBRARY="{libs}/libcrypto.1.1.dylib" \
+            -DOPENSSL_SSL_LIBRARY="{libs}/libssl.1.1.dylib" \
+            -DZLIB_INCLUDE_DIR="{includes}" \
+            -DZLIB_LIBRARY_RELEASE="{libs}/libz.a" \
+            -DLIBSSH2_INCLUDE_DIR="{includes}" \
+            -DLIBSSH2_LIBRARY="{libs}/libssh2.dylib" \
+            -DUSE_NGHTTP2=ON \
+            -DNGHTTP2_INCLUDE_DIR="{includes}" \
+            -DNGHTTP2_LIBRARY="{libs}/libnghttp2.dylib" \
+            -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+        make: |
+          cmake --build . --config Release
+        install: |
+          make install
+          install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libcurl.dylib"
+      dependencies:
+        - openssl
+        - nghttp2>=1.0.0
+        - libssh2
+        - zlib
+      install_paths:
+        license/curl:
+          - COPYING
+      required_tools:
+        - cmake
+        - clang
+  Windows:
+    x64:
+      build_script:
+        configure: |
+          CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141 \
+            -DCMAKE_CONFIGURATION_TYPES=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_USE_OPENSSL=ON \
+            -DOPENSSL_INCLUDE_DIR="{includes}" \
+            -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+            -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+            -DZLIB_INCLUDE_DIR="{includes}" \
+            -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+            -DLIBSSH2_INCLUDE_DIR="{includes}" \
+            -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
+            -DUSE_NGHTTP2=ON \
+            -DNGHTTP2_INCLUDE_DIR="{includes}" \
+            -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
+        make: |
+          CALL cmake.exe --build . --config Release
+      dependencies:
+        - openssl
+        - nghttp2>=1.0.0
+        - libssh2
+        - zlib
+      install_paths:
+        include:
+          - include/curl
+        lib:
+          - lib/Release/libcurl.dll
+          - lib/Release/libcurl_imp.lib
+        license/curl:
+          - COPYING
+      required_tools:
+        - cmake
+        - visualstudio>=2017
+    x86:
+      build_script:
+        configure: |
+          CALL cmake.exe -G "Visual Studio 15 2017" -T v141 \
+            -DCMAKE_CONFIGURATION_TYPES=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_USE_OPENSSL=ON \
+            -DOPENSSL_INCLUDE_DIR="{includes}" \
+            -DLIB_EAY_RELEASE="{libs}/libcrypto.lib" \
+            -DSSL_EAY_RELEASE="{libs}/libssl.lib" \
+            -DZLIB_INCLUDE_DIR="{includes}" \
+            -DZLIB_LIBRARY_RELEASE="{libs}/zlibstatic.lib" \
+            -DLIBSSH2_INCLUDE_DIR="{includes}" \
+            -DLIBSSH2_LIBRARY="{libs}/libssh2.lib" \
+            -DUSE_NGHTTP2=ON \
+            -DNGHTTP2_INCLUDE_DIR="{includes}" \
+            -DNGHTTP2_LIBRARY="{libs}/nghttp2.lib"
+        make: |
+          CALL cmake.exe --build . --config Release
+      dependencies:
+        - openssl
+        - nghttp2>=1.0.0
+        - libssh2
+        - zlib
+      install_paths:
+        include:
+          - include/curl
+        lib:
+          - lib/Release/libcurl.dll
+          - lib/Release/libcurl_imp.lib
+        license/curl:
+          - COPYING
+      required_tools:
+        - cmake
+        - visualstudio>=2017

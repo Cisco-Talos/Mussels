@@ -1,0 +1,120 @@
+# Copyright (C) 2019 <your name here>.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/COPYING-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO: Replace "template" in this file with your project name.
+# Adjust the options as needed so your project will build.
+
+name: template
+version: 1.2.3
+url: "hxxps://www.template.com/releases/v1.2.3.tar.gz"
+# archive_name_change:
+#   - searchpattern
+#   - replacepattern
+mussels_version: "0.1"
+type: recipe
+platforms:
+  Darwin:
+    host:
+      build_script:
+        configure: |
+          cmake . \
+              -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+        make: |
+          cmake --build . --config Release
+        install: |
+          make install
+          install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/template.dylib"
+      dependencies: []
+      install_paths:
+        license/template:
+          - COPYING
+      # patches: patches_darwin  # (optional) directory, relative to YAML file, containing patch set
+      required_tools:
+        - make
+        - clang
+  FreeBSD:
+    host:
+      build_script:
+        configure: |
+          cmake . \
+              -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+        make: |
+          cmake --build . --config Release
+        install: |
+          gmake install
+      dependencies: []
+      install_paths:
+        license/template:
+          - COPYING
+      # patches: patches_freebsd
+      required_tools:
+        - gmake
+        - gcc
+  Linux:
+    host:
+      build_script:
+        configure: |
+          cmake . \
+              -DCMAKE_INSTALL_PREFIX="{install}/{target}"
+        make: |
+          cmake --build . --config Release
+        install: |
+          make install
+      dependencies: []
+      install_paths:
+        license/template:
+          - COPYING
+      # patches: patches_linux
+      required_tools:
+        - make
+        - gcc
+  Windows:
+    x64:
+      build_script:
+        configure: |
+          CALL cmake.exe -G "Visual Studio 15 2017 Win64" -T v141
+        make: |
+          CALL cmake.exe --build . --config Release
+      dependencies: []
+      install_paths:
+        include:
+          - template.h
+        lib:
+          - template.dll
+          - template.lib
+        license/template:
+          - COPYING
+      patches: patches_windows
+      required_tools:
+        - cmake
+        - visualstudio>=2017
+    x86:
+      build_script:
+        configure: |
+          CALL cmake.exe -G "Visual Studio 15 2017" -T v141
+        make: |
+          CALL cmake.exe --build . --config Release
+      dependencies: []
+      install_paths:
+        include:
+          - template.h
+        lib:
+          - template.dll
+          - template.lib
+        license/template:
+          - COPYING
+      patches: patches_windows
+      required_tools:
+        - cmake
+        - visualstudio>=2017

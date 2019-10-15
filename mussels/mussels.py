@@ -40,9 +40,11 @@ if platform.system() == "Windows":
     if not r"c:\program files\git\bin" in os.environ["PATH"].lower():
         os.environ["PATH"] = os.environ["PATH"] + r";C:\Program Files\Git\bin"
 import git
+import yaml
 
 import mussels.bookshelf
-from mussels.utils import read
+import mussels.recipe
+import mussels.tool
 from mussels.utils.versions import (
     NVC,
     nvc_str,
@@ -159,15 +161,148 @@ class Mussels:
 
         return True
 
+    def load_directory(self, cookbook: str, load_path: str) -> tuple:
+        """
+        Load all recipes and tools in a directory.
+        This function reads in YAML files and assigns each to a new Recipe or Tool class, accordingly.
+        The classes are returned in a tuple.
+        """
+        minimum_version = "0.1"
+        recipes = defaultdict(dict)
+        tools = defaultdict(dict)
+
+        if not os.path.exists(load_path):
+            return recipes
+
+        for root, dirs, filenames in os.walk(load_path):
+            for fname in filenames:
+                if not fname.endswith(".yaml"):
+                    continue
+                fpath = os.path.abspath(os.path.join(root, fname))
+                with open(fpath, "r") as fd:
+                    try:
+                        yaml_file = yaml.load(fd.read(), Loader=yaml.SafeLoader)
+                    except Exception as exc:
+                        self.logger.warning(f"Failed to load YAML file: {fpath}")
+                        self.logger.warning(f"Exception occured: \n{exc}")
+                        continue
+                    if yaml_file == None:
+                        continue
+
+                    if (
+                        "mussels_version" in yaml_file
+                        and yaml_file["mussels_version"] >= minimum_version
+                    ):
+                        if not "type" in yaml_file:
+                            self.logger.warning(f"Failed to load recipe: {fpath}")
+                            self.logger.warning(f"Missing required 'type' field.")
+                            continue
+
+                        if (
+                            yaml_file["type"] == "recipe"
+                            or yaml_file["type"] == "collection"
+                        ):
+                            if not "name" in yaml_file:
+                                self.logger.warning(f"Failed to load recipe: {fpath}")
+                                self.logger.warning(f"Missing required 'name' field.")
+                                continue
+                            name = f"{cookbook}__{yaml_file['name']}"
+
+                            if not "version" in yaml_file:
+                                self.logger.warning(f"Failed to load recipe: {fpath}")
+                                self.logger.warning(f"Missing required 'version' field.")
+                                continue
+                            else:
+                                name = f"{name}_{yaml_file['version']}"
+
+                            recipe_class = type(
+                                name,
+                                (mussels.recipe.BaseRecipe,),
+                                {"__doc__": f"{yaml_file['name']} recipe class."},
+                            )
+
+                            recipe_class.module_file = fpath
+
+                            recipe_class.name = yaml_file["name"]
+
+                            recipe_class.version = yaml_file["version"]
+
+                            if yaml_file["type"] == "collection":
+                                recipe_class.is_collection = True
+                            else:
+                                recipe_class.is_collection = False
+
+                            if not "url" in yaml_file:
+                                self.logger.warning(f"Failed to load recipe: {fpath}")
+                                self.logger.warning(f"Missing required 'url' field.")
+                                continue
+                            else:
+                                recipe_class.url = yaml_file["url"]
+
+                            if "archive_name_change" in yaml_file:
+                                recipe_class.archive_name_change = (
+                                    yaml_file["archive_name_change"][0],
+                                    yaml_file["archive_name_change"][1],
+                                )
+
+                            if not "platforms" in yaml_file:
+                                self.logger.warning(f"Failed to load recipe: {fpath}")
+                                self.logger.warning(f"Missing required 'platforms' field.")
+                                continue
+                            else:
+                                recipe_class.platforms = yaml_file["platforms"]
+
+                            recipes[recipe_class.name][recipe_class.version] = recipe_class
+
+                        elif yaml_file["type"] == "tool":
+                            if not "name" in yaml_file:
+                                self.logger.warning(f"Failed to load tool: {fpath}")
+                                self.logger.warning(f"Missing required 'name' field.")
+                                continue
+                            name = f"{cookbook}__{yaml_file['name']}"
+
+                            if "version" in yaml_file:
+                                name = f"{name}_{yaml_file['version']}"
+
+                            tool_class = type(
+                                name,
+                                (mussels.tool.BaseTool,),
+                                {"__doc__": f"{yaml_file['name']} tool class."},
+                            )
+
+                            tool_class.module_file = fpath
+
+                            tool_class.name = yaml_file["name"]
+
+                            if "version" in yaml_file:
+                                tool_class.version = yaml_file["version"]
+
+
+                            if not "platforms" in yaml_file:
+                                self.logger.warning(f"Failed to load tool: {fpath}")
+                                self.logger.warning(f"Missing required 'platforms' field.")
+                                continue
+                            else:
+                                tool_class.platforms = yaml_file["platforms"]
+
+                            tools[tool_class.name][tool_class.version] = tool_class
+
+        return recipes, tools
+
     def _read_cookbook(self, cookbook: str, cookbook_path: str) -> bool:
         """
         Load the recipes and tools from a single cookbook.
         """
+
         sorted_recipes: defaultdict = defaultdict(list)
         sorted_tools: defaultdict = defaultdict(list)
 
-        # Load the recipes
-        recipes = read.recipes(os.path.join(cookbook_path))
+        # Load the recipes and the tools
+        recipes, tools = self.load_directory(
+            cookbook=cookbook, load_path=os.path.join(cookbook_path)
+        )
+
+        # Sort the recipes
         sorted_recipes = sort_cookbook_by_version(recipes)
 
         self.cookbooks[cookbook]["recipes"] = sorted_recipes
@@ -177,8 +312,7 @@ class Mussels:
                     self.recipes[recipe][version] = {}
                 self.recipes[recipe][version][cookbook] = recipes[recipe][version]
 
-        # Load the tools
-        tools = read.tools(os.path.join(cookbook_path))
+        # Sort the tools
         sorted_tools = sort_cookbook_by_version(tools)
 
         self.cookbooks[cookbook]["tools"] = sorted_tools
@@ -408,7 +542,9 @@ class Mussels:
         if not recipe_object._build(clean):
             self.logger.error(f"FAILURE: {nvc_str(recipe, version)} build failed!\n")
         else:
-            self.logger.info(f"Success: {nvc_str(recipe, version)} build succeeded. :)\n")
+            self.logger.info(
+                f"Success: {nvc_str(recipe, version)} build succeeded. :)\n"
+            )
             result["success"] = True
 
         result["time elapsed"] = time.time() - start

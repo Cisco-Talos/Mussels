@@ -213,11 +213,13 @@ limitations under the License.
 
 The following are issues or features on the to-do list to implement or repair.
 
-- Convert Python class-based recipes to JSON to simplify recipe definitions, and reduce the barrier to entry.
-
 - Migrate clamav-related recipes to a separate `clamav-mussels-cookbook` repository.
 - Migrate non-clamav-related recipes to the new `mussels-recipe-scrapbook` repository.
 - Start documentation about cookbooks and how to get new cookbooks added to the index.
+
+- Add ability to build recipes from:
+  - git clones
+  - local directories
 
 - Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dry-run` option.
   - Feature must include a `-y`/`--yes` override for non-interactive builds.
@@ -233,7 +235,7 @@ The following are issues or features on the to-do list to implement or repair.
   - Debug builds should also include copying .pdb files to the out/install directory (Windows)
 
 - Add ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
-  - It may make sense to create the platform toolset as a tool which adds a build script variable.
+  - It may make more sense to create the platform toolset as a tool which adds a build script variable.
     - Should tools have the ability to add new build script variables?
 
 - Add capability for recipes to have "static" dependencies.
