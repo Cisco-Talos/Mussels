@@ -20,12 +20,12 @@ limitations under the License.
 """
 
 cookbooks = {
-    # "scrapbook": {
-    #     "author": "Cisco",
-    #     "url": "https://github.com/Cisco-Talos/mussels-recipe-scrapbook.git",
-    # },
-    # "clamav": {
-    #     "author": "Cisco",
-    #     "url": "https://github.com/Cisco-Talos/clamav-mussels-cookbook.git",
-    # },
+    "scrapbook": {
+        "author": "Cisco",
+        "url": "https://github.com/Cisco-Talos/mussels-recipe-scrapbook.git",
+    },
+    "clamav": {
+        "author": "Cisco",
+        "url": "https://github.com/Cisco-Talos/clamav-mussels-cookbook.git",
+    },
 }
