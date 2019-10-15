@@ -916,7 +916,7 @@ class Mussels:
                 "The following tools are missing and must be installed for this build to continue:"
             )
             for tool_version in missing_tools:
-                self.logger.warning(f"    {nvc_str(tool_nvc.name, tool_nvc.version)}")
+                self.logger.warning(f"    {nvc_str(tool_version.name, tool_version.version)}")
 
             sys.exit(1)
 
