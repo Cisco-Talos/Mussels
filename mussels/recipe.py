@@ -239,7 +239,11 @@ class BaseRecipe(object):
             # Write the build commands to a file
             build_lines = script.splitlines()
             for line in build_lines:
-                fd.write(line.strip() + "\n")
+                line = line.strip()
+                if platform.system() == "Windows" and line.endswith("\\"):
+                    fd.write(line.rstrip("\\") + " ")
+                else:
+                    fd.write(line + "\n")
 
         if platform.system() != "Windows":
             st = os.stat(script_name)

@@ -628,16 +628,19 @@ class Mussels:
 
         # verify that recipe supports requested target architecture
 
-        dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
+        if "dependencies" in self.recipes[recipe_nvc.name][recipe_nvc.version][
             recipe_nvc.cookbook
-        ].platforms[matching_platform][target]["dependencies"]
-        for dependency in dependencies:
-            if ":" not in dependency:
-                # If the cookbook isn't explicitly specified for the dependency,
-                # select the recipe from the current cookbook.
-                dependency = f"{recipe_nvc.cookbook}:{dependency}"
+        ].platforms[matching_platform][target]:
+            dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
+                recipe_nvc.cookbook
+            ].platforms[matching_platform][target]["dependencies"]
+            for dependency in dependencies:
+                if ":" not in dependency:
+                    # If the cookbook isn't explicitly specified for the dependency,
+                    # select the recipe from the current cookbook.
+                    dependency = f"{recipe_nvc.cookbook}:{dependency}"
 
-            recipes += self._identify_build_recipes(dependency, chain, platform, target)
+                recipes += self._identify_build_recipes(dependency, chain, platform, target)
 
         return recipes
 
@@ -659,9 +662,15 @@ class Mussels:
                 recipe_nvc.cookbook
             ].platforms.keys()
             matching_platform = pick_platform(platform, platform_options)
-            dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
+
+            if "dependencies" in self.recipes[recipe_nvc.name][recipe_nvc.version][
                 recipe_nvc.cookbook
-            ].platforms[matching_platform][target]["dependencies"]
+            ].platforms[matching_platform][target]:
+                dependencies = self.recipes[recipe_nvc.name][recipe_nvc.version][
+                    recipe_nvc.cookbook
+                ].platforms[matching_platform][target]["dependencies"]
+            else:
+                dependencies = []
             nvc_to_deps[recipe_nvc] = set(
                 [
                     self._get_recipe_version(dependency, platform, target)
