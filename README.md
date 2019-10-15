@@ -135,8 +135,11 @@ View all available recipes:
 Many Mussels commands may be shortened to save keystrokes. For example, the following are all equivalent:
 
 > `msl list`
+>
 > `msl lis`
+>
 > `msl li`
+>
 > `msl l`
 
 Show information about a specific recipe:
@@ -164,6 +167,7 @@ Use the `list` command to find a recipe you would like to use as a starting poin
 Once you've chosen a recipe, copy it to your current working directory with the `clone` command. For example:
 
 > `msl clone nghttp2`
+>
 > `ls -la`
 
 _Tip_: If the recipe requires one or more patch sets to build, the corresponding patch directories will also be copied to your current working directory.
@@ -182,9 +186,23 @@ The Mussels project maintains [an index](mussels/bookshelf.py) of cookbooks prov
 
 You don't need to add your cookbook to the public index in order to use it.
 
-_To use a local cookbook directory_: Simply `cd` to your cookbook directory and execute `mussels` commands in that directory for it to detect the "local" cookbook.
+#### To use a local cookbook directory
 
-_To use a private cookbook repository_: Run `msl cookbook add private <Git URL>` to add the Git URL for your cookbook to your global mussels config so that Mussels will record your cookbook in the index on your local machine. Then run `mussels update` so that repository is cloned and the recipes are made available for use.
+Simply `cd` to your cookbook directory and execute `mussels` commands in that directory for it to detect the "local" cookbook.
+
+#### To use a private cookbook repository
+
+  Run:
+
+  > `msl cookbook add private <Git URL>`
+
+  This will add the Git URL for your cookbook to your global Mussels config.  Mussels will record your cookbook in the index on your local machine.
+
+  Then run:
+
+  > `mussels update`
+
+  Mussels will clone the repository in your ~/.mussels directory and the recipes will be available for use.
 
 ## Contribute
 
@@ -198,11 +216,13 @@ If your project is willing to make project-specific recipes public, we'd also be
 
 ### Issue reporting
 
-If you find an issue with Mussels or the Mussels documentation, please submit an issue to our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).
+If you find an issue with Mussels or the Mussels documentation, please submit an issue to our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Before you submit, please check if someone else has already reported the issue.
 
 ### Development
 
-If you find a bug and you're able to craft a fix yourself, consider submitting the fix in pull request. Your help will be greatly appreciated.
+If you find a bug and you're able to craft a fix yourself, consider submitting the fix in a [pull request](https://github.com/Cisco-Talos/Mussels/pulls). Your help will be greatly appreciated.
+
+If you want to contribute to the project and don't have anything specific in mind, please checkout our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Perhaps you'll be able to fix a bug or add a cool new feature.
 
 _By submitting a contribution to the Mussels project, you acknowledge and agree to assign Cisco Systems, Inc the copyright for the contribution. If you submit a significant contribution such as a new feature or capability or a large amount of code, you may be asked to sign a contributors license agreement comfirming that Cisco will have copyright license and patent license and that you are authorized to contribute the code._
 
@@ -214,15 +234,15 @@ The following steps are intended to help users that wish to contribute to develo
 
     For example:
 
-    `git clone https://github.com/<your username>/Mussels.git`
+    > `git clone https://github.com/<your username>/Mussels.git`
 
 2. Make user Mussels is not already installed.  If it is, remove it.
 
-    `python3 -m pip uninstall mussels`
+    > `python3 -m pip uninstall mussels`
 
 3. Use pip to install Mussels in "edit" mode.
 
-    `python3 -m pip install -e --user ./Mussels`
+    > `python3 -m pip install -e --user ./Mussels`
 
 Once installed in "edit" mode, any changes you make to your clone of the Mussels code will be immediately usable simply by running the `mussels` commands.
 
@@ -241,38 +261,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
-## To-do
-
-The following are issues or features on the to-do list to implement or repair.
-
-- Add documentation about how to create new recipes and tool definitions.
-- Start documentation about cookbooks and how to get new cookbooks added to the index.
-
-- Add ability to build recipes from:
-  - git clones
-  - local directories
-
-- Add a yes/no Ready-check prompt prior to a build, with information about the build similar to the `--dry-run` option.
-  - Feature must include a `-y`/`--yes` override for non-interactive builds.
-
-- Add build `--package` option that copies the items located in directories such as "lib", "bin", "license" files for each of its dependencies to a specified directory, collocating all libraries and binaries in one directory.
-  - Recipes should define a list of files in dictionary variable named `distribute` so the `--package` option knows what files to collect.
-    - Two ways of defining the distributables are needed.
-      - "library" if the recipe is being used as a dependency.
-      - "application" if the recipe is the primary build target.
-    - This feature must support globbing, so you can specify a directory or all files within the directory.
-
-- Add ability to specify "Debug" or "Release" builds
-  - Debug builds should also include copying .pdb files to the out/install directory (Windows)
-
-- Add ability to specify Platform Toolset (i.e. v141 / 14.1) in recipe build script & as a version requirement.
-  - It may make more sense to create the platform toolset as a tool which adds a build script variable.
-    - Should tools have the ability to add new build script variables?
-
-- Add capability for recipes to have "static" dependencies.
-  - Static dependencies would be built in addition to normal (shared) dependencies, meaning that two recipes in a dependency chain could depend on different versions and from different cookbooks of the same library without conflicting.
-  - For compiled and linked software, any recipe which uses a static dependency must use a recipe that builds a static library and it must statically link the the static library.
-  - Recipes could be able to provide "incompatible_with" lists to indicate other libraries that will cause a conflict, unless the recipe is static. Example incompatibility: libjson-c must not be included with libjson-gnu or jansson, unless all but one (or all) are static. This feature would help people avoid symbol collisions that will cause crashes during runtime.
-
-- Improve test coverage.
