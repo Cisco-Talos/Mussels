@@ -15,7 +15,7 @@
 # TODO: Replace "template" with your recipe name, and customize the other options accordingly.
 
 name: template_deps
-version: 1.2.3
+version: "1.2.3"
 url: "hxxps://www.template.com/releases/v1.2.3.tar.gz"
 mussels_version: "0.1"
 type: collection

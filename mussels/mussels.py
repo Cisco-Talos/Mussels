@@ -172,7 +172,7 @@ class Mussels:
         tools = defaultdict(dict)
 
         if not os.path.exists(load_path):
-            return recipes
+            return recipes, tools
 
         for root, dirs, filenames in os.walk(load_path):
             for fname in filenames:
@@ -232,12 +232,12 @@ class Mussels:
                             else:
                                 recipe_class.is_collection = False
 
-                            if not "url" in yaml_file:
-                                self.logger.warning(f"Failed to load recipe: {fpath}")
-                                self.logger.warning(f"Missing required 'url' field.")
-                                continue
-                            else:
-                                recipe_class.url = yaml_file["url"]
+                                if not "url" in yaml_file:
+                                    self.logger.warning(f"Failed to load recipe: {fpath}")
+                                    self.logger.warning(f"Missing required 'url' field.")
+                                    continue
+                                else:
+                                    recipe_class.url = yaml_file["url"]
 
                             if "archive_name_change" in yaml_file:
                                 recipe_class.archive_name_change = (
@@ -351,8 +351,8 @@ class Mussels:
         """
         Load the recipes and tools from local "mussels" directory
         """
-        # Load recipes and tools from `cwd`/mussels directory, if any exist.
-        local_recipes = os.path.join(os.getcwd(), "mussels")
+        # Load recipes and tools from `cwd` directory, if any exist.
+        local_recipes = os.path.join(os.getcwd())
         if os.path.isdir(local_recipes):
             if not self._read_cookbook("local", local_recipes):
                 return False

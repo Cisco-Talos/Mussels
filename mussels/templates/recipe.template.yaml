@@ -16,7 +16,7 @@
 # Adjust the options as needed so your project will build.
 
 name: template
-version: 1.2.3
+version: "1.2.3"
 url: "hxxps://www.template.com/releases/v1.2.3.tar.gz"
 # archive_name_change:
 #   - searchpattern
