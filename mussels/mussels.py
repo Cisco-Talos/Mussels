@@ -436,9 +436,10 @@ class Mussels:
 
         # Load recipes from the local mussels directory, if those exists.
         if not self._read_local_recipes():
-            self.logger.warning(
-                f"Local `mussels` directory found, but failed to load any recipes or tools."
-            )
+            self.logger.warning(f"Failed to load any recipes or tools.")
+            self.logger.warning(f"Re-run Mussels from a directory containing Mussels recipe & tool definitions,")
+            self.logger.warning(f" or use `mussels update` to download recipes from the public cookbooks.")
+            return False
 
         self.sorted_recipes = self._sort_items_by_version(
             self.recipes, all=all, has_target=True
@@ -1332,7 +1333,7 @@ class Mussels:
         for book in self.cookbooks:
             repo_dir = os.path.join(self.app_data_dir, "cookbooks", book)
 
-            if self.cookbooks[book]["url"] != "":
+            if "url" in self.cookbooks[book] and self.cookbooks[book]["url"] != "":
                 if not os.path.isdir(repo_dir):
                     repo = git.Repo.clone_from(self.cookbooks[book]["url"], repo_dir)
                 else:
