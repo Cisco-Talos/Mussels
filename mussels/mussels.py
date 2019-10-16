@@ -769,6 +769,49 @@ class Mussels:
 
         return cookbook
 
+    def check_tool(
+        self,
+        tool: str,
+        version: str,
+        cookbook: str,
+        results: list,
+    ) -> bool:
+        """
+        Check if a tool exists. Will check all tools if tool arg is "".
+
+        Args:
+            recipe:     The recipe to build.
+            version:    A specific version to build.  Leave empty ("") to build the newest.
+            cookbook:   A specific cookbook to use.  Leave empty ("") if there's probably only one.
+            results:    (out) A list of dictionaries describing the results of the build.
+        """
+        found_tool = False
+
+        for each_tool in self.sorted_tools:
+            if tool == "" or tool == each_tool:
+                for each_version in self.sorted_tools[each_tool]:
+                    if version == "" or version == each_version["version"]:
+                        for each_cookbook in each_version["cookbooks"]:
+                            if cookbook == "" or cookbook == each_cookbook:
+                                found_tool = True
+
+                                tool_object = self.tools[each_tool][each_version["version"]][each_cookbook](self.app_data_dir)
+
+                                if tool_object.detect():
+                                    # Found!
+                                    self.logger.warning(
+                                        f"    {nvc_str(each_tool, each_version['version'], each_cookbook)} FOUND."
+                                    )
+                                else:
+                                    # Not found.
+                                    self.logger.error(
+                                        f"    {nvc_str(each_tool, each_version['version'], each_cookbook)} NOT found."
+                                    )
+        if not found_tool:
+            self.logger.warning(
+                f"    Unable to find tool definition matching: {nvc_str(tool, version, cookbook)}."
+            )
+
     def build_recipe(
         self,
         recipe: str,
@@ -1000,7 +1043,7 @@ class Mussels:
         """
         version_num = version["version"]
         cookbooks = version["cookbooks"].keys()
-        self.logger.info(f"    {recipe}-{version_num};  provided by cookbook(s): {list(cookbooks)}")
+        self.logger.info(f"    {nvc_str(recipe, version_num)};  provided by cookbook(s): {list(cookbooks)}")
 
         if verbose:
             self.logger.info("")
@@ -1271,7 +1314,9 @@ class Mussels:
                     outline = f"    {recipe:10} "
                     for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
-                            outline += f" {version['version']}*"
+                            outline += f" {version['version']}"
+                            if len(self.sorted_recipes[recipe]) > 1:
+                                outline += "*"
                         else:
                             outline += f", {version['version']}"
                     outline += ""
@@ -1280,7 +1325,9 @@ class Mussels:
                     outline = f"    {recipe:10} "
                     for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
-                            outline += f" {version['version']} {version['cookbooks']}*"
+                            outline += f" {version['version']} {version['cookbooks']}"
+                            if len(self.sorted_recipes[recipe]) > 1:
+                                outline += "*"
                         else:
                             outline += f", {version['version']} {version['cookbooks']}"
                     outline += ""
@@ -1299,7 +1346,9 @@ class Mussels:
                     outline = f"    {recipe:10} "
                     for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
-                            outline += f" {version['version']}*"
+                            outline += f" {version['version']}"
+                            if len(self.sorted_recipes[recipe]) > 1:
+                                outline += "*"
                         else:
                             outline += f", {version['version']}"
                     outline += ""
@@ -1308,11 +1357,273 @@ class Mussels:
                     outline = f"    {recipe:10} "
                     for i, version in enumerate(self.sorted_recipes[recipe]):
                         if i == 0:
-                            outline += f" {version['version']} {version['cookbooks']}*"
+                            outline += f" {version['version']} {version['cookbooks']}"
+                            if len(self.sorted_recipes[recipe]) > 1:
+                                outline += "*"
                         else:
                             outline += f", {version['version']} {version['cookbooks']}"
                     outline += ""
                     self.logger.info(outline)
+
+    def print_tool_details(
+        self, tool: str, version: dict, verbose: bool, all: bool
+    ):
+        """
+        Print tool information.
+        """
+        version_num = version["version"]
+        cookbooks = version["cookbooks"].keys()
+        self.logger.info(f"    {nvc_str(tool, version_num)};  provided by cookbook(s): {list(cookbooks)}")
+
+        if verbose:
+            self.logger.info("")
+            for cookbook in cookbooks:
+                self.logger.info(f"      Cookbook: {cookbook}")
+
+                book_tool = self.tools[tool][version_num][cookbook]
+
+                self.logger.info(f"        Platforms:")
+                for each_platform in book_tool.platforms:
+                    if all or platform_is(each_platform):
+                        self.logger.info(f"          Host platform: {each_platform}")
+
+                        details = yaml.dump(book_tool.platforms[each_platform], indent=4)
+                        for detail in details.split('\n'):
+                            self.logger.info("            " + detail)
+
+                        if not all:
+                            break
+            self.logger.info("")
+
+    def show_tool(self, tool_match: str, version_match: str, verbose: bool = False):
+        """
+        Search tools for a specific tool and print tool details.
+        """
+
+        found = False
+
+        if version_match == "":
+            self.logger.info(f'Searching for tool matching name: "{tool_match}"...')
+        else:
+            self.logger.info(
+                f'Searching for tool matching name: "{tool_match}", version: "{version_match}"...'
+            )
+        # Attempt to match the tool name
+        for tool in self.sorted_tools:
+            if fnmatch.fnmatch(tool, tool_match):
+                if version_match == "":
+                    found = True
+
+                    # Show info for every version
+                    for version in self.sorted_tools[tool]:
+                        self.print_tool_details(tool, version, verbose, all)
+                    break
+                else:
+                    # Attempt to match the version too
+                    for version in self.sorted_tools[tool]:
+                        if fnmatch.fnmatch(version, version_match):
+                            found = True
+
+                            self.print_tool_details(tool, version, verbose, all)
+                            break
+                    if found:
+                        break
+        if not found:
+            if version_match == "":
+                self.logger.warning(f'No tool matching name: "{tool_match}"')
+            else:
+                self.logger.warning(
+                    f'No tool matching name: "{tool_match}", version: "{version_match}"'
+                )
+
+    def clone_tool(self, tool: str, version: str, cookbook: str, destination: str):
+        """
+        Search tools for a specific tool and copy the file to the CWD.
+        """
+
+        def get_cookbook(tool: str, tool_version: dict) -> str:
+            """
+            Return the cookbook name, if only one cookbook provides the tool-version.
+            If more then one cookbook provides the tool-version, explain the options and return an empty string.
+            """
+            cookbook = ""
+
+            num_cookbooks = len(tool_version["cookbooks"].keys())
+            if num_cookbooks == 0:
+                self.logger.error(
+                    f"tool {nvc_str(tool, version)} not provided by any cookbook!(?!)"
+                )
+
+            elif num_cookbooks == 1:
+                cookbook = next(iter(tool_version["cookbooks"]))
+
+            else:
+                self.logger.error(
+                    f'Clone failed: No cookbook specified, and multiple cookbooks provide tool "{nvc_str(tool, tool_version["version"])}"'
+                )
+                self.logger.error(
+                    f"Please retry with a specific cookbook using the `-c` or `--cookbook` option:"
+                )
+                self.logger.info(f"")
+
+                self.print_tool_details(
+                    tool, tool_version, verbose=True, all=True
+                )
+
+            return cookbook
+
+        found = False
+
+        self.logger.info(
+            f'Attempting to clone tool: "{nvc_str(tool, version, cookbook)}"...'
+        )
+
+        try:
+            tool_versions = self.sorted_tools[tool]
+        except KeyError:
+            self.logger.error(f'Clone failed: No such tool "{tool}"')
+            return False
+
+        # Identify highest available version, for future reference.
+        highest_tool_version = tool_versions[0]
+
+        #
+        # Now repeat the above if/else logic to select the exact tool requested.
+        #
+
+        if version == "":
+            if cookbook == "":
+                # neither version nor cookbook was specified.
+                self.logger.info(
+                    f"No version or cookbook specified, will select highest available version."
+                )
+                version = highest_tool_version["version"]
+
+                cookbook = get_cookbook(version, highest_tool_version)
+
+                if cookbook == "":
+                    return False
+
+            else:
+                # cookbook specified, but version wasn't.
+                self.logger.info(
+                    f'No version specified, will select highest version provided by cookbook: "{cookbook}".'
+                )
+
+                selected_tool_version = {}
+
+                for tool_version in tool_versions:
+                    if cookbook in tool_version["cookbooks"].keys():
+                        selected_tool_version = tool_version
+                        break
+
+                if selected_tool_version == {}:
+                    self.logger.error(
+                        f'Clone failed: Requested tool "{tool}" could not be found in cookbook: "{cookbook}".'
+                    )
+                    return False
+
+                version = selected_tool_version["version"]
+
+                if (
+                    selected_tool_version["version"]
+                    != highest_tool_version["version"]
+                ):
+                    self.logger.warning(
+                        f'The version selected from cookbook "{cookbook}" is not the highest version available.'
+                    )
+                    self.logger.warning(
+                        f"A newer version appears to be available from other sources:"
+                    )
+                    self.logger.info(f"")
+                    self.print_tool_details(
+                        tool, highest_tool_version, verbose=True, all=True
+                    )
+
+        else:
+            # version specified
+            if cookbook == "":
+                self.logger.info(
+                    f"No cookbook specified, will select tool only if version is provided by only one cookbook."
+                )
+
+                selected_tool_version = {}
+
+                for tool_version in tool_versions:
+                    if version == tool_version["version"]:
+
+                        cookbook = get_cookbook(tool, tool_version)
+                        break
+
+                if cookbook == "":
+                    return False
+
+            else:
+                # version and cookbook specified.
+                pass
+
+        if destination == "":
+            destination = os.getcwd()
+
+        try:
+            tool_class = self.tools[tool][version][cookbook]
+        except KeyError:
+            self.logger.error(
+                f'Clone failed: Requested tool "{nvc_str(tool, version, cookbook)}" could not be found.'
+            )
+            return False
+
+        tool_basename = os.path.basename(tool_class.module_file)
+        clone_path = os.path.join(destination, tool_basename)
+
+        try:
+            shutil.copyfile(
+                tool_class.module_file, os.path.join(destination, tool_basename)
+            )
+        except Exception as exc:
+            self.logger.error(f"Clone failed.  Exception: {exc}")
+            return False
+
+        self.logger.info(
+            f'Successfully cloned tool "{nvc_str(tool, version, cookbook)}" to:'
+        )
+        self.logger.info(f"    {clone_path}")
+
+        return True
+
+    def list_tools(self, verbose: bool = False):
+        """
+        Print out a list of all tools and all collections.
+        """
+        has_collections = False
+
+        self.logger.info("tools:")
+        for tool in self.sorted_tools:
+            newest_version = self.sorted_tools[tool][0]["version"]
+            cookbooks = list(self.tools[tool][newest_version].keys())
+
+            if not verbose:
+                outline = f"    {tool:10} "
+                for i, version in enumerate(self.sorted_tools[tool]):
+                    if i == 0:
+                        outline += f" {version['version']}"
+                        if len(self.sorted_tools[tool]) > 1:
+                            outline += "*"
+                    else:
+                        outline += f", {version['version']}"
+                outline += ""
+                self.logger.info(outline)
+            else:
+                outline = f"    {tool:10} "
+                for i, version in enumerate(self.sorted_tools[tool]):
+                    if i == 0:
+                        outline += f" {version['version']} {version['cookbooks']}"
+                        if len(self.sorted_tools[tool]) > 1:
+                            outline += "*"
+                    else:
+                        outline += f", {version['version']} {version['cookbooks']}"
+                outline += ""
+                self.logger.info(outline)
 
     def update_cookbooks(self) -> None:
         """

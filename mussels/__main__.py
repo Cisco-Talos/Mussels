@@ -234,7 +234,7 @@ def recipe_show(recipe: str, version: str, verbose: bool, all: bool):
 @click.option("--dest", "-d", default="", help="Destination directory. [optional]")
 def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     """
-    Copy a recipe to the current working directory or to a specific directory.
+    Copy a recipe to the current directory or to a specific directory.
     """
     my_mussels = Mussels(load_all_recipes=True)
 
@@ -279,6 +279,99 @@ def recipe_build(
     success = my_mussels.build_recipe(
         recipe, version, cookbook, target, results, dry_run, clean
     )
+    if success == False:
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+@cli.group(cls=ShortNames, help="Commands that operate on tools.")
+def tool():
+    pass
+
+
+@tool.command("list")
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="List all tools, including those for other platforms. [optional]",
+)
+def tool_list(verbose: bool, all: bool):
+    """
+    Print the list of all known tools.
+    An asterisk indicates default (highest) version.
+    """
+    my_mussels = Mussels(load_all_recipes=all)
+
+    my_mussels.list_tools(verbose)
+
+
+@tool.command("show")
+@click.argument("tool", required=True)
+@click.option("--version", "-v", default="", help="Version. [optional]")
+@click.option(
+    "--verbose", "-V", is_flag=True, default=False, help="Verbose output. [optional]"
+)
+@click.option(
+    "--all",
+    "-a",
+    is_flag=True,
+    default=False,
+    help="Show all tool variants, including those for other platforms. [optional]",
+)
+def tool_show(tool: str, version: str, verbose: bool, all: bool):
+    """
+    Show details about a specific tool.
+    """
+    my_mussels = Mussels(load_all_recipes=all)
+
+    my_mussels.show_tool(tool, version, verbose)
+
+
+@tool.command("clone")
+@click.argument("tool", required=True)
+@click.option(
+    "--version", "-v", default="", help="Specific version to clone. [optional]"
+)
+@click.option(
+    "--cookbook", "-c", default="", help="Specific cookbook to clone. [optional]"
+)
+@click.option("--dest", "-d", default="", help="Destination directory. [optional]")
+def tool_clone(tool: str, version: str, cookbook: str, dest: str):
+    """
+    Copy a tool to the current directory or to a specific directory.
+    """
+    my_mussels = Mussels(load_all_recipes=True)
+
+    my_mussels.clone_tool(tool, version, cookbook, dest)
+
+
+@tool.command("check")
+@click.argument("tool", required=False, default="")
+@click.option(
+    "--version",
+    "-v",
+    default="",
+    help="Version of tool to check. May not be combined with @version in tool name. [optional]",
+)
+@click.option(
+    "--cookbook", "-c", default="", help="Specific cookbook to use. [optional]"
+)
+def tool_check(tool: str, version: str, cookbook: str):
+    """
+    Check if a tool is installed.
+    """
+
+    my_mussels = Mussels()
+
+    results = []
+
+    success = my_mussels.check_tool(tool, version, cookbook, results)
     if success == False:
         sys.exit(1)
 
