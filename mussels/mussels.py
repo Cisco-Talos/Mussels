@@ -912,12 +912,12 @@ class Mussels:
                 tool_found = True
                 toolchain[tool_nvc.name] = preferred_tool
                 self.logger.info(
-                    f"    {nvc_str(tool_nvc.name, tool_nvc.version)} found."
+                    f"    {nvc_str(tool_nvc.name, tool_nvc.version, tool_nvc.cookbook)} found."
                 )
             else:
                 # Check if non-preferred (older, but compatible) version is available.
                 self.logger.warning(
-                    f"    {nvc_str(tool_nvc.name, tool_nvc.version)} not found."
+                    f"    {nvc_str(tool_nvc.name, tool_nvc.version, tool_nvc.cookbook)} not found."
                 )
 
                 if len(self.sorted_tools[tool_nvc.name]) > 1:
@@ -943,11 +943,11 @@ class Mussels:
                                 self.sorted_tools,
                             )
                             self.logger.info(
-                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version, alt_version_cookbook)} found."
+                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)} found."
                             )
                         else:
                             self.logger.warning(
-                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version, alt_version_cookbook)} not found."
+                                f"    Alternative version {nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)} not found."
                             )
 
                 if not tool_found:
