@@ -364,10 +364,13 @@ class BaseRecipe(object):
         for tool in self.toolchain:
             platform_options = self.toolchain[tool].platforms.keys()
             matching_platform = pick_platform(platform.system(), platform_options)
-            for path_mod in self.toolchain[tool].platforms[matching_platform][
-                "path_mods"
-            ][self.toolchain[tool].installed][self.target]:
-                os.environ["PATH"] = path_mod + os.pathsep + os.environ["PATH"]
+            if self.toolchain[tool].tool_path != "":
+                self.logger.debug(
+                    f"Adding tool {tool} path {self.toolchain[tool].tool_path} to PATH"
+                )
+                os.environ["PATH"] = (
+                    self.toolchain[tool].tool_path + os.pathsep + os.environ["PATH"]
+                )
 
         cwd = os.getcwd()
         build_path_exists = os.path.exists(self.builds[self.target])

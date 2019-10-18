@@ -23,7 +23,7 @@ limitations under the License.
 """
 
 import datetime
-from distutils import dir_util
+from distutils import dir_util, spawn
 import inspect
 import logging
 import os
@@ -49,7 +49,7 @@ class BaseTool(object):
     version = ""
     platforms: dict = {}
     logs_dir = ""
-    installed = ""
+    tool_path = ""
 
     def __init__(self, data_dir: str = ""):
         """
@@ -89,41 +89,100 @@ class BaseTool(object):
 
         self.logger.addHandler(filehandler)
 
+    def _run_command(self, command: str, expected_output: str) -> bool:
+        """
+        Run a command.
+        """
+        found_expected_output = False
+
+        cmd = command.split()
+
+        # Run the build script.
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        with process.stdout:
+            for line in iter(process.stdout.readline, b""):
+                if expected_output in line.decode("utf-8"):
+                    found_expected_output = True
+
+        process.wait()
+        if process.returncode != 0:
+            self.logger.warning(f"Command failed!")
+            return False
+
+        return found_expected_output
+
     def detect(self) -> bool:
         """
         Determine if tool is available in expected locations.
         """
-        self.installed = ""
+        found = False
 
         self.logger.info(f"Detecting tool: {self.name_version}...")
 
         for each_platform in self.platforms:
             if platform_is(each_platform):
-                for install_location in self.platforms[each_platform]["file_checks"]:
-                    missing_file = False
-
-                    for filepath in self.platforms[each_platform]["file_checks"][
-                        install_location
-                    ]:
-                        if os.path.exists(filepath):
-                            self.logger.info(
-                                f'{install_location}-install {self.name_version} file "{filepath}" found'
-                            )
+                if "path_checks" in self.platforms[each_platform]:
+                    for path_check in self.platforms[each_platform]["path_checks"]:
+                        self.logger.info(f"  Checking for {path_check} in PATH")
+                        install_location = spawn.find_executable(path_check)
+                        if install_location == None:
+                            self.logger.info(f"    {path_check} not found")
                         else:
                             self.logger.info(
-                                f'{install_location}-install {self.name_version} file "{filepath}" not found'
+                                f"    {path_check} found, at: {install_location}"
                             )
-                            missing_file = True
+                            found = True
+                            break
 
-                    if missing_file == False:
-                        self.logger.info(
-                            f"{install_location}-install {self.name_version} detected!"
+                if found:
+                    break
+
+                if "command_checks" in self.platforms[each_platform]:
+                    for script_check in self.platforms[each_platform]["command_checks"]:
+                        found = self._run_command(
+                            command=script_check["command"],
+                            expected_output=script_check["output_has"],
                         )
-                        self.installed = install_location
-                        break
+                        if not found:
+                            self.logger.info(f"    {script_check['command']} failed.")
+                        else:
+                            self.logger.info(f"    {script_check['command']} passed!")
+                            break
+
+                if found:
+                    break
+
+                if "file_checks" in self.platforms[each_platform]:
+                    for install_location in self.platforms[each_platform][
+                        "file_checks"
+                    ]:
+                        missing_file = False
+
+                        for filepath in self.platforms[each_platform]["file_checks"][
+                            install_location
+                        ]:
+                            if os.path.exists(filepath):
+                                self.logger.info(
+                                    f'{install_location}-install {self.name_version} file "{filepath}" found'
+                                )
+                            else:
+                                self.logger.info(
+                                    f'{install_location}-install {self.name_version} file "{filepath}" not found'
+                                )
+                                missing_file = True
+
+                        if missing_file == False:
+                            self.logger.info(
+                                f"{install_location}-install {self.name_version} detected!"
+                            )
+                            self.tool_path = os.path.dirname(filepath)
+                            found = True
+                            break
                 break
 
-        if self.installed == "":
+        if not found:
             self.logger.warning(f"Failed to detect {self.name_version}.")
             return False
 
