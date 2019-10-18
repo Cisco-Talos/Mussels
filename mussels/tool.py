@@ -98,19 +98,23 @@ class BaseTool(object):
         cmd = command.split()
 
         # Run the build script.
-        process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-        )
-        with process.stdout:
-            for line in iter(process.stdout.readline, b""):
-                if expected_output in line.decode("utf-8"):
-                    found_expected_output = True
+        try:
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            with process.stdout:
+                for line in iter(process.stdout.readline, b""):
+                    if expected_output in line.decode("utf-8"):
+                        found_expected_output = True
 
-        process.wait()
-        if process.returncode != 0:
-            self.logger.warning(f"Command failed!")
+            process.wait()
+            if process.returncode != 0:
+                self.logger.warning(f"Command failed!")
+                return False
+        except FileNotFoundError:
+            self.logger.warning(f"Command failed; File not found!")
             return False
-
+            
         return found_expected_output
 
     def detect(self) -> bool:
