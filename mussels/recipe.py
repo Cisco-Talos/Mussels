@@ -32,6 +32,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import time
 import zipfile
 
 import requests
@@ -88,7 +89,6 @@ class BaseRecipe(object):
         self.downloads_dir = os.path.join(self.data_dir, "cache", "downloads")
         self.logs_dir = os.path.join(self.data_dir, "logs", "recipes")
         self.work_dir = os.path.join(self.data_dir, "cache", "work")
-        self.src_dir = os.path.join(self.data_dir, "cache", "src")
 
         self.module_dir = os.path.split(self.module_file)[0]
 
@@ -149,7 +149,7 @@ class BaseRecipe(object):
             return True
 
         self.logger.info(f"Downloading {self.url}")
-        self.logger.info(f"         to {self.download_path}...")
+        self.logger.info(f"         to {self.download_path} ...")
 
         if self.url.startswith("ftp"):
             try:
@@ -168,41 +168,63 @@ class BaseRecipe(object):
 
         return True
 
-    def _extract_archive(self) -> bool:
+    def _extract_archive(self, clean: bool) -> bool:
         """
         Extract the archive found in Downloads directory, if necessary.
         """
-        if self.download_path.endswith(".tar.gz"):
-            # Un-tar
-            self.extracted_source_path = os.path.join(self.src_dir, self.archive[:-7])
-            if os.path.exists(self.extracted_source_path):
-                self.logger.debug(f"Archive already extracted.")
+        if self.archive.endswith(".tar.gz"):
+            self.builds[self.target] = os.path.join(
+                self.work_dir, self.target, f"{self.archive[:-len('.tar.gz')]}"
+            )
+        elif self.archive.endswith(".zip"):
+            self.builds[self.target] = os.path.join(
+                self.work_dir, self.target, f"{self.archive[:-len('.zip')]}"
+            )
+        else:
+            self.logger.error(
+                f"Unexpected archive extension. Currently only supports .tar.gz and .zip!"
+            )
+            return False
+
+        self.prior_build_exists = os.path.exists(self.builds[self.target])
+
+        if self.prior_build_exists:
+            if not clean:
+                # Build directory already exists.  We're good.
                 return True
 
+            # Remove previous built, start over.
             self.logger.info(
-                f"Extracting archive {self.archive} to {self.extracted_source_path} ..."
+                f"--clean: Removing previous {self.target} build directory:"
+            )
+            self.logger.info(f"   {self.builds[self.target]}")
+            shutil.rmtree(self.builds[self.target])
+            self.prior_build_exists = False
+
+        os.makedirs(os.path.join(self.work_dir, self.target), exist_ok=True)
+
+        # Make our own copy of the extracted source so we don't dirty the original.
+        self.logger.debug(f"Preparing {self.target} build directory:")
+        self.logger.debug(f"   {self.builds[self.target]}")
+
+        if self.archive.endswith(".tar.gz"):
+            # Un-tar
+            self.logger.info(
+                f"Extracting tarball archive {self.archive} to {self.builds[self.target]} ..."
             )
 
             tar = tarfile.open(self.download_path, "r:gz")
-            tar.extractall(self.src_dir)
+            tar.extractall(os.path.join(self.work_dir, self.target))
             tar.close()
-        elif self.download_path.endswith(".zip"):
+        elif self.archive.endswith(".zip"):
             # Un-zip
-            self.extracted_source_path = os.path.join(self.src_dir, self.archive[:-4])
-            if os.path.exists(self.extracted_source_path):
-                self.logger.debug(f"Archive already extracted.")
-                return True
-
             self.logger.info(
-                f"Extracting Zip {self.archive} to {self.extracted_source_path}..."
+                f"Extracting zip archive {self.archive} to {self.builds[self.target]} ..."
             )
 
             zip_ref = zipfile.ZipFile(self.download_path, "r")
-            zip_ref.extractall(self.src_dir)
+            zip_ref.extractall(os.path.join(self.work_dir, self.target))
             zip_ref.close()
-        else:
-            self.logger.error(f"Unexpected archive extension!")
-            return False
 
         return True
 
@@ -273,30 +295,6 @@ class BaseRecipe(object):
 
         return True
 
-    def _prepare_for_build(self) -> bool:
-        """
-        Initialize directories
-        Collect source materials
-        """
-        os.makedirs(self.work_dir, exist_ok=True)
-        os.makedirs(self.src_dir, exist_ok=True)
-
-        # Download and build if necessary.
-        if not self._download_archive():
-            self.logger.error(
-                f"Failed to download source archive for {nvc_str(self.name, self.version)}"
-            )
-            return False
-
-        # Extract to the data_dir.
-        if not self._extract_archive():
-            self.logger.error(
-                f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
-            )
-            return False
-
-        return True
-
     def _build(self, clean: bool = False) -> bool:
         """
         Patch source materials if not already patched.
@@ -308,7 +306,20 @@ class BaseRecipe(object):
             )
             return True
 
-        if not self._prepare_for_build():
+        os.makedirs(self.work_dir, exist_ok=True)
+
+        # Download and build if necessary.
+        if not self._download_archive():
+            self.logger.error(
+                f"Failed to download source archive for {nvc_str(self.name, self.version)}"
+            )
+            return False
+
+        # Extract to the work_dir.
+        if not self._extract_archive(clean):
+            self.logger.error(
+                f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
+            )
             return False
 
         if not os.path.isdir(self.patch_dir):
@@ -319,45 +330,38 @@ class BaseRecipe(object):
                 f"Patch directory found for {nvc_str(self.name, self.version)}."
             )
             if not os.path.exists(
-                os.path.join(self.extracted_source_path, "_mussles.patched")
+                os.path.join(self.builds[self.target], "_mussles.patched")
             ):
                 # Not yet patched. Apply patches.
                 self.logger.info(
-                    f"Applying patches to {nvc_str(self.name, self.version)} source directory..."
+                    f"Applying patches to {nvc_str(self.name, self.version)} ({self.target}) build directory ..."
                 )
                 for patchfile in os.listdir(self.patch_dir):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
                         self.logger.info(f"Attempting to apply patch: {patchfile}")
                         pset = patch.fromfile(os.path.join(self.patch_dir, patchfile))
-                        patched = pset.apply(1, root=self.extracted_source_path)
+                        patched = pset.apply(1, root=self.builds[self.target])
                         if not patched:
                             self.logger.error(f"Patch failed!")
                             return False
                     else:
                         self.logger.info(
-                            f"Copying new file {patchfile} to {nvc_str(self.name, self.version)} source directory..."
+                            f"Copying new file {patchfile} to {nvc_str(self.name, self.version)} ({self.target}) build directory ..."
                         )
                         shutil.copyfile(
                             os.path.join(self.patch_dir, patchfile),
-                            os.path.join(self.extracted_source_path, patchfile),
+                            os.path.join(self.builds[self.target], patchfile),
                         )
 
                 with open(
-                    os.path.join(self.extracted_source_path, "_mussles.patched"), "w"
+                    os.path.join(self.builds[self.target], "_mussles.patched"), "w"
                 ) as patchmark:
                     patchmark.write("patched")
-
-        already_built = True
 
         build_scripts = self.platforms[self.platform][self.target]["build_script"]
 
         self.logger.info(
             f"Attempting to build {nvc_str(self.name, self.version)} for {self.target}"
-        )
-        self.builds[self.target] = os.path.join(
-            self.work_dir,
-            self.target,
-            f"{os.path.split(self.extracted_source_path)[-1]}",
         )
 
         # Add each tool from the toolchain to the PATH environment variable.
@@ -373,30 +377,9 @@ class BaseRecipe(object):
                 )
 
         cwd = os.getcwd()
-        build_path_exists = os.path.exists(self.builds[self.target])
+        os.chdir(self.builds[self.target])
 
-        if build_path_exists:
-            if clean:
-                # Remove previous built, start over.
-                self.logger.info(
-                    f"--clean: Removing previous {self.target} build directory:"
-                )
-                self.logger.info(f"   {self.builds[self.target]}")
-                shutil.rmtree(self.builds[self.target])
-                build_path_exists = False
-
-        if not build_path_exists:
-            os.makedirs(os.path.join(self.work_dir, self.target), exist_ok=True)
-
-            # Make our own copy of the extracted source so we don't dirty the original.
-            self.logger.debug(
-                f"Creating new {self.target} build directory from extracted sources:"
-            )
-            self.logger.debug(f"   {self.builds[self.target]}")
-            shutil.copytree(self.extracted_source_path, self.builds[self.target])
-
-            os.chdir(self.builds[self.target])
-
+        if not self.prior_build_exists:
             # Run "configure" script, if exists.
             if "configure" in build_scripts.keys():
                 if not self._run_script(
