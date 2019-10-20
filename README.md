@@ -7,83 +7,11 @@ Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserve
 
 ## About
 
-Mussels is a tool to automate the building of applications _and_ their dependency chains using the original build systems intended by the software authors.
+Mussels is a cross-platform and general-purpose dependency build automation tool.
 
-Mussels...
+Mussels helps automate the building of applications _and_ their versioned dependency chains using the original build systems intended by the software authors.
 
-- Is cross-platform! Mussels is designed to work on Windows, macOS, Linux, and other forms of UNIX.
-
-- Provides dependency chaining and dependency versioning.
-
-  Each recipe must identify the names of its depependencies and may optionally specify which dependency versions are compatible using `>` (greater than), `<` (less than), or `=` (equal to).
-
-  Recipes for dependencies must either be provided in the same location, or a "cookbook" may be specified to indicate where to find the recipe.
-
-  For example, a recipe depends on the `zlib` recipe, version greather than `1.2.8`, provided by the `scrapbook`* cookbook would state its "dependencies" as follows:
-
-      dependencies = ["scrapbook:zlib>1.2.8"]
-
-- Provides build tool detection and build tool version selection.
-
-  Similar to how recipes identify their recipe dependencies, recipes must identify the tools required to build a recipe. Developers may create custom tool definitions if existing tool definitions don't suit their needs.
-
-  A recipe may depend on specific build tools, and may tool versions as needed. As with recipes, a curated list of tools is provided in the Mussels "scrapbook" cookbook, but users are welcome to define their own to suit their needs.
-
-  Example recipe "required_tools" definition using tool definitions provided by the scrapbook:
-
-      required_tools = [
-          "scrapbook:nasm",
-          "scrapbook:perl",
-          "scrapbook:visualstudio>=2017",
-      ]
-
-- Does _NOT_ require changes to your project source code.
-
-  Unlike other dependency management tools, there is no requirement to add any Mussels files to your project repository.
-
-  If you need to define your own recipes, and you probably will, you're encouraged to place them in a "cookbook" repository. We suggest that you make this separate from your main project repository, although you could also place them in a sub-directory in your project if you so desire.
-
-- Does _NOT_ insert itself as a new dependency for your project.
-
-  Mussels exists make your life easier by automating your existing build processes.
-
-- Does _NOT_ require you to write all new build tooling. Unlike other dependency management tools, there are no custom CMakeLists, Makefiles, or Visual Studio project files required for your code or your dependencies.
-
-  Mussels recipes are, at their core, simple bash or batch scripts written to build your dependencies using the tools and commands that the library authors expected you to use.
-
-- Is _NOT_ a replacement for traditional build tools.
-
-  Your project will still require a traditional build system and compiler such a Make, CMake, Meson, Bazel, Visual Studio, GCC, Clang, _etc_.
-
-- Is _NOT_ a package manager. Mussels is not intended to compete with or replace application distribution tools such as DNF/Yum, Homebrew, Chocolatey, apt-get, Snapcraft, Flatpak, the Windows App Store, _etc_.
-
-- Is intended to enable application developers to build their own dependencies to be distributed with their applications on systems where the system cannot or should not be relied upon to provide application dependencies.
-
-*_Nota bene_: The ["scrapbook"](https://github.com/Cisco-Talos/mussels-recipe-scrapbook) is a curated collection of general purpose recipes. If you would like to provide a recipe or two for public use and don't want to maintain your own cookbook repository, consider submitting your recipes in a pull-request to the scrapbook.
-
-## Terminology
-
-`recipe` : A Python file containing a Recipe class that defines the following information:
-
-- name
-- version
-- download URL
-- build scripts to configure, build, and install
-- dependencies (other recipes) required for the build
-- required tools needed to perform the build
-- files and directories to be included in a package (distribution)
-- (optional) A recipe may be a collection; that is - a list of recipe "dependencies" with no download URL or and no build instructions.
-
-`tool` : A Python file containing a Tool class that defines the following information:
-
-- name
-- version
-- path modifications needed to execute tool commands from bash/batch scripts.
-- file or directory paths that, if they exist, indicate that the tool is installed
-
-`cookbook` : A git repository containing recipe and tool definitions.
-
-  Mussels maintains a [an index of cookbooks](mussels/bookshelf.py). To register your cookbook in the index so that others may use your recipes, please submit a pull-request on GitHub.
+For a more in depth explanation, see the [Mussels Introduction](docs/introduction.md).
 
 ## Requirements
 
@@ -91,6 +19,28 @@ Mussels...
 - Git (must be added to your PATH environment variable).
 
 An internet connection is required to use the public Mussels cookbooks. Some form of internet or intranet is required to download source archives from the URLs defined in each recipe.
+
+Every recipe will require tools in order to run.  If you don't have the required tools, you'll get an error message stating that you're missing a required tool.  It will be up to you to install the tool in order for that recipe to build.
+
+### Common Tools Requirements
+
+Linux:
+
+- gcc
+- Make
+- CMake
+- patchelf
+
+MacOS (Darwin):
+
+- Clang (comes with XCode)
+- Make
+- CMake
+
+Windows:
+
+- Visual Studio 2017+
+- CMake
 
 ## Installation
 
@@ -110,123 +60,42 @@ Use the `--help` option to get information about any Mussels command.
 >
 > `mussels build --help`
 
-_Tip_: Use the `msl` shorcut, instead of `mussels` to save keystrokes.
+_Tip_: Use the `msl` shortcut, instead of `mussels` to save keystrokes.
 
-_Tip_: You may not be able to run `mussels` or the `msl` shortcut directly if your Python Scripts directory is not in your `PATH` environment variable. If you run into this issue, and do not wish to add the Scripts directory to your path, you can run Mussels like this:
+_Tip_: You may not be able to run `mussels` or the `msl` shortcut directly if your Python Scripts directory is not in your `PATH` environment variable. If you run into this issue, and do not wish to add the Python Scripts directory to your path, you can run Mussels like this:
 
 > `python -m mussels`
 
-### Search for recipes and build recipes
-
-Download recipes from public sources:
-
-> `mussels update`
-
-or:
-
-> `msl update`
-
-View all available recipes:
-
-> `msl list`
->
-> `msl list -V` (verbose)
-
-Many Mussels commands may be shortened to save keystrokes. For example, the following are all equivalent:
-
-> `msl list`
->
-> `msl lis`
->
-> `msl li`
->
-> `msl l`
-
-Show information about a specific recipe:
-
-> `msl show openssl`
->
-> `msl show openssl -V` (verbose)
-
-Perform a dry-run to view order in which dependency graph will be build a specific recipe:
-
-> `msl build openssl -d`
-
-Build a specific version of a recipe:
-
-> `msl build openssl -v 1.1.0j`
-
-### Create your own recipes
-
-A recipe is just a YAML file containing metadata about where to find, and how to build, a specific version of a given project.  The easiest way to create your own recipe is to copy an existing recipe.
-
-Use the `list` command to find a recipe you would like to use as a starting point:
-
-> `msl list -a -V`
-
-Once you've chosen a recipe, copy it to your current working directory with the `clone` command. For example:
-
-> `msl clone nghttp2`
->
-> `ls -la`
-
-_Tip_: If the recipe requires one or more patch sets to build, the corresponding patch directories will also be copied to your current working directory.
-
-Now rename the cloned recipe to whatever you like and start making changes! So long as you keep the `.yaml` extension, Mussels will still recognize it.
-
-_Tip_: When testing your recipes, the recipes must be in (in a subdirectory of) your current working directory for Mussels to find them.  Use `msl list -a -V` to display all current recipes.  Recipes found in the current working directory will show up as being provided by the "local" cookbook.  Use `msl show <recipe_name> -V` to view more information about a specific recipe.
-
-### Create your own cookbook
-
-Simply put, a cookbook is a git repository that contains Mussels recipe files and/or Mussels tool files.  The structure of the cookbook is up to the project owners, as `mussels` will search every Python file in the repository for files containing "Recipe" and "Tool" class definitions.
-
-Cookbooks are a way for users to curate recipes to build their project without relying on recipes provided by others where changes may inadvertantly break their build. As cookbooks are privately owned, their owners are free to copyright and license the recipe and tool definitions within as they see fit.
-
-The Mussels project maintains [an index](mussels/bookshelf.py) of cookbooks provided by third-parties. Cookbook authors are encouraged to add their cookbook to the index by submitting a pull-request to the Mussels project. However, each cookbook's license must be compatible with the Apache v2.0 license used by Mussels in order to be included in the index.
-
-You don't need to add your cookbook to the public index in order to use it.
-
-#### To use a local cookbook directory
-
-Simply `cd` to your cookbook directory and execute `mussels` commands in that directory for it to detect the "local" cookbook.
-
-#### To use a private cookbook repository
-
-  Run:
-
-  > `msl cookbook add private <Git URL>`
-
-  This will add the Git URL for your cookbook to your global Mussels config.  Mussels will record your cookbook in the index on your local machine.
-
-  Then run:
-
-  > `mussels update`
-
-  Mussels will clone the repository in your ~/.mussels directory and the recipes will be available for use.
+Learn more about how use Mussels in our [documentation](docs/usage.md).
 
 ## Contribute
 
 Mussels is open source and we'd love your help. There are many ways to contribute!
 
-### Recipes
+### Contribute Recipes
 
 You can contribute to the Mussels community by creating new recipes or improving on existing recipes in the ["scrapbook"](https://github.com/Cisco-Talos/mussels-recipe-scrapbook). Do this by submitting a pull request to that Git repository.
 
-If your project is willing to make project-specific recipes public, we'd also be happy to add your cookbook repository to the Mussels [index](mussels/bookshelf.py). Do this by submitting a pull request to this Git repository. As noted above, each cookbook's license must be compatible with the Apache v2.0 license used by Mussels in order to be included in the index.
+If your project is willing to make your project-specific recipes available to the public, we'd also be happy to add your cookbook repository to the Mussels [bookshelf](mussels/bookshelf.py). Do this submitting a pull request to this Git repository. As noted above, each cookbook's license must be compatible with the Apache v2.0 license used by Mussels in order to be included in the bookshelf.
 
-### Issue reporting
+To learn more about how to read & write Mussels recipe and tool definitions, check out the following:
 
-If you find an issue with Mussels or the Mussels documentation, please submit an issue to our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Before you submit, please check if someone else has already reported the issue.
+- [Recipe guide](docs/recipes.md)
+- [Tool guide](docs/tools.md)
 
-### Development
+### Report issues
+
+If you find an issue with Mussels or the Mussels documentation, please submit an issue to our [GitHub issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Before you submit, please check to if someone else has already reported the issue.
+
+### Mussels Development
 
 If you find a bug and you're able to craft a fix yourself, consider submitting the fix in a [pull request](https://github.com/Cisco-Talos/Mussels/pulls). Your help will be greatly appreciated.
 
-If you want to contribute to the project and don't have anything specific in mind, please checkout our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Perhaps you'll be able to fix a bug or add a cool new feature.
+If you want to contribute to the project and don't have anything specific in mind, please check out our [issue tracker](https://github.com/Cisco-Talos/Mussels/issues).  Perhaps you'll be able to fix a bug or add a cool new feature.
 
 _By submitting a contribution to the Mussels project, you acknowledge and agree to assign Cisco Systems, Inc the copyright for the contribution. If you submit a significant contribution such as a new feature or capability or a large amount of code, you may be asked to sign a contributors license agreement comfirming that Cisco will have copyright license and patent license and that you are authorized to contribute the code._
 
-#### Mussels Development Setup
+#### Mussels Development Set-up
 
 The following steps are intended to help users that wish to contribute to development of the Mussels project get started.
 
@@ -244,7 +113,7 @@ The following steps are intended to help users that wish to contribute to develo
 
     > `python3 -m pip install -e --user ./Mussels`
 
-Once installed in "edit" mode, any changes you make to your clone of the Mussels code will be immediately usable simply by running the `mussels` commands.
+Once installed in "edit" mode, any changes you make to your clone of the Mussels code will be immediately usable simply by running the `mussels` / `msl` commands.
 
 ### Conduct
 

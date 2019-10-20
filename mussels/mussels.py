@@ -1799,13 +1799,13 @@ class Mussels:
 
         self._store_config("cookbooks.json", self.cookbooks)
 
-    def config_add_cookbook(self, cookbook, author, url):
+    def config_add_cookbook(self, cookbook, author, url, trust=False):
         """
         Update config to indicate that a given cookbook is trusted.
         """
         self.cookbooks[cookbook]["author"] = author
         self.cookbooks[cookbook]["url"] = url
-        self.cookbooks[cookbook]["trusted"] = True
+        self.cookbooks[cookbook]["trusted"] = trust
 
         self._store_config("cookbooks.json", self.cookbooks)
 

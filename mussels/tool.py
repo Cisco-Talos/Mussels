@@ -159,27 +159,14 @@ class BaseTool(object):
                     break
 
                 if "file_checks" in self.platforms[each_platform]:
-                    for install_location in self.platforms[each_platform][
-                        "file_checks"
-                    ]:
-                        missing_file = False
-
-                        for filepath in self.platforms[each_platform]["file_checks"][
-                            install_location
-                        ]:
-                            if os.path.exists(filepath):
-                                self.logger.info(
-                                    f'{install_location}-install {self.name_version} file "{filepath}" found'
-                                )
-                            else:
-                                self.logger.info(
-                                    f'{install_location}-install {self.name_version} file "{filepath}" not found'
-                                )
-                                missing_file = True
-
-                        if missing_file == False:
+                    for filepath in self.platforms[each_platform]["file_checks"]:
+                        if not os.path.exists(filepath):
                             self.logger.info(
-                                f"{install_location}-install {self.name_version} detected!"
+                                f'{self.name_version} file "{filepath}" not found'
+                            )
+                        else:
+                            self.logger.info(
+                                f'{self.name_version} file "{filepath}" found'
                             )
                             self.tool_path = os.path.dirname(filepath)
                             found = True

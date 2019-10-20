@@ -131,7 +131,7 @@ def cookbook_trust(cookbook, yes):
         )
         response = response.strip().lower()
 
-        if response != "y":
+        if response != "y" and response != "yes":
             return
 
     my_mussels.config_trust_cookbook(cookbook)
@@ -139,29 +139,22 @@ def cookbook_trust(cookbook, yes):
 
 @cookbook.command("add")
 @click.argument("cookbook", required=True)
+@click.option("--author", "-a", default="", help="Author or company name")
+@click.option("--url", "-u", default="", help="Git repository URL")
 @click.option(
-    "--author", "-a", default="", help="Author. [required for non-interactive modes]"
-)
-@click.option(
-    "--url",
-    "-u",
-    default="",
-    help="Git repository URL. [required for non-interactive modes]",
-)
-@click.option(
-    "--yes",
-    "-y",
+    "--trust",
+    "-t",
     is_flag=True,
     default=False,
-    help="Confirm trust. [required for non-interactive modes]",
+    help="Add as a trusted cookbook, enabling you to build directly from this cookbook.",
 )
-def cookbook_add(cookbook, author, url, yes):
+def cookbook_add(cookbook, author, url, trust):
     """
     Add a cookbook to the list of known cookbooks.
     """
     my_mussels = Mussels()
 
-    my_mussels.config_add_cookbook(cookbook, author, url)
+    my_mussels.config_add_cookbook(cookbook, author, url, trust=trust)
 
 
 @cookbook.command("remove")
