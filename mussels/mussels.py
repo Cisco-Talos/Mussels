@@ -89,7 +89,6 @@ class Mussels:
 
         self.app_data_dir = data_dir
 
-        self._load_config("config.json", self.config)
         self._load_config("cookbooks.json", self.cookbooks)
         self._load_recipes(all=load_all_recipes)
 
@@ -316,25 +315,30 @@ class Mussels:
         # Sort the recipes
         sorted_recipes = sort_cookbook_by_version(recipes)
 
-        self.cookbooks[cookbook]["recipes"] = sorted_recipes
-        for recipe in recipes.keys():
-            for version in recipes[recipe]:
-                if version not in self.recipes[recipe].keys():
-                    self.recipes[recipe][version] = {}
-                self.recipes[recipe][version][cookbook] = recipes[recipe][version]
+        if len(sorted_recipes) > 0:
+            self.cookbooks[cookbook]["recipes"] = sorted_recipes
+            for recipe in recipes.keys():
+                for version in recipes[recipe]:
+                    if version not in self.recipes[recipe].keys():
+                        self.recipes[recipe][version] = {}
+                    self.recipes[recipe][version][cookbook] = recipes[recipe][version]
 
         # Sort the tools
         sorted_tools = sort_cookbook_by_version(tools)
 
-        self.cookbooks[cookbook]["tools"] = sorted_tools
-        for tool in tools.keys():
-            for version in tools[tool]:
-                if version not in self.tools[tool].keys():
-                    self.tools[tool][version] = {}
-                self.tools[tool][version][cookbook] = tools[tool][version]
+        if len(sorted_tools) > 0:
+            self.cookbooks[cookbook]["tools"] = sorted_tools
+            for tool in tools.keys():
+                for version in tools[tool]:
+                    if version not in self.tools[tool].keys():
+                        self.tools[tool][version] = {}
+                    self.tools[tool][version][cookbook] = tools[tool][version]
 
         if len(recipes) == 0 and len(tools) == 0:
             return False
+
+        if "trusted" not in self.cookbooks[cookbook]:
+            self.cookbooks[cookbook]["trusted"] = False
 
         return True
 
@@ -435,10 +439,10 @@ class Mussels:
             self._read_bookshelf()
 
         # Load recipes from the local mussels directory, if those exists.
-        if not self._read_local_recipes():
-            self.logger.warning(f"Failed to load any recipes or tools.")
-            self.logger.warning(f"Re-run Mussels from a directory containing Mussels recipe & tool definitions,")
-            self.logger.warning(f" or use `mussels update` to download recipes from the public cookbooks.")
+        if not self._read_local_recipes() and "local" in self.cookbooks:
+            self.cookbooks.pop("local")
+
+        if len(self.recipes) == 0:
             return False
 
         self.sorted_recipes = self._sort_items_by_version(
@@ -446,28 +450,7 @@ class Mussels:
         )
         self.sorted_tools = self._sort_items_by_version(self.tools, all=all)
 
-        if len(self.sorted_recipes) == 0:
-            self.logger.warning(
-                f"Failed to find any recipes for platform: {platform.system()}."
-            )
-            self.logger.warning(
-                f"Local recipes must be stored under the current working directory."
-            )
-            self.logger.warning(
-                f"To update your local bookshelf of public cookbooks, run `mussels update`."
-            )
-            return False
-
-        if len(self.sorted_tools) == 0:
-            self.logger.warning(
-                f"Failed to find any tools for platform: {platform.system()}"
-            )
-            self.logger.warning(
-                f"Local tools must be stored under under the current working directory."
-            )
-            self.logger.warning(
-                f"To update your local bookshelf of public cookbooks, run `mussels update`."
-            )
+        if len(self.sorted_recipes) == 0 or len(self.sorted_tools) == 0:
             return False
 
         return True
@@ -1180,7 +1163,7 @@ class Mussels:
                 )
                 version = highest_recipe_version["version"]
 
-                cookbook = get_cookbook(version, highest_recipe_version)
+                cookbook = get_cookbook(recipe, highest_recipe_version)
 
                 if cookbook == "":
                     return False
@@ -1304,6 +1287,23 @@ class Mussels:
         Print out a list of all recipes and all collections.
         """
         has_collections = False
+
+        if len(self.sorted_recipes) == 0:
+            if len(self.cookbooks) > 0:
+                self.logger.warning(f"No recipes available from trusted cookbooks.")
+                self.logger.warning(f"Recipes from \"untrusted\" cookbooks are hidden by default.\n")
+                self.logger.info(f"Run the this to view that which cookbooks are available:")
+                self.logger.info(f"    mussels cookbook list -V\n")
+                self.logger.info(f"Run this to view recipes & tools from a specific cookbook:")
+                self.logger.info(f"    mussels cookbook show <name> -V\n")
+                self.logger.info(f"To view ALL recipes, use:")
+                self.logger.info(f"    mussels recipe list -a")
+                return
+            else:
+                self.logger.warning(f"Failed to load any recipes.\n")
+                self.logger.info(f"Re-run Mussels from a directory containing Mussels recipe & tool definitions,")
+                self.logger.info(f" or use `mussels update` to download recipes from the public cookbooks.")
+                return
 
         self.logger.info("Recipes:")
         for recipe in self.sorted_recipes:
@@ -1597,7 +1597,24 @@ class Mussels:
         """
         has_collections = False
 
-        self.logger.info("tools:")
+        if len(self.sorted_tools) == 0:
+            if len(self.cookbooks) > 0:
+                self.logger.warning(f"No tools available from trusted cookbooks.")
+                self.logger.warning(f"Tools from \"untrusted\" cookbooks are hidden by default.\n")
+                self.logger.info(f"Run the this to view that which cookbooks are available:")
+                self.logger.info(f"    mussels cookbook list -V\n")
+                self.logger.info(f"Run this to view recipes & tools from a specific cookbook:")
+                self.logger.info(f"    mussels cookbook show <name> -V\n")
+                self.logger.info(f"To view ALL tools, use:")
+                self.logger.info(f"    mussels tool list -a")
+                return
+            else:
+                self.logger.warning(f"Failed to load any tools.\n")
+                self.logger.info(f"Re-run Mussels from a directory containing Mussels recipe & tool definitions,")
+                self.logger.info(f" or use `mussels update` to download recipes from the public cookbooks.")
+                return
+
+        self.logger.info("Tools:")
         for tool in self.sorted_tools:
             newest_version = self.sorted_tools[tool][0]["version"]
             cookbooks = list(self.tools[tool][newest_version].keys())
@@ -1659,6 +1676,12 @@ class Mussels:
         """
         Print out a list of all cookbooks.
         """
+
+        if len(self.cookbooks) == 0:
+            self.logger.warning(f"Failed to load any cookbooks.\n")
+            self.logger.info(f"Re-run Mussels from a directory containing Mussels recipe & tool definitions,")
+            self.logger.info(f" or use `mussels update` to download recipes from the public cookbooks.")
+            return
 
         self.logger.info("Cookbooks:")
         for cookbook in self.cookbooks:

@@ -78,7 +78,7 @@ def cookbook_list(verbose: bool):
     """
     Print the list of all known cookbooks.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.list_cookbooks(verbose)
 
@@ -92,7 +92,7 @@ def cookbook_show(cookbook: str, verbose: bool):
     """
     Show details about a specific cookbook.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.show_cookbook(cookbook, verbose)
 
@@ -102,7 +102,7 @@ def cookbook_update():
     """
     Update the cookbooks from the internet.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.update_cookbooks()
 
@@ -120,14 +120,14 @@ def cookbook_trust(cookbook, yes):
     """
     Trust a cookbook.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     if yes != True:
         print(
             f"\nDisclaimer: There is a non-zero risk when running code downloaded from the internet.\n"
         )
         response = input(
-            f"Are you sure you would like to trust recipes from cookbook '{cookbook}'? [N/y]\n"
+            f"Are you sure you would like to trust recipes from cookbook '{cookbook}'? [N/y] "
         )
         response = response.strip().lower()
 
@@ -152,7 +152,7 @@ def cookbook_add(cookbook, author, url, trust):
     """
     Add a cookbook to the list of known cookbooks.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.config_add_cookbook(cookbook, author, url, trust=trust)
 
@@ -163,7 +163,7 @@ def cookbook_remove(cookbook):
     """
     Remove a cookbook from the list of known cookbooks.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.config_remove_cookbook(cookbook)
 
@@ -381,7 +381,7 @@ def clean_cache():
     """
     Clear the cache files.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clean_cache()
 
@@ -391,7 +391,7 @@ def clean_install():
     """
     Clear the install files.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clean_install()
 
@@ -401,7 +401,7 @@ def clean_logs():
     """
     Clear the logs files.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clean_logs()
 
@@ -411,7 +411,7 @@ def clean_all():
     """
     Clear the all files.
     """
-    my_mussels = Mussels()
+    my_mussels = Mussels(load_all_recipes=True)
 
     my_mussels.clean_all()
 
