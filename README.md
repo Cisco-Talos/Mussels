@@ -72,6 +72,10 @@ Learn more about how use Mussels in our [documentation](docs/usage.md).
 
 Mussels is open source and we'd love your help. There are many ways to contribute!
 
+### Community
+
+Join the Mussels community on the [Mussels Discord chat server](https://discord.gg/My6Mqxt).
+
 ### Contribute Recipes
 
 You can contribute to the Mussels community by creating new recipes or improving on existing recipes in the ["scrapbook"](https://github.com/Cisco-Talos/mussels-recipe-scrapbook). Do this by submitting a pull request to that Git repository.
