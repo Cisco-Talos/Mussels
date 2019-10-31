@@ -25,6 +25,8 @@ platforms:
 
 The name of the program this tool detects.
 
+_Tip_: Mussels tool names may not include the following characters: `-`, `=`, `@`, `>`, `<`, `:`. Instead, consider the humble underscore `_`.
+
 ### `version`
 
 The tool version _string_ is generally expected to follow traditional semantic versioning practices (i.e `"<major>.<minor>.<patch>"`), though any alpha-numeric version string should be fine. So long as the format is consistent across multiple versions, Mussels should be able to compare version strings for a given tool.
