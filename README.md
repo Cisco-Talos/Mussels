@@ -1,11 +1,17 @@
-[![PyPI version](https://badge.fury.io/py/mussels.svg)](https://badge.fury.io/py/mussels) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+<p align="center">
+  <img width="350" height="350" src="https://raw.githubusercontent.com/Cisco-Talos/Mussels/master/images/mussels-500.png" alt='Mussels'>
+</p>
 
-# ![image](images/mussels-500.png)
+<p align="center">A tool to download, build, and assemble application dependencies.
+</br>Brought to you by the Clam AntiVirus Team.
+<p align="center"><em>Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.</em></p>
 
-A tool to download, build, and assemble application dependencies.
-Brought to you by the Clam AntiVirus Team.
-
-Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+<p align="center">
+<a href="https://pypi.org/project/mussels/">
+  <img src="https://badge.fury.io/py/mussels.svg" alt="PyPI version" height="18">
+</a>
+<img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/mussels" height="18">
+</p>
 
 ## About
 

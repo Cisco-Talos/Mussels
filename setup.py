@@ -5,15 +5,16 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mussels",
-    version="0.1.0",
+    version="0.2.0",
     author="Micah Snyder",
     author_email="micasnyd@cisco.com",
     copyright="Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
-    description="Mussels Build System",
+    description="Mussels Dependency Build Automation Tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
+    data_files=[("images", ["images/*"]), ("docs", ["docs/*"])],
     entry_points={
         "console_scripts": [
             "mussels = mussels.__main__:cli",

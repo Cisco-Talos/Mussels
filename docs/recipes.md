@@ -4,23 +4,23 @@ Recipes are simple YAML files that must adhere to the following format:
 
 ```yaml
 name: template
-version: "0.1"
-url: "hxxps://www.example.com/releases/v0.1.tar.gz"
+version: "0.2"
+url: "hxxps://www.example.com/releases/v0.2.tar.gz"
 archive_name_change: # Optional; delete if not needed.
-  - v0.1         # search pattern
-  - template-0.1 # replace pattern
-mussels_version: "0.1"
+  - v0.2         # search pattern
+  - template-0.2 # replace pattern
+mussels_version: "0.2"
 type: recipe
 platforms:
   <platform>:
     <target>:
       build_script:
         configure: |
-          < a shell script to configure prior to build >
+          <a shell script to configure prior to build>
         make: |
-          < a shell script to build the software >
+          <a shell script to build the software>
         install: |
-          < a shell script to install the software >
+          <a shell script to install the software>
       dependencies: []
       install_paths:
         <install location>:
@@ -131,15 +131,15 @@ Variables available in Mussels 0.1 include:
 
 - `{install}`
 
-  The `.mussels/install` directory.
+  The `.mussels/install/{target}` directory (default), or the directory specified when building with the `-i`/`--install` option.
 
 - `{includes}`
 
-  Shorthand for the `{install}/{target}/include` directory.
+  Shorthand for the `{install}/include` directory.
 
 - `{libs}`
 
-  Shorthand for the `{install}/{target}/lib` directory.
+  Shorthand for the `{install}/lib` directory.
 
 ### `dependencies`
 
@@ -197,7 +197,7 @@ The Windows instructions omit the `install` script.  All scripts are optional, b
 name: pcre2
 version: "10.33"
 url: https://ftp.pcre.org/pub/pcre/pcre2-10.33.tar.gz
-mussels_version: "0.1"
+mussels_version: "0.2"
 type: recipe
 platforms:
   Darwin:
@@ -209,7 +209,7 @@ platforms:
           make
         install: |
           make install
-          install_name_tool -add_rpath @executable_path/../lib "{install}/{target}/lib/libpcre2-8.dylib"
+          install_name_tool -add_rpath @executable_path/../lib "{install}/lib/libpcre2-8.dylib"
       dependencies:
         - bzip2
         - zlib
@@ -229,7 +229,7 @@ platforms:
           make
         install: |
           make install
-          patchelf --set-rpath '$ORIGIN/../lib' "{install}/{target}/lib/libpcre2-8.so"
+          patchelf --set-rpath '$ORIGIN/../lib' "{install}/lib/libpcre2-8.so"
       dependencies:
         - bzip2
         - zlib

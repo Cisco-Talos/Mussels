@@ -258,14 +258,23 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
+@click.option(
+    "--install", "-i", default="", help="Specific install directory. [optional]"
+)
 def recipe_build(
-    recipe: str, version: str, cookbook: str, target: str, dry_run: bool, clean: bool
+    recipe: str,
+    version: str,
+    cookbook: str,
+    target: str,
+    dry_run: bool,
+    clean: bool,
+    install: str,
 ):
     """
     Download, extract, build, and install a recipe.
     """
 
-    my_mussels = Mussels()
+    my_mussels = Mussels(install_dir=install)
 
     results = []
 
@@ -443,6 +452,9 @@ def clean_all():
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
+@click.option(
+    "--install", "-i", default="", help="Specific install directory. [optional]"
+)
 @click.pass_context
 def build_alias(
     ctx,
@@ -452,6 +464,7 @@ def build_alias(
     target: str,
     dry_run: bool,
     clean: bool,
+    install: str,
 ):
     """
     Download, extract, build, and install a recipe.

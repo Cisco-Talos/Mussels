@@ -70,7 +70,14 @@ class BaseRecipe(object):
 
     module_file: str = ""
 
-    def __init__(self, toolchain: dict, platform: str, target: str, data_dir: str = ""):
+    def __init__(
+        self,
+        toolchain: dict,
+        platform: str,
+        target: str,
+        install_dir: str = "",
+        data_dir: str = "",
+    ):
         """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
@@ -85,7 +92,7 @@ class BaseRecipe(object):
         else:
             self.data_dir = os.path.abspath(data_dir)
 
-        self.install_dir = os.path.join(self.data_dir, "install")
+        self.install_dir = install_dir
         self.downloads_dir = os.path.join(self.data_dir, "cache", "downloads")
         self.logs_dir = os.path.join(self.data_dir, "logs", "recipes")
         self.work_dir = os.path.join(self.data_dir, "cache", "work")
@@ -242,10 +249,8 @@ class BaseRecipe(object):
 
         with open(os.path.join(os.getcwd(), script_name), "w", newline=newline) as fd:
             # Evaluate "".format() syntax in the build script
-            var_includes = os.path.join(self.install_dir, target, "include").replace(
-                "\\", "/"
-            )
-            var_libs = os.path.join(self.install_dir, target, "lib").replace("\\", "/")
+            var_includes = os.path.join(self.install_dir, "include").replace("\\", "/")
+            var_libs = os.path.join(self.install_dir, "lib").replace("\\", "/")
             var_install = os.path.join(self.install_dir).replace("\\", "/")
             var_build = os.path.join(self.builds[target]).replace("\\", "/")
             var_target = target
@@ -448,10 +453,7 @@ class BaseRecipe(object):
                         return False
 
                     dst_path = os.path.join(
-                        self.install_dir,
-                        self.target,
-                        install_path,
-                        os.path.basename(src_filepath),
+                        self.install_dir, install_path, os.path.basename(src_filepath)
                     )
 
                     # Remove prior installation, if exists.

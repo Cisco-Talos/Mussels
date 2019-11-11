@@ -74,6 +74,7 @@ class Mussels:
         log_file: str = os.path.join(
             str(Path.home()), ".mussels", "logs", "mussels.log"
         ),
+        install_dir: str = "",
         log_level: str = "DEBUG",
     ) -> None:
         """
@@ -88,6 +89,12 @@ class Mussels:
         self._init_logging(log_level)
 
         self.app_data_dir = data_dir
+        if install_dir == "":
+            self.install_dir = os.path.join(self.app_data_dir, "install")
+            self.custom_install_dir = False
+        else:
+            self.install_dir = os.path.abspath(install_dir)
+            self.custom_install_dir = True
 
         self._load_config("cookbooks.json", self.cookbooks)
         self._load_recipes(all=load_all_recipes)
@@ -527,11 +534,18 @@ class Mussels:
             result["time elapsed"] = time.time() - start
             return result
 
+        # If the user specified a custom install directory, then don't add the target arch subdirectory.
+        if self.custom_install_dir == True:
+            install_dir = self.install_dir
+        else:
+            install_dir = os.path.join(self.install_dir, target)
+
         recipe_object = recipe_class(
             toolchain=toolchain,
             platform=platform,
             target=target,
             data_dir=self.app_data_dir,
+            install_dir=install_dir,
         )
 
         if not recipe_object._build(clean):
@@ -815,6 +829,7 @@ class Mussels:
             target:     The target architecture to build.
             results:    (out) A list of dictionaries describing the results of the build.
             dry_run:    (optional) Don't actually build, just print the build chain.
+            clean:      (optional) Rebuild the entire dependency chain.
         """
 
         def print_results(results: list):
@@ -1766,8 +1781,8 @@ class Mussels:
             f"Clearing install directory ( {os.path.join(self.app_data_dir, 'install')} )..."
         )
 
-        if os.path.exists(os.path.join(self.app_data_dir, "install")):
-            shutil.rmtree(os.path.join(self.app_data_dir, "install"))
+        if os.path.exists(os.path.join(self.install_dir)):
+            shutil.rmtree(os.path.join(self.install_dir))
             self.logger.info(f"Install directory cleared.")
         else:
             self.logger.info(f"No install directory to clear.")
