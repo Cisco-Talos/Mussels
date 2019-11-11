@@ -14,7 +14,6 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Cisco-Talos/mussels",
     packages=setuptools.find_packages(),
-    data_files=[("images", ["images/*"]), ("docs", ["docs/*"])],
     entry_points={
         "console_scripts": [
             "mussels = mussels.__main__:cli",
