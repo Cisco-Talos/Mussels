@@ -11,6 +11,9 @@
   <img src="https://badge.fury.io/py/mussels.svg" alt="PyPI version" height="18">
 </a>
 <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/mussels" height="18">
+<a href="https://github.com/Cisco-Talos/Mussels/actions">
+  <img alt="Unit Tests" src="https://github.com/Cisco-Talos/Mussels/workflows/.github/workflows/unittests.yml/badge.svg" height="18">
+</a>
 </p>
 
 ## About
