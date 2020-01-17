@@ -255,8 +255,8 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
 @click.option(
-    "--clean",
-    "-c",
+    "--rebuild",
+    "-r",
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
@@ -269,7 +269,7 @@ def recipe_build(
     cookbook: str,
     target: str,
     dry_run: bool,
-    clean: bool,
+    rebuild: bool,
     install: str,
 ):
     """
@@ -281,7 +281,7 @@ def recipe_build(
     results = []
 
     success = my_mussels.build_recipe(
-        recipe, version, cookbook, target, results, dry_run, clean
+        recipe, version, cookbook, target, results, dry_run, rebuild
     )
     if success == False:
         sys.exit(1)
@@ -449,8 +449,8 @@ def clean_all():
     help="Print out the version dependency graph without actually doing a build. [optional]",
 )
 @click.option(
-    "--clean",
-    "-c",
+    "--rebuild",
+    "-r",
     is_flag=True,
     help="Re-build a recipe, even if already built. [optional]",
 )
@@ -465,7 +465,7 @@ def build_alias(
     cookbook: str,
     target: str,
     dry_run: bool,
-    clean: bool,
+    rebuild: bool,
     install: str,
 ):
     """
