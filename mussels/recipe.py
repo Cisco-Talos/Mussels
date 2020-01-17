@@ -77,6 +77,9 @@ class BaseRecipe(object):
         target: str,
         install_dir: str = "",
         data_dir: str = "",
+        work_dir: str = "",
+        log_dir: str = "",
+        download_dir: str = "",
     ):
         """
         Download the archive (if necessary) to the Downloads directory.
@@ -93,9 +96,21 @@ class BaseRecipe(object):
             self.data_dir = os.path.abspath(data_dir)
 
         self.install_dir = install_dir
-        self.downloads_dir = os.path.join(self.data_dir, "cache", "downloads")
-        self.logs_dir = os.path.join(self.data_dir, "logs", "recipes")
-        self.work_dir = os.path.join(self.data_dir, "cache", "work")
+
+        if download_dir != "":
+            self.download_dir = download_dir
+        else:
+            self.download_dir = os.path.join(self.data_dir, "cache", "downloads")
+
+        if log_dir != "":
+            self.log_dir = log_dir
+        else:
+            self.log_dir = os.path.join(self.data_dir, "logs", "recipes")
+
+        if work_dir != "":
+            self.work_dir = work_dir
+        else:
+            self.work_dir = os.path.join(self.data_dir, "cache", "work")
 
         self.module_dir = os.path.split(self.module_file)[0]
 
@@ -112,7 +127,7 @@ class BaseRecipe(object):
         """
         Initializes the logging parameters
         """
-        os.makedirs(self.logs_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
 
         self.logger = logging.getLogger(f"{nvc_str(self.name, self.version)}")
         self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
@@ -123,7 +138,7 @@ class BaseRecipe(object):
         )
 
         self.log_file = os.path.join(
-            self.logs_dir,
+            self.log_dir,
             f"{nvc_str(self.name, self.version)}.{datetime.datetime.now()}.log".replace(
                 ":", "_"
             ),
@@ -138,7 +153,7 @@ class BaseRecipe(object):
         """
         Use the URL to download the archive if it doesn't already exist in the Downloads directory.
         """
-        os.makedirs(self.downloads_dir, exist_ok=True)
+        os.makedirs(self.download_dir, exist_ok=True)
 
         # Determine download path from URL &  possible archive name change.
         self.archive = self.url.split("/")[-1]
@@ -147,7 +162,7 @@ class BaseRecipe(object):
                 self.archive_name_change[0], self.archive_name_change[1]
             )
         self.download_path = os.path.join(
-            self.data_dir, "cache", "downloads", self.archive
+            self.download_dir, self.archive
         )
 
         # Exit early if we already have the archive.
