@@ -165,7 +165,7 @@ def compare_versions(version_a: str, version_b: str) -> int:
         return 1
 
 
-def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NVC:
+def get_item_version(item_name: str, sorted_items: dict, target: str = "", logger = None) -> NVC:
     """
     Convert a item name in the below format to a (name, version) tuple:
 
@@ -213,6 +213,9 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
         if "local" in item_version["cookbooks"] and cookbook_has_build_target(
             item_version["cookbooks"]["local"], target
         ):
+            if nvc["cookbook"] != "" and nvc["cookbook"] != "local":
+                if logger:
+                    logger.debug(f"Overriding {nvc_str(nvc['name'], nvc['version'], nvc['cookbook'])} with {nvc_str(nvc['name'], item_version['version'], 'local')}")
             nvc["version"] = item_version["version"]
             nvc["cookbook"] = "local"
             cookbook_selected = True
@@ -268,6 +271,9 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
                     item_selected = select_cookbook_version(nvc, item_version, target)
             else:
                 # Version is too low. Remove it, and subsequent versions.
+                if logger != None and len(sorted_items[name][:i]) < len(sorted_items[name]):
+                    logger.debug(f"{name} limited to version: {', '.join([item['version'] for item in sorted_items[name][:i]])}")
+
                 sorted_items[name] = sorted_items[name][:i]
                 break
 
@@ -284,6 +290,9 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
                     item_selected = select_cookbook_version(nvc, item_version, target)
             else:
                 # Version is too low. Remove it, and subsequent versions.
+                if logger != None and len(sorted_items[name][:i]) < len(sorted_items[name]):
+                    logger.debug(f"{name} limited to version: {', '.join([item['version'] for item in sorted_items[name][:i]])}")
+
                 sorted_items[name] = sorted_items[name][:i]
                 break
 
@@ -293,14 +302,17 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
         nvc["name"] = name.strip()
         version = version.strip()
 
+        pruned = False
         # First, prune down to highest tolerable version
         if len(sorted_items[name]) > 0:
+
             while (
                 len(sorted_items[name]) > 0
                 and compare_versions(sorted_items[name][0]["version"], version) > 0
             ):
                 # Remove a version from the sorted_items.
                 sorted_items[name].remove(sorted_items[name][0])
+                pruned = True
 
         # Then, prune down to the highest version provided by a the requested cookbook
         if len(sorted_items[name]) > 0:
@@ -312,6 +324,10 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
                 if not item_selected:
                     # Remove a version from the sorted_items.
                     sorted_items[name].remove(sorted_items[name][0])
+                    pruned = True
+
+            if logger != None and pruned:
+                logger.debug(f"{name} limited to version: {', '.join([item['version'] for item in sorted_items[name]])}")
 
     elif "<" in item_name:
         # LT requirement found.
@@ -319,14 +335,17 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
         nvc["name"] = name.strip()
         version = version.strip()
 
+        pruned = False
         # First, prune down to highest tolerable version
         if len(sorted_items[name]) > 0:
+
             while (
                 len(sorted_items[name]) > 0
                 and compare_versions(sorted_items[name][0]["version"], version) >= 0
             ):
                 # Remove a version from the sorted_items.
                 sorted_items[name].remove(sorted_items[name][0])
+                pruned = True
 
         # Then, prune down to the highest version provided by a the requested cookbook
         if len(sorted_items[name]) > 0:
@@ -338,6 +357,10 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
                 if not item_selected:
                     # Remove a version from the sorted_items.
                     sorted_items[name].remove(sorted_items[name][0])
+                    pruned = True
+
+            if logger != None and pruned:
+                logger.debug(f"{name} limited to version: {', '.join([item['version'] for item in sorted_items[name]])}")
 
     else:
         eq_cond = False
@@ -364,6 +387,9 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
                 if version == item_version["version"]:
                     item_selected = select_cookbook_version(nvc, item_version, target)
                     if item_selected:
+                        if logger != None and len(sorted_items[nvc["name"]]) > 1:
+                            logger.debug(f"{name} limited to version: {version}")
+
                         sorted_items[nvc["name"]] = [item_version]
                         break
 
@@ -379,11 +405,11 @@ def get_item_version(item_name: str, sorted_items: dict, target: str = "") -> NV
     if not item_selected:
         if target == "":
             raise Exception(
-                f"No versions available to satisfy requirement for {requested_item}"
+                f"No versions available to satisfy requirement for {requested_item}.\nThe requested version may have been filtered out by requirements for another recipe."
             )
         else:
             raise Exception(
-                f"No versions available to satisfy requirement for {requested_item} ({target})"
+                f"No versions available to satisfy requirement for {requested_item} ({target}).\nThe requested version may have been filtered out by requirements for another recipe."
             )
 
     return NVC(nvc["name"], nvc["version"], nvc["cookbook"])
