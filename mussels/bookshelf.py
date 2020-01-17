@@ -1,5 +1,5 @@
 """
-Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 This module provides a list of public Mussels recipe cookbooks.
 To have your cookbook added to the list, create an issue here:

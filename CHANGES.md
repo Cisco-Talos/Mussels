@@ -9,6 +9,23 @@ Changes in this document should be grouped per release using the following types
 - Fixed
 - Security
 
+## Version 0.2.1
+
+### Added
+
+- Added the Mussels version string to the `msl --help` output.
+
+- Added `msl build` options allowing users to customize the work, logs, and downloads directories:
+  - `-w`, `--work-dir TEXT`      Work directory. The default is: ~/.mussels/cache/work
+  - `-l`, `--log-dir TEXT`       Log directory. The default is: ~/.mussels/logs
+  - `-D`, `--download-dir TEXT`  Downloads directory. The default is: ~/.mussels/cache/downloads
+
+### Fixed
+
+- The `msl build -c` shorthand for `--cookbook` was overloaded by the `--clean` (`-c`) shorthand. Because `--cookbook` (`-c` ) is also used elsewhere, the `--clean` option was renamed to `--rebuild` (`-r`).
+
+- Fixed an issue where the list of available tools was being limited based on _all_ recipe tool version requirements rather than just those found in the dependency chain.
+
 ## Version 0.2.0
 
 ### Added

@@ -13,7 +13,7 @@ A tool to download, build, and assemble application dependencies.
                                     Brought to you by the Clam AntiVirus Team.
 """
 _copyright = """
-Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 """
 
 """

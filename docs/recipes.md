@@ -111,7 +111,7 @@ The `build_script` dictionary provides up to three (3) scripts used to build the
 
 These three scripts are each optional, but must be named as follows::
 
-- `configure` - Configure the build, only run the first time a build is run. This script is only run the first time you build a package and is skipped in subsequent builds so as to save compile time.  If you need to re-run this step, build the recipe with the `msl build --clean` option.
+- `configure` - Configure the build, only run the first time a build is run. This script is only run the first time you build a package and is skipped in subsequent builds so as to save compile time.  If you need to re-run this step, build the recipe with the `msl build --rebuild` option.
 
   In many recipes, this step sets the "prefix" to the `{install}/{target}` directory, so the resulting binaries are automatically copied there when the `install` step runs `make install`.
 

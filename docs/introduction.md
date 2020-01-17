@@ -109,7 +109,7 @@ A YAML file defining how to build a specific library or application. It defines 
 - download URL
 - build scripts, each of which are optional:
   - configure
-    - This will only run the first time a recipe is built, unless you build with the `--clean` option, or delete the build directory from the `~/.mussels/cache`
+    - This will only run the first time a recipe is built, unless you build with the `--rebuild` option, or delete the build directory from the `~/.mussels/cache`
   - make
   - install
 - dependencies (other recipes) required for the build
