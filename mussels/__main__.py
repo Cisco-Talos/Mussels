@@ -259,7 +259,16 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     help="Re-build a recipe, even if already built. [optional]",
 )
 @click.option(
-    "--install", "-i", default="", help="Specific install directory. [optional]"
+    "--install", "-i", default="", help="Install directory. [optional] Default is: ~/.mussels/install/<target>"
+)
+@click.option(
+    "--work-dir", "-w", default="", help="Work directory. [optional] Default is: ~/.mussels/cache/work"
+)
+@click.option(
+    "--log-dir", "-l", default="", help="Log directory. [optional] Default is: ~/.mussels/logs"
+)
+@click.option(
+    "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
 def recipe_build(
     recipe: str,
@@ -269,12 +278,20 @@ def recipe_build(
     dry_run: bool,
     clean: bool,
     install: str,
+    work_dir: str,
+    log_dir: str,
+    download_dir: str,
 ):
     """
     Download, extract, build, and install a recipe.
     """
 
-    my_mussels = Mussels(install_dir=install)
+    my_mussels = Mussels(
+        install_dir=install,
+        work_dir=work_dir,
+        log_dir=log_dir,
+        download_dir=download_dir,
+    )
 
     results = []
 
@@ -453,7 +470,16 @@ def clean_all():
     help="Re-build a recipe, even if already built. [optional]",
 )
 @click.option(
-    "--install", "-i", default="", help="Specific install directory. [optional]"
+    "--install", "-i", default="", help="Install directory. [optional] Default is: ~/.mussels/install/<target>"
+)
+@click.option(
+    "--work-dir", "-w", default="", help="Work directory. [optional] Default is: ~/.mussels/cache/work"
+)
+@click.option(
+    "--log-dir", "-l", default="", help="Log directory. [optional] Default is: ~/.mussels/logs"
+)
+@click.option(
+    "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
 @click.pass_context
 def build_alias(
@@ -465,6 +491,9 @@ def build_alias(
     dry_run: bool,
     clean: bool,
     install: str,
+    work_dir: str,
+    log_dir: str,
+    download_dir: str,
 ):
     """
     Download, extract, build, and install a recipe.

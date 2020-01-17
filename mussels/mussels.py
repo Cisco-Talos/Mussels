@@ -71,10 +71,10 @@ class Mussels:
         self,
         load_all_recipes: bool = False,
         data_dir: str = os.path.join(str(Path.home()), ".mussels"),
-        log_file: str = os.path.join(
-            str(Path.home()), ".mussels", "logs", "mussels.log"
-        ),
         install_dir: str = "",
+        work_dir: str = "",
+        log_dir: str = "",
+        download_dir: str = "",
         log_level: str = "DEBUG",
     ) -> None:
         """
@@ -85,7 +85,10 @@ class Mussels:
             log_file:   path output log.
             log_level:  log level ("DEBUG", "INFO", "WARNING", "ERROR").
         """
-        self.log_file = log_file
+        if log_dir != "":
+            self.log_file = os.path.join(log_dir, "mussels.log")
+        else:
+            self.log_file = os.path.join(data_dir, "logs", "mussels.log")
         self._init_logging(log_level)
 
         self.app_data_dir = data_dir
@@ -95,6 +98,10 @@ class Mussels:
         else:
             self.install_dir = os.path.abspath(install_dir)
             self.custom_install_dir = True
+
+        self.work_dir = "" if work_dir == "" else os.path.abspath(work_dir)
+        self.log_dir = "" if log_dir == "" else os.path.abspath(log_dir)
+        self.download_dir = "" if download_dir == "" else os.path.abspath(download_dir)
 
         self._load_config("cookbooks.json", self.cookbooks)
         self._load_recipes(all=load_all_recipes)
@@ -546,6 +553,9 @@ class Mussels:
             target=target,
             data_dir=self.app_data_dir,
             install_dir=install_dir,
+            work_dir=self.work_dir,
+            log_dir=self.log_dir,
+            download_dir=self.download_dir,
         )
 
         if not recipe_object._build(clean):
