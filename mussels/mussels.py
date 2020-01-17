@@ -578,30 +578,24 @@ class Mussels:
             )
         """
         # Select the recipe
-        nvc = get_item_version(recipe, self.sorted_recipes, target)
+        nvc = get_item_version(recipe, self.sorted_recipes, target, logger=self.logger)
 
         # Use "get_item_version()" to prune the list of sorted_tools based on the required tools for the selected recipe.
-        for name in self.sorted_recipes:
-            for i, each_ver in enumerate(self.sorted_recipes[name]):
-                version = each_ver["version"]
-                for cookbook in each_ver["cookbooks"].keys():
-                    recipe_class = self.recipes[name][version][cookbook]
+        recipe_class = self.recipes[nvc.name][nvc.version][nvc.cookbook]
 
-                    for each_platform in recipe_class.platforms:
-                        if platform_matches(each_platform, platform):
-                            variant = recipe_class.platforms[each_platform]
-                            if target in variant.keys():
-                                build_target = variant[target]
+        for each_platform in recipe_class.platforms:
+            if platform_matches(each_platform, platform):
+                variant = recipe_class.platforms[each_platform]
+                if target in variant.keys():
+                    build_target = variant[target]
 
-                                if "required_tools" in build_target.keys():
-                                    for tool in build_target["required_tools"]:
-                                        try:
-                                            get_item_version(tool, self.sorted_tools)
-                                        except Exception:
-                                            raise Exception(
-                                                f'No tool definition "{tool}" found. Required by {nvc_str(name, version, cookbook)}.'
-                                            )
-                                break
+                    if "required_tools" in build_target.keys():
+                        for tool in build_target["required_tools"]:
+                            try:
+                                get_item_version(tool, self.sorted_tools, logger=self.logger)
+                            except Exception as exc:
+                                raise Exception(f"The {tool} tool, required by {nvc_str(nvc.name, nvc.version, nvc.cookbook)} is not available...\n{exc}")
+                    break
         return nvc
 
     def _identify_build_recipes(
@@ -652,9 +646,12 @@ class Mussels:
                     # select the recipe from the current cookbook.
                     dependency = f"{recipe_nvc.cookbook}:{dependency}"
 
-                recipes += self._identify_build_recipes(
-                    dependency, chain, platform, target
-                )
+                try:
+                    recipes += self._identify_build_recipes(
+                        dependency, chain, platform, target
+                    )
+                except Exception as exc:
+                    raise Exception(f"The {dependency} recipe, required by {nvc_str(recipe_nvc.name, recipe_nvc.version, recipe_nvc.cookbook)} has dependency issues...\n{exc}")
 
         return recipes
 
@@ -666,7 +663,10 @@ class Mussels:
             recipe:    A recipes string in the format [cookbook:]recipe[==version].
         """
         # Identify all recipes that must be built given list of desired builds.
-        all_recipes = set(self._identify_build_recipes(recipe, [], platform, target))
+        try:
+            all_recipes = set(self._identify_build_recipes(recipe, [], platform, target))
+        except Exception as exc:
+            raise Exception(f"Failed to assemble dependency chain for {recipe} on {platform} ({target}):\n{exc}")
 
         # Build a map of recipes (name,version) tuples to sets of dependency (name,version,cookbook) tuples
         nvc_to_deps = {}
@@ -869,9 +869,15 @@ class Mussels:
             else:
                 target = "host"
 
-        batches = self._get_build_batches(
-            recipe_str, platform=platform.system(), target=target
-        )
+        try:
+            batches = self._get_build_batches(
+                recipe_str, platform=platform.system(), target=target
+            )
+        except Exception as exc:
+            self.logger.error(f"{recipe_str} build failed!")
+            for line in str(exc).split('\n'):
+                self.logger.warning(f"{line}")
+            return False
 
         #
         # Validate toolchain
@@ -894,7 +900,7 @@ class Mussels:
                             for tool in recipe_class.platforms[each_platform][target][
                                 "required_tools"
                             ]:
-                                tool_nvc = get_item_version(tool, self.sorted_tools)
+                                tool_nvc = get_item_version(tool, self.sorted_tools, logger=self.logger)
                                 preferred_tool_versions.add(tool_nvc)
 
         # Check if required tools are installed
@@ -914,12 +920,12 @@ class Mussels:
                 )
             else:
                 # Check if non-preferred (older, but compatible) version is available.
-                self.logger.warning(
+                self.logger.debug(
                     f"    {nvc_str(tool_nvc.name, tool_nvc.version, tool_nvc.cookbook)} not found."
                 )
 
                 if len(self.sorted_tools[tool_nvc.name]) > 1:
-                    self.logger.warning(f"        Checking for alt versions...")
+                    self.logger.debug(f"        Checking for alternative versions...")
                     alt_versions = self.sorted_tools[tool_nvc.name][1:]
 
                     for alt_version in alt_versions:
@@ -939,12 +945,13 @@ class Mussels:
                             get_item_version(
                                 f"{nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)}",
                                 self.sorted_tools,
+                                logger=self.logger
                             )
                             self.logger.info(
                                 f"    Alternative version {nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)} found."
                             )
                         else:
-                            self.logger.warning(
+                            self.logger.debug(
                                 f"    Alternative version {nvc_str(tool_nvc.name, alt_version['version'], alt_version_cookbook)} not found."
                             )
 
@@ -966,7 +973,7 @@ class Mussels:
         for tool in toolchain:
             self.logger.info(f"   {nvc_str(tool, toolchain[tool].version)}")
 
-        #
+        #FF
         # Perform Build
         #
         if dry_run:
@@ -1002,7 +1009,7 @@ class Mussels:
                         for tool in self.recipes[recipe_nvc.name][recipe_nvc.version][
                             recipe_nvc.cookbook
                         ].platforms[matching_platform][target]["required_tools"]:
-                            tool_nvc = get_item_version(tool, self.sorted_tools)
+                            tool_nvc = get_item_version(tool, self.sorted_tools, logger=self.logger)
                             self.logger.debug(
                                 f"        {nvc_str(tool_nvc.name, tool_nvc.version, tool_nvc.cookbook)}"
                             )

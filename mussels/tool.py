@@ -109,12 +109,12 @@ class BaseTool(object):
 
             process.wait()
             if process.returncode != 0:
-                self.logger.warning(f"Command failed!")
+                self.logger.debug(f"Command failed!")
                 return False
         except FileNotFoundError:
-            self.logger.warning(f"Command failed; File not found!")
+            self.logger.debug(f"Command failed; File not found!")
             return False
-            
+
         return found_expected_output
 
     def detect(self) -> bool:
@@ -174,7 +174,7 @@ class BaseTool(object):
                 break
 
         if not found:
-            self.logger.warning(f"Failed to detect {self.name_version}.")
+            self.logger.debug(f"Failed to detect {self.name_version}.")
             return False
 
         return True
