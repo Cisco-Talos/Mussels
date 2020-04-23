@@ -457,16 +457,10 @@ class BaseRecipe(object):
         for install_path in install_paths:
 
             for install_item in install_paths[install_path]:
+                item_installed = False
                 src_path = os.path.join(self.builds[self.target], install_item)
 
                 for src_filepath in glob.glob(src_path):
-                    # Make sure it actually exists.
-                    if not os.path.exists(src_filepath):
-                        self.logger.error(
-                            f"Required target files for installation do not exist:\n\t{src_filepath}"
-                        )
-                        return False
-
                     dst_path = os.path.join(
                         self.install_dir, install_path, os.path.basename(src_filepath)
                     )
@@ -488,6 +482,18 @@ class BaseRecipe(object):
                         dir_util.copy_tree(src_filepath, dst_path)
                     else:
                         shutil.copyfile(src_filepath, dst_path)
+
+                    item_installed = True
+
+                # Globbing only shows us files that actually exists.
+                # It's possible we didn't install anything at all.
+                # Verify that we installed at least one item.
+                if not item_installed:
+                    self.logger.error(
+                        f"Required target install files do not exist:  {src_path}"
+                    )
+                    return False
+
 
         self.logger.info(
             f"{nvc_str(self.name, self.version)} {self.target} install succeeded."
