@@ -74,6 +74,8 @@ Use the `--help` option to get information about any Mussels command.
 >
 > `mussels build --help`
 
+When performing a build, the intermediate build files are placed into the `~/.mussels/cache/work/<target>` directory and the final installed files into the `~/.mussels/install/<target>` directory. This default behavior can be overridden using `msl build --work-dir <path>` to specify a different work directory, and `msl build --install <path>` to specify a different install directory.
+
 _Tip_: Use the `msl` shortcut, instead of `mussels` to save keystrokes.
 
 _Tip_: You may not be able to run `mussels` or the `msl` shortcut directly if your Python Scripts directory is not in your `PATH` environment variable. If you run into this issue, and do not wish to add the Python Scripts directory to your path, you can run Mussels like this:
