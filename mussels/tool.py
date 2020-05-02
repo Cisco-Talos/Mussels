@@ -104,7 +104,7 @@ class BaseTool(object):
             )
             with process.stdout:
                 for line in iter(process.stdout.readline, b""):
-                    if expected_output in line.decode("utf-8"):
+                    if expected_output in line.decode("utf-8", errors='replace'):
                         found_expected_output = True
 
             process.wait()

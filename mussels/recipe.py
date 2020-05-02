@@ -300,7 +300,7 @@ class BaseRecipe(object):
         )
         with process.stdout:
             for line in iter(process.stdout.readline, b""):
-                self.logger.debug(line.decode("utf-8").strip())
+                self.logger.debug(line.decode("utf-8", errors='replace').strip())
         process.wait()
         if process.returncode != 0:
             self.logger.warning(
