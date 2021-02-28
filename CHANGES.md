@@ -9,6 +9,63 @@ Changes in this document should be grouped per release using the following types
 - Fixed
 - Security
 
+## Version 0.3.0
+
+### Added
+
+- Added the ability to define variables in tools that can be accessed in recipes.
+
+  To define variables, add a `variables` list for each platform.
+
+  This feature was inspired by a need to make recipes that have strings in them specific to a given tool version. Specifically we'll be using this to define CMake generator names in Visual Studio tool YAML files. The correct generator name for a given Visual Studio version will then be available for use in recipes that use Visual Studio.
+
+  Example tool, `visualstudio-2017.yaml`:
+
+  ```yaml
+  name: visualstudio
+  version: "2017"
+  mussels_version: "0.3"
+  type: tool
+  platforms:
+    Windows:
+      file_checks:
+        - C:\/Program Files (x86)/Microsoft Visual Studio/2017/Professional/VC/Auxiliary/Build/vcvarsall.bat
+        - C:\/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/VC/Auxiliary/Build/vcvarsall.bat
+        - C:\/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvarsall.bat
+      variables:
+        cmake_generator: Visual Studio 15 2017
+  ```
+
+  Example recipe, `libz.yaml`:
+
+  ```yaml
+  name: libz
+  version: "1.2.11"
+  url: https://www.zlib.net/zlib-1.2.11.tar.gz
+  mussels_version: "0.3"
+  type: recipe
+  platforms:
+    Windows:
+      x64:
+        build_script:
+          configure: |
+            CALL cmake.exe -G "{visualstudio.cmake_generator} Win64"
+          make: |
+            CALL cmake.exe --build . --config Release
+        dependencies: []
+        install_paths:
+          include:
+            - zlib.h
+            - zconf.h
+          lib:
+            - Release/zlibstatic.lib
+          license/zlib:
+            - README
+        required_tools:
+          - cmake
+          - visualstudio>=2017
+  ```
+
 ## Version 0.2.1
 
 ### Added

@@ -70,6 +70,8 @@ class BaseRecipe(object):
 
     module_file: str = ""
 
+    variables: dict = {} # variables that will be evaluated in build scripts
+
     def __init__(
         self,
         toolchain: dict,
@@ -264,19 +266,7 @@ class BaseRecipe(object):
 
         with open(os.path.join(os.getcwd(), script_name), "w", newline=newline) as fd:
             # Evaluate "".format() syntax in the build script
-            var_includes = os.path.join(self.install_dir, "include").replace("\\", "/")
-            var_libs = os.path.join(self.install_dir, "lib").replace("\\", "/")
-            var_install = os.path.join(self.install_dir).replace("\\", "/")
-            var_build = os.path.join(self.builds[target]).replace("\\", "/")
-            var_target = target
-
-            script = script.format(
-                includes=var_includes,
-                libs=var_libs,
-                install=var_install,
-                build=var_build,
-                target=var_target,
-            )
+            script = script.format(**self.variables)
 
             # Write the build commands to a file
             build_lines = script.splitlines()
@@ -384,10 +374,14 @@ class BaseRecipe(object):
             f"Attempting to build {nvc_str(self.name, self.version)} for {self.target}"
         )
 
-        # Add each tool from the toolchain to the PATH environment variable.
+        self.variables["includes"] = os.path.join(self.install_dir, "include").replace("\\", "/")
+        self.variables["libs"] = os.path.join(self.install_dir, "lib").replace("\\", "/")
+        self.variables["install"] = os.path.join(self.install_dir).replace("\\", "/")
+        self.variables["build"] = os.path.join(self.builds[self.target]).replace("\\", "/")
+        self.variables["target"] = self.target
+
         for tool in self.toolchain:
-            platform_options = self.toolchain[tool].platforms.keys()
-            matching_platform = pick_platform(platform.system(), platform_options)
+            # Add each tool from the toolchain to the PATH environment variable.
             if self.toolchain[tool].tool_path != "":
                 self.logger.debug(
                     f"Adding tool {tool} path {self.toolchain[tool].tool_path} to PATH"
@@ -395,6 +389,17 @@ class BaseRecipe(object):
                 os.environ["PATH"] = (
                     self.toolchain[tool].tool_path + os.pathsep + os.environ["PATH"]
                 )
+
+            # Collect tool variables for use in the build.
+            platform_options = self.toolchain[tool].platforms.keys()
+            matching_platform = pick_platform(platform.system(), platform_options)
+
+            if "variables" in self.toolchain[tool].platforms[matching_platform]:
+                # The following will allow us to format strings like "echo {tool.variable}"
+                tool_vars = lambda: None
+                for variable in self.toolchain[tool].platforms[matching_platform]["variables"]:
+                    setattr(tool_vars, variable, self.toolchain[tool].platforms[matching_platform]["variables"][variable])
+                self.variables[tool] = tool_vars
 
         cwd = os.getcwd()
         os.chdir(self.builds[self.target])
