@@ -67,6 +67,8 @@ class Mussels:
     tools: defaultdict = defaultdict(dict)
     sorted_tools: dict = {}
 
+    log_level: str
+
     def __init__(
         self,
         load_all_recipes: bool = False,
@@ -89,6 +91,7 @@ class Mussels:
             self.log_file = os.path.join(log_dir, "mussels.log")
         else:
             self.log_file = os.path.join(data_dir, "logs", "mussels.log")
+        self.log_level = log_level
         self._init_logging(log_level)
 
         self.app_data_dir = data_dir
@@ -477,7 +480,7 @@ class Mussels:
         platform: str,
         target: str,
         toolchain: dict,
-        clean: bool = False,
+        rebuild: bool = False,
     ) -> dict:
         """
         Build a specific recipe.
@@ -556,9 +559,10 @@ class Mussels:
             work_dir=self.work_dir,
             log_dir=self.log_dir,
             download_dir=self.download_dir,
+            log_level=self.log_level,
         )
 
-        if not recipe_object._build(clean):
+        if not recipe_object.build(rebuild):
             self.logger.error(f"FAILURE: {nvc_str(recipe, version)} build failed!\n")
         else:
             self.logger.info(
@@ -802,7 +806,11 @@ class Mussels:
                             if cookbook == "" or cookbook == each_cookbook:
                                 found_tool = True
 
-                                tool_object = self.tools[each_tool][each_version["version"]][each_cookbook](self.app_data_dir)
+                                tool_class = self.tools[each_tool][each_version["version"]][each_cookbook]
+                                tool_object = tool_class(
+                                    self.app_data_dir,
+                                    log_level=self.log_level,
+                                )
 
                                 if tool_object.detect():
                                     # Found!
@@ -827,7 +835,7 @@ class Mussels:
         target: str,
         results: list,
         dry_run: bool = False,
-        clean: bool = False,
+        rebuild: bool = False,
     ) -> bool:
         """
         Execute a build of a recipe.
@@ -839,7 +847,7 @@ class Mussels:
             target:     The target architecture to build.
             results:    (out) A list of dictionaries describing the results of the build.
             dry_run:    (optional) Don't actually build, just print the build chain.
-            clean:      (optional) Rebuild the entire dependency chain.
+            rebuild:    (optional) Rebuild the entire dependency chain.
         """
 
         def print_results(results: list):
@@ -1037,7 +1045,7 @@ class Mussels:
                         matching_platform,
                         target,
                         toolchain,
-                        clean,
+                        rebuild,
                     )
                     results.append(result)
                     if not result["success"]:

@@ -82,6 +82,7 @@ class BaseRecipe(object):
         work_dir: str = "",
         log_dir: str = "",
         download_dir: str = "",
+        log_level: str = "DEBUG",
     ):
         """
         Download the archive (if necessary) to the Downloads directory.
@@ -123,16 +124,23 @@ class BaseRecipe(object):
         else:
             self.patch_dir = ""
 
-        self._init_logging()
+        self._init_logging(log_level)
 
-    def _init_logging(self):
+    def _init_logging(self, level="DEBUG"):
         """
         Initializes the logging parameters
         """
+        levels = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARN": logging.WARNING,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+        }
+
         os.makedirs(self.log_dir, exist_ok=True)
 
         self.logger = logging.getLogger(f"{nvc_str(self.name, self.version)}")
-        self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
             fmt="%(asctime)s - %(levelname)s:  %(message)s",
@@ -150,6 +158,7 @@ class BaseRecipe(object):
         filehandler.setFormatter(formatter)
 
         self.logger.addHandler(filehandler)
+        self.logger.setLevel(levels[os.environ.get("LOG_LEVEL", level)])
 
     def _download_archive(self) -> bool:
         """
@@ -192,7 +201,7 @@ class BaseRecipe(object):
 
         return True
 
-    def _extract_archive(self, clean: bool) -> bool:
+    def _extract_archive(self, rebuild: bool) -> bool:
         """
         Extract the archive found in Downloads directory, if necessary.
         """
@@ -213,13 +222,13 @@ class BaseRecipe(object):
         self.prior_build_exists = os.path.exists(self.builds[self.target])
 
         if self.prior_build_exists:
-            if not clean:
+            if not rebuild:
                 # Build directory already exists.  We're good.
                 return True
 
             # Remove previous built, start over.
             self.logger.info(
-                f"--clean: Removing previous {self.target} build directory:"
+                f"--rebuild: Removing previous {self.target} build directory:"
             )
             self.logger.info(f"   {self.builds[self.target]}")
             shutil.rmtree(self.builds[self.target])
@@ -305,7 +314,7 @@ class BaseRecipe(object):
 
         return True
 
-    def _build(self, clean: bool = False) -> bool:
+    def build(self, rebuild: bool = False) -> bool:
         """
         Patch source materials if not already patched.
         Then, for each architecture, run the build commands if the output files don't already exist.
@@ -326,7 +335,7 @@ class BaseRecipe(object):
             return False
 
         # Extract to the work_dir.
-        if not self._extract_archive(clean):
+        if not self._extract_archive(rebuild):
             self.logger.error(
                 f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
             )
@@ -457,50 +466,55 @@ class BaseRecipe(object):
             f"Copying {nvc_str(self.name, self.version)} install files to: {self.install_dir}."
         )
 
-        install_paths = self.platforms[self.platform][self.target]["install_paths"]
+        if 'install_paths' not in self.platforms[self.platform][self.target]:
+            self.logger.info(
+                f"{nvc_str(self.name, self.version)} {self.target} nothing additional to install."
+            )
 
-        for install_path in install_paths:
+        else:
+            install_paths = self.platforms[self.platform][self.target]["install_paths"]
 
-            for install_item in install_paths[install_path]:
-                item_installed = False
-                src_path = os.path.join(self.builds[self.target], install_item)
+            for install_path in install_paths:
 
-                for src_filepath in glob.glob(src_path):
-                    dst_path = os.path.join(
-                        self.install_dir, install_path, os.path.basename(src_filepath)
-                    )
+                for install_item in install_paths[install_path]:
+                    item_installed = False
+                    src_path = os.path.join(self.builds[self.target], install_item)
 
-                    # Remove prior installation, if exists.
-                    if os.path.isdir(dst_path):
-                        shutil.rmtree(dst_path)
-                    elif os.path.isfile(dst_path):
-                        os.remove(dst_path)
+                    for src_filepath in glob.glob(src_path):
+                        dst_path = os.path.join(
+                            self.install_dir, install_path, os.path.basename(src_filepath)
+                        )
 
-                    # Create the target install paths, if it doesn't already exist.
-                    os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
+                        # Remove prior installation, if exists.
+                        if os.path.isdir(dst_path):
+                            shutil.rmtree(dst_path)
+                        elif os.path.isfile(dst_path):
+                            os.remove(dst_path)
 
-                    self.logger.debug(f"Copying: {src_filepath}")
-                    self.logger.debug(f"     to: {dst_path}")
+                        # Create the target install paths, if it doesn't already exist.
+                        os.makedirs(os.path.split(dst_path)[0], exist_ok=True)
 
-                    # Now copy the file or directory.
-                    if os.path.isdir(src_filepath):
-                        dir_util.copy_tree(src_filepath, dst_path)
-                    else:
-                        shutil.copyfile(src_filepath, dst_path)
+                        self.logger.debug(f"Copying: {src_filepath}")
+                        self.logger.debug(f"     to: {dst_path}")
 
-                    item_installed = True
+                        # Now copy the file or directory.
+                        if os.path.isdir(src_filepath):
+                            dir_util.copy_tree(src_filepath, dst_path)
+                        else:
+                            shutil.copyfile(src_filepath, dst_path)
 
-                # Globbing only shows us files that actually exists.
-                # It's possible we didn't install anything at all.
-                # Verify that we installed at least one item.
-                if not item_installed:
-                    self.logger.error(
-                        f"Required target install files do not exist:  {src_path}"
-                    )
-                    return False
+                        item_installed = True
 
+                    # Globbing only shows us files that actually exists.
+                    # It's possible we didn't install anything at all.
+                    # Verify that we installed at least one item.
+                    if not item_installed:
+                        self.logger.error(
+                            f"Required target install files do not exist:  {src_path}"
+                        )
+                        return False
 
-        self.logger.info(
-            f"{nvc_str(self.name, self.version)} {self.target} install succeeded."
-        )
+            self.logger.info(
+                f"{nvc_str(self.name, self.version)} {self.target} install succeeded."
+            )
         return True
