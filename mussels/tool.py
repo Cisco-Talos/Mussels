@@ -51,7 +51,10 @@ class BaseTool(object):
     logs_dir = ""
     tool_path = ""
 
-    def __init__(self, data_dir: str = ""):
+    def __init__(self,
+        data_dir: str = "",
+        log_level: str = "DEBUG",
+    ):
         """
         Download the archive (if necessary) to the Downloads directory.
         Extract the archive to the temp directory so it is ready to build.
@@ -65,14 +68,21 @@ class BaseTool(object):
 
         self.name_version = nvc_str(self.name, self.version)
 
-        self._init_logging()
+        self._init_logging(log_level)
 
-    def _init_logging(self):
+    def _init_logging(self, level="DEBUG"):
         """
         Initializes the logging parameters
         """
+        levels = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARN": logging.WARNING,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+        }
+
         self.logger = logging.getLogger(f"{self.name_version}")
-        self.logger.setLevel(os.environ.get("LOG_LEVEL", logging.DEBUG))
 
         formatter = logging.Formatter(
             fmt="%(asctime)s - %(levelname)s:  %(message)s",
@@ -88,6 +98,7 @@ class BaseTool(object):
         filehandler.setFormatter(formatter)
 
         self.logger.addHandler(filehandler)
+        self.logger.setLevel(levels[os.environ.get("LOG_LEVEL", level)])
 
     def _run_command(self, command: str, expected_output: str) -> bool:
         """
