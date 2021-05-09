@@ -4,7 +4,7 @@
 
 <p align="center">A tool to download, build, and assemble application dependencies.
 </br>Brought to you by the Clam AntiVirus Team.
-<p align="center"><em>Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.</em></p>
+<p align="center"><em>Copyright (C) 2019-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.</em></p>
 
 <p align="center">
 <a href="https://pypi.org/project/mussels/">
@@ -36,7 +36,11 @@ An internet connection is required to use the public Mussels cookbooks. Some for
 
 Every recipe will require tools in order to run.  If you don't have the required tools, you'll get an error message stating that you're missing a required tool.  It will be up to you to install the tool in order for that recipe to build.
 
-### Common Tools Requirements
+### Common Tools Requirements for building C/C++ software
+
+Mussels was born out of the ClamAV project so you can find some good example recipe and tool definitions here: https://github.com/Cisco-Talos/clamav-mussels-cookbook/
+
+The ClamAV recipes build C libraries for the most part. When using them, you'll probably the following compiler toolchain software installed on your system for the build to work. If these are missing, the Mussels build will fail and tell you as much.
 
 Linux:
 
