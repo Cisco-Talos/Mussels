@@ -38,6 +38,7 @@ import zipfile
 import requests
 import urllib.request
 import patch
+from requests.api import head
 
 from mussels.utils.versions import pick_platform, nvc_str
 
@@ -63,6 +64,8 @@ class BaseRecipe(object):
     #     v2.3.4  to  nghttp2-2.3.4.
     # This hack is necessary because archives with changed names will extract to their original directory name.
     archive_name_change: tuple = ("", "")
+
+    auth_token = ""
 
     platforms: dict = {}  # Dictionary of recipe instructions for each platform.
 
@@ -192,7 +195,10 @@ class BaseRecipe(object):
                 return False
         else:
             try:
-                r = requests.get(self.url)
+                self.logger.debug("downloading using auth_token " + self.auth_token)
+                headers_dict={'Authorization': 'token '+self.auth_token}
+                r =  requests.get(self.url , headers=headers_dict)
+                self.logger.debug(r.status_code)
                 with open(self.download_path, "wb") as f:
                     f.write(r.content)
             except Exception:

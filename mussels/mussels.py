@@ -260,6 +260,11 @@ class Mussels:
                                     continue
                                 else:
                                     recipe_class.url = yaml_file["url"]
+                            
+                            if "auth_token" in yaml_file:
+                                recipe_class.auth_token = yaml_file["auth_token"]
+                                self.logger.debug("found auth. token " + yaml_file["auth_token"] )
+
 
                             if "archive_name_change" in yaml_file:
                                 recipe_class.archive_name_change = (
