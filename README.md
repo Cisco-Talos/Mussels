@@ -88,6 +88,55 @@ _Tip_: You may not be able to run `mussels` or the `msl` shortcut directly if yo
 
 Learn more about how use Mussels in our [documentation](docs/usage.md).
 
+## How it works
+
+Any time you run Mussels, Mussels will search your current directory to load Mussels-YAML files that define "recipes" and "tools". Recipes define instructions to build a program or library. Tools describe a way to verify that your computer has a program needed to build a recipe. Recipes may depend any number of tools and on other recipes. Mussels will fail to build a recipe if a circular dependency is detected.
+
+> _Tip_: Don't run Mussels in a big directory like your home directory. The recursive search for Mussels-YAML files will make startup sluggish, and the current version may throw some errors if it encounters non-Mussels YAML files.
+
+All Mussels-YAML files have a type field that may be either "tool", "recipe", or "collection". A collection is just a special purpose recipe that only contains dependencies for other recipes. Each YAML file also includes the minimum Mussels version required to use the recipe.
+
+Inside of each recipe YAML there is:
+- A recipe name.
+- A recipe version number.
+- A URL for downloading the source code,
+- For each `platform` (OS):
+  - For each `target` supported on that OS:
+    - Recipe dependencies that must be built before this recipe.
+    - Tools dependencies that must be present to build this recipe.
+    - (*optional*) Build scripts to "configure", "make", and "install" for this target.
+    - (*optional*) A list of additional files that will be copied from the work directory to the install directory after the "install" script has run.
+    - (*optional*) A directory name next to the recipe file that contains patches that that will be applied to the source code before running the "configure" script.
+
+On Linux/UNIX systems, the default target is `host`. But you can define custom targets for variants of the recipe like `host-static`, or `host-static-debug`. On Windows the default target is either `x86` or `x64` depending on your current OS architecture. But you're welcome to use something custom here as well.
+
+Inside of each tool YAML there is:
+- A tool name.
+- (*optional*) A tool version number.
+- Ways to check if the tool exists for each `platform`:
+  - (*optional*) Check if one or more names is in the `$PATH`.
+  - (*optional*) Check if one or more filepaths exists on disk.
+  - (*optional*) Check if the output of running one or more commands (like `clang --version`) matches expectations.
+
+Each `tool` definition is good for one (1) program check. Lets say you wanted to check if a suite of programs exists.  You may check for just one of those tools, but if you need to verify that all of the programs exist, you would need to have a `tool` YAML file for each program.
+
+When assembling the dependency chain, Mussels will only evaluate recipes that all have the same platform and target. That is to say, that if you want to build your recipe with a `host-static` target, then each of your recipe dependencies must also have a `host-static` target defined.
+
+At build time, Mussels will evaluate the dependency chain and verify that (A) all of the recipes in the chain exist for the given platform and architecture and that (B) all of the tools required by the recipes can be found on the system, using methods defined in each tool's YAML file. You can use the `msl build --dry-run` option to do this check without performing an actual build. When not doing a "dry run", the build will proceed to build the dependency chain in reverse order, building the things with no dependencies first, followed by the things that depend on them. The `msl build --dry-run` option will show you that chain if you're curious what it looks like.
+
+Each recipe has 3 stages: "configure", "make", and "install". On Linux/Unix these stages are instructions for bash scripts and on Windows they're instructions for batch scripts. These scripts are written to the `~/.mussels/cache/work/{dependency}` directory and executed.
+
+- `configure`: This is used for Autotools' `./configure` step, or CMake's first call to `cmake .` build system generation step.
+  - The "configure" script is only run the first time you build the recipe.
+
+  > _Tip_: If something goes wrong during this stage, like you canceled the build early, all subsequent attempts to build will fail. You can force Mussels to rebuild from scratch using the `--rebuild` (`-r`) option. This will re-build ALL recipes in the dependency chain.
+
+- `make`: This is used for Autotools' `make` step, or CMake's `cmake --build .`
+  - Mussels will re-run this step for every dependency in the chain every time you build a recipe. This is usually pretty fast because if the scripts use CMake, Autotools, Meson, etc to do the build... those tools will verify what _actually_ needs to be recompiled.
+
+- `install`: This is used for Autotools' `make install` step, or CMake's `cmake --build . --target install`.
+  - Mussels will re-run this step for every dependency in the chain every time you build a recipe.
+
 ## Contribute
 
 Mussels is open source and we'd love your help. There are many ways to contribute!
