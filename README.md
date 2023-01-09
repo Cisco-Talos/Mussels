@@ -14,9 +14,6 @@
 <a href="https://github.com/Cisco-Talos/Mussels/actions">
   <img alt="Unit Tests" src="https://github.com/Cisco-Talos/Mussels/workflows/Unit%20Tests/badge.svg" height="18">
 </a>
-<a href="https://discord.gg/My6Mqxt">
-<img src="https://img.shields.io/discord/636014317892009985.svg?logo=discord" height="18"/>
-</a>
 </p>
 
 ## About
