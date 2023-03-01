@@ -140,7 +140,7 @@ Mussels is open source and we'd love your help. There are many ways to contribut
 
 ### Community
 
-Join the Mussels community on the [Mussels Discord chat server](https://discord.gg/My6Mqxt).
+Join the ClamAV / Mussels community on the [ClamAV Discord chat server](https://discord.gg/6vNAqWnVgw).
 
 ### Contribute Recipes
 
