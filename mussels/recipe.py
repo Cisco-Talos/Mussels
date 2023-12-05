@@ -213,6 +213,10 @@ class BaseRecipe(object):
             self.builds[self.target] = os.path.join(
                 self.work_dir, self.target, f"{self.archive[:-len('.zip')]}"
             )
+        elif self.archive.endswith(".tar.xz"):
+            self.builds[self.target] = os.path.join(
+                self.work_dir, self.target, f"{self.archive[:-len('.tar.xz')]}"
+            )
         else:
             self.logger.error(
                 f"Unexpected archive extension. Currently only supports .tar.gz and .zip!"
@@ -258,6 +262,15 @@ class BaseRecipe(object):
             zip_ref = zipfile.ZipFile(self.download_path, "r")
             zip_ref.extractall(os.path.join(self.work_dir, self.target))
             zip_ref.close()
+        elif self.archive.endswith(".tar.xz"):
+            # Un-tar
+            self.logger.info(
+                f"Extracting tarball archive {self.archive} to {self.builds[self.target]} ..."
+            )
+
+            tar = tarfile.open(self.download_path, "r:xz")
+            tar.extractall(os.path.join(self.work_dir, self.target))
+            tar.close()
 
         return True
 
