@@ -8,6 +8,12 @@
 > - Fixed: 🐛
 > - Security: 🛡
 
+## Version 0.4.0
+
+### Added
+
+➕ Added support for extracting `.tar.xz` source archives, in addition to `.tar.gz` and `.zip` archives.
+
 ## Version 0.3.0
 
 ### Added
