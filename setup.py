@@ -28,6 +28,7 @@ setuptools.setup(
         "patch",
         "gitpython",
         "pyyaml",
+        "setuptools",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
