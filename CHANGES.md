@@ -8,6 +8,10 @@
 > - Fixed: 🐛
 > - Security: 🛡
 
+## Version 0.4.1
+
+🐛 Fixed an issue using pkg_resources package when setuptools is not installed. The fix adds setuptools as a dependency.
+
 ## Version 0.4.0
 
 ### Added

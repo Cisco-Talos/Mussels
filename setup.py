@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mussels",
-    version="0.4.0",
+    version="0.4.1",
     author="Micah Snyder",
     author_email="micasnyd@cisco.com",
-    copyright="Copyright (C) 2023 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
+    copyright="Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
     description="Mussels Dependency Build Automation Tool",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -28,6 +28,7 @@ setuptools.setup(
         "patch",
         "gitpython",
         "pyyaml",
+        "setuptools",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
