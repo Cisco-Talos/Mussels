@@ -273,7 +273,7 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
     "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
 @click.option(
-    "--data-dir", "-w", default="", help="Downloads directory. [optional] Default is: $HOME/.mussels/"
+    "--data-dir", "-w", default="", help="Root directory for Mussels builds. [optional] Default is: $HOME/.mussels/"
 )
 def recipe_build(
     recipe: str,
@@ -489,7 +489,7 @@ def clean_all():
     "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
 @click.option(
-    "--data-dir", "-w", default="", help="Downloads directory. [optional] Default is: $HOME/.mussels/"
+    "--data-dir", "-w", default="", help="Root directory for Mussels builds. [optional] Default is: $HOME/.mussels/"
 )
 @click.pass_context
 def build_alias(

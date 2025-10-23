@@ -75,7 +75,11 @@ Use the `--help` option to get information about any Mussels command.
 >
 > `mussels build --help`
 
-When performing a build, the intermediate build files are placed into the `~/.mussels/cache/work/<target>` directory and the final installed files into the `~/.mussels/install/<target>` directory. This default behavior can be overridden using `msl build --work-dir <path>` to specify a different work directory, and `msl build --install <path>` to specify a different install directory.
+When performing a build, user can specify --data-dir as root directory to store build artifacts.
+Directory where application data is stored.  
+**Default:** `$HOME/.mussels`
+
+The intermediate build files are placed into the `<data-dir>/cache/work/<target>` directory and the final installed files into the `<data-dir>/install/<target>` directory. This default behavior can be overridden for intermediate directories using `msl build --work-dir <path>` to specify a different work directory, and `msl build --install <path>` to specify a different install directory.
 
 _Tip_: Use the `msl` shortcut, instead of `mussels` to save keystrokes.
 
