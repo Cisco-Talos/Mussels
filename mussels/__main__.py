@@ -272,6 +272,9 @@ def recipe_clone(recipe: str, version: str, cookbook: str, dest: str):
 @click.option(
     "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
+@click.option(
+    "--data-dir", "-w", default="", help="Downloads directory. [optional] Default is: $HOME/.mussels/"
+)
 def recipe_build(
     recipe: str,
     version: str,
@@ -283,6 +286,7 @@ def recipe_build(
     work_dir: str,
     log_dir: str,
     download_dir: str,
+    data_dir:  str,
 ):
     """
     Download, extract, build, and install a recipe.
@@ -293,6 +297,7 @@ def recipe_build(
         work_dir=work_dir,
         log_dir=log_dir,
         download_dir=download_dir,
+        data_dir=data_dir,
     )
 
     results = []
@@ -483,6 +488,9 @@ def clean_all():
 @click.option(
     "--download-dir", "-D", default="", help="Downloads directory. [optional] Default is: ~/.mussels/cache/downloads"
 )
+@click.option(
+    "--data-dir", "-w", default="", help="Downloads directory. [optional] Default is: $HOME/.mussels/"
+)
 @click.pass_context
 def build_alias(
     ctx,
@@ -496,6 +504,7 @@ def build_alias(
     work_dir: str,
     log_dir: str,
     download_dir: str,
+    data_dir:  str,
 ):
     """
     Download, extract, build, and install a recipe.
