@@ -75,7 +75,7 @@ Use the `--help` option to get information about any Mussels command.
 >
 > `mussels build --help`
 
-When performing a build, user can specify --data-dir as root directory to store build artifacts.
+When performing a build, user can specify `--data-dir` as root directory to store build artifacts.
 Directory where application data is stored.  
 **Default:** `$HOME/.mussels`
 

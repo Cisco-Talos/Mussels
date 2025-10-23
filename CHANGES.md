@@ -12,9 +12,7 @@
 
 ### Added
 
-➕ Added support for --data-dir cli option for mussels build to store artifacts.
-
-🐛 Fixed an issue using pkg_resources package when setuptools is not installed. The fix adds setuptools as a dependency.
+➕ Added `--data-dir` CLI option to allow users to change the root directory for Mussels build artifacts from the default location (`$HOME/.mussels`) to another directory.
 
 ## Version 0.4.1
 
