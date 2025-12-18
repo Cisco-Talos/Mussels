@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mussels",
-    version="0.4.1",
+    version="0.4.2",
     author="Micah Snyder",
     author_email="micasnyd@cisco.com",
     copyright="Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",

@@ -38,8 +38,8 @@ import sys
 
 import click
 import coloredlogs
+import importlib.metadata
 
-import pkg_resources
 from mussels.mussels import Mussels
 from mussels.utils.click import MusselsModifier, ShortNames
 
@@ -59,7 +59,7 @@ from colorama import Fore, Back, Style
     + __doc__
     + Fore.GREEN
     + _description
-    + f"\nVersion {pkg_resources.get_distribution('mussels').version}\n"
+    + f"\nVersion {importlib.metadata.version('mussels')}\n"
     + Style.RESET_ALL
     + _copyright,
 )
