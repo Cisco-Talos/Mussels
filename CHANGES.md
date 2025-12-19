@@ -8,6 +8,10 @@
 > - Fixed: 🐛
 > - Security: 🛡
 
+## Version 0.4.2
+
+🐛 Remove dependency on deprecated pkg_resources package to ensure compatibility with future Python versions.
+
 ## Version 0.4.1
 
 🐛 Fixed an issue using pkg_resources package when setuptools is not installed. The fix adds setuptools as a dependency.
