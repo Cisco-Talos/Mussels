@@ -10,10 +10,10 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v1
+    - name: Set up Python
+      uses: actions/setup-python@v6
       with:
-        python-version: 3.12
+        python-version: '3.13'
 
     - name: Install pypa/build
       run: >-
@@ -32,6 +32,6 @@ jobs:
         .
 
     - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
