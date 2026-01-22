@@ -250,16 +250,33 @@ class Mussels:
                             else:
                                 recipe_class.is_collection = False
 
-                                if not "url" in yaml_file:
+                                # Check for mutually exclusive url and git_repo
+                                has_url = "url" in yaml_file
+                                has_git_repo = "git_repo" in yaml_file
+
+                                if has_url and has_git_repo:
                                     self.logger.warning(
                                         f"Failed to load recipe: {fpath}"
                                     )
                                     self.logger.warning(
-                                        f"Missing required 'url' field."
+                                        f"Recipe cannot have both 'url' and 'git_repo' fields. These are mutually exclusive."
                                     )
                                     continue
-                                else:
+                                elif not has_url and not has_git_repo:
+                                    self.logger.warning(
+                                        f"Failed to load recipe: {fpath}"
+                                    )
+                                    self.logger.warning(
+                                        f"Recipe must have either 'url' or 'git_repo' field."
+                                    )
+                                    continue
+
+                                if has_url:
                                     recipe_class.url = yaml_file["url"]
+                                    recipe_class.git_repo = ""
+                                else:  # has_git_repo
+                                    recipe_class.git_repo = yaml_file["git_repo"]
+                                    recipe_class.url = ""
 
                             if "archive_name_change" in yaml_file:
                                 recipe_class.archive_name_change = (

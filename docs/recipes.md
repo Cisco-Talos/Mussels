@@ -2,6 +2,8 @@
 
 Recipes are simple YAML files that must adhere to the following format:
 
+**Option 1: Using a URL archive**
+
 ```yaml
 name: template
 version: "0.2"
@@ -25,12 +27,67 @@ platforms:
       install_paths:
         <install location>:
           - <files or directories to be copied to the install location>
-          - <files or directories to be copied to the install location>
+      patches: <patch directory>   # Optional; delete if not needed.
+      required_tools:
+        - <names of tools required for the build>
+```
+
+**Option 2: Using a Git repository**
+
+```yaml
+name: template
+version: "0.2"  # Will be used as git tag/branch/commit to checkout
+git_repo: "https://github.com/example/template.git"
+mussels_version: "0.2"
+type: recipe
+platforms:
+  <platform>:
+    <target>:
+      build_script:
+        configure: |
+          <a shell script to configure prior to build>
+        make: |
+          <a shell script to build the software>
+        install: |
+          <a shell script to install the software>
+      dependencies: []
+      install_paths:
+        <install location>:
           - <files or directories to be copied to the install location>
       patches: <patch directory>   # Optional; delete if not needed.
       required_tools:
         - <names of tools required for the build>
-        - <names of tools required for the build>
+```
+
+**Option 3: Using NOOP (manual source acquisition)**
+
+```yaml
+name: template
+version: "0.2"
+url: "NOOP"  # Source will be obtained manually in build scripts
+mussels_version: "0.2"
+type: recipe
+platforms:
+  <platform>:
+    <target>:
+      build_script:
+        configure: |
+          # Manually obtain source code here
+          git clone https://github.com/example/template.git src
+          cd src
+          git checkout v0.2
+        make: |
+          cd src
+          <a shell script to build the software>
+        install: |
+          cd src
+          <a shell script to install the software>
+      dependencies: []
+      install_paths:
+        <install location>:
+          - <files or directories to be copied to the install location>
+      patches: <patch directory>   # Optional; delete if not needed.
+      required_tools:
         - <names of tools required for the build>
 ```
 
@@ -48,9 +105,25 @@ The recipe version _string_ is generally expected to follow traditional semantic
 
 ### `url`
 
-The URL to be used to download a TAR or ZIP archive containing the source code to be built.
+The URL to be used to download a TAR or ZIP archive containing the source code to be built. This must be a URL ending in `.tar.gz`, `.tar.xz`, or `.zip`.
 
-In the future, we would like to add support for local paths and Git repositories, but for the moment this must be a URL ending in `.tar.gz` or `.zip`.
+**Special value:** You can set `url: "NOOP"` if the source code will be obtained manually during one of the build script sections (configure, make, or install). When using `"NOOP"`, Mussels will create an empty build directory and skip the download/extract steps, allowing your build scripts to handle source acquisition (e.g., using `git clone`, `wget`, custom tools, etc.).
+
+**Note:** The `url` field is **mutually exclusive** with `git_repo`. A recipe must use either `url` for archive-based sources OR `git_repo` for Git repository sources, but not both.
+
+### `git_repo`
+
+As an alternative to using a `url` field to download an archive, you can specify a Git repository:
+
+- `git_repo`: The URL of the Git repository (e.g., `"https://github.com/example/project.git"`)
+- `version`: The recipe's version field will be used as the Git revision to checkout. This can be:
+  - A tag (e.g., `"v1.2.3"`)
+  - A branch name (e.g., `"main"` or `"develop"`)
+  - A commit hash (e.g., `"abc123def456..."`)
+
+When using Git repositories, Mussels will clone the repository and checkout the version specified in the `version` field before building.
+
+**Note:** The `git_repo` field is **mutually exclusive** with the `url` field.
 
 ### `archive_name_change` (optional)
 
@@ -122,6 +195,10 @@ These three scripts are each optional, but must be named as follows::
 Within the scripts, curly braces are used to identify a few special variables that you may use to reference dependencies or the install path.
 
 Variables available in Mussels 0.1 include:
+
+- `{name}` - The name of the recipe (e.g., `pcre2`, `openssl`, etc.)
+
+- `{version}` - The version of the recipe (e.g., `1.2.3`, `v3.0.0`, etc.)
 
 - `{target}` - The name of the build `target` (i.e. `host` / `x64` / `x86` or whatever you named it.)
 

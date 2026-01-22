@@ -96,7 +96,10 @@ All Mussels-YAML files have a type field that may be either "tool", "recipe", or
 Inside of each recipe YAML there is:
 - A recipe name.
 - A recipe version number.
-- A URL for downloading the source code,
+- A source code location, which can be specified in one of three ways:
+  - **URL**: A URL for downloading an archive (`.tar.gz`, `.tar.xz`, or `.zip`)
+  - **Git Repository**: A `git_repo` URL for cloning from a Git repository (the `version` field will be used as the tag/branch/commit to checkout)
+  - **NOOP**: Set `url: "NOOP"` to manually obtain source code within build scripts (useful for specialized tools like depot_tools)
 - For each `platform` (OS):
   - For each `target` supported on that OS:
     - Recipe dependencies that must be built before this recipe.
@@ -133,6 +136,55 @@ Each recipe has 3 stages: "configure", "make", and "install". On Linux/Unix thes
 
 - `install`: This is used for Autotools' `make install` step, or CMake's `cmake --build . --target install`.
   - Mussels will re-run this step for every dependency in the chain every time you build a recipe.
+
+### Source Code Acquisition Options
+
+Mussels provides flexible options for obtaining source code for your recipes:
+
+#### 1. URL Archive (Traditional Method)
+
+Specify a URL pointing to a `.tar.gz`, `.tar.xz`, or `.zip` archive:
+
+```yaml
+name: example
+version: "1.0"
+url: "https://example.com/example-1.0.tar.gz"
+```
+
+Mussels will download and extract the archive before building.
+
+#### 2. Git Repository
+
+Specify a Git repository URL. The recipe's `version` field will be used as the Git tag, branch, or commit hash to checkout:
+
+```yaml
+name: example
+version: "v1.0"  # Will be used as the git tag/branch/commit to checkout
+git_repo: "https://github.com/example/example.git"
+```
+
+Mussels will clone the repository and checkout the version specified in the `version` field. **Note:** The `url` and `git_repo` options are mutually exclusive - use one or the other, not both.
+
+#### 3. NOOP (Manual Source Acquisition)
+
+Set `url: "NOOP"` when your build scripts will obtain the source code manually:
+
+```yaml
+name: chromium_component
+version: "1.0"
+url: "NOOP"
+platforms:
+  Linux:
+    host:
+      build_script:
+        configure: |
+          # Manually fetch source using custom tools
+          fetch chromium
+          cd chromium/src
+          gclient sync
+```
+
+This is particularly useful for projects that use specialized build tools (like Chromium's depot_tools) or require complex source acquisition workflows.
 
 ## Contribute
 
