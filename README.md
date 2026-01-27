@@ -96,7 +96,10 @@ All Mussels-YAML files have a type field that may be either "tool", "recipe", or
 Inside of each recipe YAML there is:
 - A recipe name.
 - A recipe version number.
-- A URL for downloading the source code,
+- A source code location, which is specified using a `source` field that can be one of:
+  - **uri**: A URL for downloading an archive (`.tar.gz`, `.tar.xz`, or `.zip`)
+  - **git**: A Git repository URL with either a `tag` or `branch` to checkout
+  - **none**: Set to `true` to manually obtain source code within build scripts (useful for specialized tools like depot_tools)
 - For each `platform` (OS):
   - For each `target` supported on that OS:
     - Recipe dependencies that must be built before this recipe.
@@ -133,6 +136,69 @@ Each recipe has 3 stages: "configure", "make", and "install". On Linux/Unix thes
 
 - `install`: This is used for Autotools' `make install` step, or CMake's `cmake --build . --target install`.
   - Mussels will re-run this step for every dependency in the chain every time you build a recipe.
+
+### Source Code Acquisition Options
+
+Mussels provides flexible options for obtaining source code for your recipes:
+
+#### 1. URI Archive (Traditional Method)
+
+Specify a URL pointing to a `.tar.gz`, `.tar.xz`, or `.zip` archive:
+
+```yaml
+name: example
+version: "1.0"
+source:
+  uri: "https://example.com/example-1.0.tar.gz"
+```
+
+Mussels will download and extract the archive before building.
+
+#### 2. Git Repository
+
+Specify a Git repository URL with either a `tag` or `branch` to checkout:
+
+```yaml
+name: example
+version: "1.0"
+source:
+  git: "https://github.com/example/example.git"
+  tag: "v1.0"
+```
+
+Or use a branch:
+
+```yaml
+name: example
+version: "1.0"
+source:
+  git: "https://github.com/example/example.git"
+  branch: "main"
+```
+
+Mussels will clone the repository and checkout the specified tag or branch. **Note:** You must specify either `tag` or `branch`, but not both.
+
+#### 3. None (Manual Source Acquisition)
+
+Set `none: true` when your build scripts will obtain the source code manually:
+
+```yaml
+name: chromium_component
+version: "1.0"
+source:
+  none: true
+platforms:
+  Linux:
+    host:
+      build_script:
+        configure: |
+          # Manually fetch source using custom tools
+          fetch chromium
+          cd chromium/src
+          gclient sync
+```
+
+This is particularly useful for projects that use specialized build tools (like Chromium's depot_tools) or require complex source acquisition workflows.
 
 ## Contribute
 
