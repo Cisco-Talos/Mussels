@@ -2,12 +2,13 @@
 
 Recipes are simple YAML files that must adhere to the following format:
 
-**Option 1: Using a URL archive**
+**Option 1: Using a URI archive**
 
 ```yaml
 name: template
 version: "0.2"
-url: "hxxps://www.example.com/releases/v0.2.tar.gz"
+source:
+  uri: "hxxps://www.example.com/releases/v0.2.tar.gz"
 archive_name_change: # Optional; delete if not needed.
   - v0.2         # search pattern
   - template-0.2 # replace pattern
@@ -36,8 +37,10 @@ platforms:
 
 ```yaml
 name: template
-version: "0.2"  # Will be used as git tag/branch/commit to checkout
-git_repo: "https://github.com/example/template.git"
+version: "0.2"
+source:
+  git: "https://github.com/example/template.git"
+  tag: "v0.2"  # Or use "branch" instead of "tag"
 mussels_version: "0.2"
 type: recipe
 platforms:
@@ -59,12 +62,13 @@ platforms:
         - <names of tools required for the build>
 ```
 
-**Option 3: Using NOOP (manual source acquisition)**
+**Option 3: Using none (manual source acquisition)**
 
 ```yaml
 name: template
 version: "0.2"
-url: "NOOP"  # Source will be obtained manually in build scripts
+source:
+  none: true  # Source will be obtained manually in build scripts
 mussels_version: "0.2"
 type: recipe
 platforms:
@@ -103,27 +107,43 @@ _Tip_: Mussels recipe names may not include the following characters: `-`, `=`, 
 
 The recipe version _string_ is generally expected to follow traditional semantic versioning practices (i.e `"<major>.<minor>.<patch>"`), though any alpha-numeric version string should be fine. So long as the format is consistent across multiple versions, Mussels should be able to compare version strings for a given recipe.
 
-### `url`
+### `source`
 
-The URL to be used to download a TAR or ZIP archive containing the source code to be built. This must be a URL ending in `.tar.gz`, `.tar.xz`, or `.zip`.
+The `source` field defines where and how to obtain the source code for the recipe. It must be a dictionary containing exactly one of the following keys:
 
-**Special value:** You can set `url: "NOOP"` if the source code will be obtained manually during one of the build script sections (configure, make, or install). When using `"NOOP"`, Mussels will create an empty build directory and skip the download/extract steps, allowing your build scripts to handle source acquisition (e.g., using `git clone`, `wget`, custom tools, etc.).
+**`uri`**: Specifies a URL to download a TAR or ZIP archive containing the source code. The URL must end in `.tar.gz`, `.tar.xz`, or `.zip`.
 
-**Note:** The `url` field is **mutually exclusive** with `git_repo`. A recipe must use either `url` for archive-based sources OR `git_repo` for Git repository sources, but not both.
+Example:
+```yaml
+source:
+  uri: "https://www.example.com/releases/v0.2.tar.gz"
+```
 
-### `git_repo`
+**`git`**: Specifies a Git repository URL. When using `git`, you must also specify either `tag` or `branch`:
+- `tag`: A Git tag to checkout (e.g., `"v1.2.3"`)
+- `branch`: A Git branch to checkout (e.g., `"main"` or `"develop"`)
 
-As an alternative to using a `url` field to download an archive, you can specify a Git repository:
+Example:
+```yaml
+source:
+  git: "https://github.com/example/project.git"
+  tag: "v1.2.3"
+```
 
-- `git_repo`: The URL of the Git repository (e.g., `"https://github.com/example/project.git"`)
-- `version`: The recipe's version field will be used as the Git revision to checkout. This can be:
-  - A tag (e.g., `"v1.2.3"`)
-  - A branch name (e.g., `"main"` or `"develop"`)
-  - A commit hash (e.g., `"abc123def456..."`)
+Or:
+```yaml
+source:
+  git: "https://github.com/example/project.git"
+  branch: "main"
+```
 
-When using Git repositories, Mussels will clone the repository and checkout the version specified in the `version` field before building.
+**`none`**: Set to `true` if the source code will be obtained manually during one of the build script sections (configure, make, or install). When using `none: true`, Mussels will create an empty build directory and skip the download/extract steps, allowing your build scripts to handle source acquisition (e.g., using `git clone`, `wget`, custom tools, etc.).
 
-**Note:** The `git_repo` field is **mutually exclusive** with the `url` field.
+Example:
+```yaml
+source:
+  none: true
+```
 
 ### `archive_name_change` (optional)
 
@@ -149,7 +169,7 @@ Recipe type can either be one of:
 - `recipe`
 - `collection`
 
-What is the difference between a `recipe` and a `collection`?  Recipes have the `url` field, and include the fields `build_script`, `install_paths`, `patches`, and `required_tools`.  Collections don't include any of the above. Collections just provide the `dependencies` lists.
+What is the difference between a `recipe` and a `collection`?  Recipes have the `source` field, and include the fields `build_script`, `install_paths`, `patches`, and `required_tools`.  Collections don't include any of the above. Collections just provide the `dependencies` lists.
 
 ### `platforms`
 
@@ -194,7 +214,7 @@ These three scripts are each optional, but must be named as follows::
 
 Within the scripts, curly braces are used to identify a few special variables that you may use to reference dependencies or the install path.
 
-Variables available in Mussels 0.1 include:
+Variables available in Mussels include:
 
 - `{name}` - The name of the recipe (e.g., `pcre2`, `openssl`, etc.)
 
@@ -273,7 +293,8 @@ The Windows instructions omit the `install` script.  All scripts are optional, b
 ```yaml
 name: pcre2
 version: "10.33"
-url: https://ftp.pcre.org/pub/pcre/pcre2-10.33.tar.gz
+source:
+  uri: https://ftp.pcre.org/pub/pcre/pcre2-10.33.tar.gz
 mussels_version: "0.2"
 type: recipe
 platforms:
