@@ -55,6 +55,7 @@ class BaseRecipe(object):
     # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
     is_collection = False
 
+    url = ""  # Optional: URL can be specified directly here instead of in source.uri
     source = {"uri": "https://sample.com/sample.tar.gz"}  # Source location: can be 'uri', 'git' (with 'tag' or 'branch'), or 'none': true
 
     # archive_name_change is a tuple of strings to replace.
@@ -117,6 +118,15 @@ class BaseRecipe(object):
             self.work_dir = os.path.join(self.data_dir, "cache", "work")
 
         self.module_dir = os.path.split(self.module_file)[0]
+
+        # Allow a top-level uri field for convenience. A uri specified inside of a source field will take precedence over the top-level url.
+        if hasattr(self, 'url') and self.url:
+            # If url is specified at top level, use it
+            if not hasattr(self, 'source') or not self.source:
+                self.source = {}
+            # Only override source.uri if it's not already set
+            if 'uri' not in self.source:
+                self.source['uri'] = self.url
 
         if "patches" in self.platforms[self.platform][self.target]:
             self.patch_dir = os.path.join(
