@@ -35,6 +35,7 @@ import tarfile
 import time
 import zipfile
 
+import git
 import requests
 import urllib.request
 import patch
@@ -54,7 +55,8 @@ class BaseRecipe(object):
     # If True, only `dependencies` and `required_tools` matter. Everything else should be omited.
     is_collection = False
 
-    url = "https://sample.com/sample.tar.gz"  # URL of project release materials.
+    url = ""  # Optional: URL can be specified directly here instead of in source.uri
+    source = {"uri": "https://sample.com/sample.tar.gz"}  # Source location: can be 'uri', 'git' (with 'tag' or 'branch'), or 'none': true
 
     # archive_name_change is a tuple of strings to replace.
     # For example:
@@ -162,12 +164,13 @@ class BaseRecipe(object):
 
     def _download_archive(self) -> bool:
         """
-        Use the URL to download the archive if it doesn't already exist in the Downloads directory.
+        Use the URI to download the archive if it doesn't already exist in the Downloads directory.
         """
         os.makedirs(self.download_dir, exist_ok=True)
 
-        # Determine download path from URL &  possible archive name change.
-        self.archive = self.url.split("/")[-1]
+        # Determine download path from URI & possible archive name change.
+        uri = self.source.get('uri', '')
+        self.archive = uri.split("/")[-1]
         if self.archive_name_change[0] != "":
             self.archive = self.archive.replace(
                 self.archive_name_change[0], self.archive_name_change[1]
@@ -181,23 +184,117 @@ class BaseRecipe(object):
             self.logger.debug(f"Archive already downloaded.")
             return True
 
-        self.logger.info(f"Downloading {self.url}")
+        self.logger.info(f"Downloading {uri}")
         self.logger.info(f"         to {self.download_path} ...")
 
-        if self.url.startswith("ftp"):
+        if uri.startswith("ftp"):
             try:
-                urllib.request.urlretrieve(self.url, self.download_path)
+                urllib.request.urlretrieve(uri, self.download_path)
             except Exception as exc:
-                self.logger.info(f"Failed to download archive from {self.url}, {exc}!")
+                self.logger.info(f"Failed to download archive from {uri}, {exc}!")
                 return False
         else:
             try:
-                r = requests.get(self.url)
+                r = requests.get(uri)
                 with open(self.download_path, "wb") as f:
                     f.write(r.content)
             except Exception:
-                self.logger.info(f"Failed to download archive from {self.url}!")
+                self.logger.info(f"Failed to download archive from {uri}!")
                 return False
+
+        return True
+
+    def _create_none_build_dir(self, rebuild: bool) -> bool:
+        """
+        Create an empty build directory for recipes with source: none: true.
+        Source will be obtained manually during build scripts.
+        """
+        self.builds[self.target] = os.path.join(
+            self.work_dir, self.target, f"{self.name}-{self.version}"
+        )
+
+        self.prior_build_exists = os.path.exists(self.builds[self.target])
+
+        if self.prior_build_exists:
+            if not rebuild:
+                # Build directory already exists. We're good.
+                self.logger.debug(f"Build directory already exists.")
+                return True
+
+            # Remove previous build, start over.
+            self.logger.info(
+                f"--rebuild: Removing previous {self.target} build directory:"
+            )
+            self.logger.info(f"   {self.builds[self.target]}")
+            shutil.rmtree(self.builds[self.target])
+            self.prior_build_exists = False
+
+        # Create empty build directory
+        os.makedirs(self.builds[self.target], exist_ok=True)
+        self.logger.info(
+            f"Created build directory for 'source: none' recipe: {self.builds[self.target]}"
+        )
+        self.logger.info(
+            f"Source will be obtained manually during build scripts."
+        )
+
+        return True
+
+    def _clone_git_repo(self, rebuild: bool) -> bool:
+        """
+        Clone the git repository to the work directory.
+        """
+        os.makedirs(os.path.join(self.work_dir, self.target), exist_ok=True)
+
+        git_url = self.source.get('git', '')
+        git_tag = self.source.get('tag', '')
+        git_branch = self.source.get('branch', '')
+
+        # Determine the build directory name from the repo URL
+        repo_name = git_url.rstrip('/').split('/')[-1]
+        if repo_name.endswith('.git'):
+            repo_name = repo_name[:-4]
+
+        # Use tag or branch for directory name
+        ref_name = git_tag if git_tag else git_branch
+        self.builds[self.target] = os.path.join(
+            self.work_dir, self.target, f"{repo_name}-{ref_name}"
+        )
+
+        self.prior_build_exists = os.path.exists(self.builds[self.target])
+
+        if self.prior_build_exists:
+            if not rebuild:
+                # Build directory already exists. We're good.
+                self.logger.debug(f"Git repository already cloned.")
+                return True
+
+            # Remove previous build, start over.
+            self.logger.info(
+                f"--rebuild: Removing previous {self.target} build directory:"
+            )
+            self.logger.info(f"   {self.builds[self.target]}")
+            shutil.rmtree(self.builds[self.target])
+            self.prior_build_exists = False
+
+        # Clone the repository
+        self.logger.info(f"Cloning git repository {git_url}")
+        self.logger.info(f"         to {self.builds[self.target]} ...")
+
+        try:
+            repo = git.Repo.clone_from(git_url, self.builds[self.target])
+
+            # Checkout the specified tag or branch
+            if git_tag:
+                self.logger.info(f"Checking out tag: {git_tag}")
+                repo.git.checkout(git_tag)
+            elif git_branch:
+                self.logger.info(f"Checking out branch: {git_branch}")
+                repo.git.checkout(git_branch)
+
+        except Exception as exc:
+            self.logger.error(f"Failed to clone git repository {git_url}: {exc}")
+            return False
 
         return True
 
@@ -340,17 +437,39 @@ class BaseRecipe(object):
 
         os.makedirs(self.work_dir, exist_ok=True)
 
-        # Download and build if necessary.
-        if not self._download_archive():
-            self.logger.error(
-                f"Failed to download source archive for {nvc_str(self.name, self.version)}"
-            )
-            return False
+        # Determine if we're using a git repository, URI archive, or none
+        if 'git' in self.source:
+            # Clone git repository
+            if not self._clone_git_repo(rebuild):
+                self.logger.error(
+                    f"Failed to clone git repository for {nvc_str(self.name, self.version)}"
+                )
+                return False
+        elif 'none' in self.source and self.source['none']:
+            # none: true - create empty directory, source obtained manually in build scripts
+            if not self._create_none_build_dir(rebuild):
+                self.logger.error(
+                    f"Failed to create build directory for {nvc_str(self.name, self.version)}"
+                )
+                return False
+        elif 'uri' in self.source:
+            # Download and extract archive
+            if not self._download_archive():
+                self.logger.error(
+                    f"Failed to download source archive for {nvc_str(self.name, self.version)}"
+                )
+                return False
 
-        # Extract to the work_dir.
-        if not self._extract_archive(rebuild):
+            # Extract to the work_dir.
+            if not self._extract_archive(rebuild):
+                self.logger.error(
+                    f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
+                )
+                return False
+        else:
             self.logger.error(
-                f"Failed to extract source archive for {nvc_str(self.name, self.version)}"
+                f"Invalid source configuration for {nvc_str(self.name, self.version)}. "
+                f"Must specify 'uri', 'git', or 'none'."
             )
             return False
 
@@ -396,6 +515,8 @@ class BaseRecipe(object):
             f"Attempting to build {nvc_str(self.name, self.version)} for {self.target}"
         )
 
+        self.variables["name"] = self.name
+        self.variables["version"] = self.version
         self.variables["includes"] = os.path.join(self.install_dir, "include").replace("\\", "/")
         self.variables["libs"] = os.path.join(self.install_dir, "lib").replace("\\", "/")
         self.variables["install"] = os.path.join(self.install_dir).replace("\\", "/")

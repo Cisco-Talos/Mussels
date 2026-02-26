@@ -250,16 +250,67 @@ class Mussels:
                             else:
                                 recipe_class.is_collection = False
 
-                                if not "url" in yaml_file:
+                                # Check for source field with valid configuration
+                                if "source" not in yaml_file and "url" in yaml_file:
+                                    source = {
+                                        'uri': yaml_file['url']
+                                    }
+                                elif "source" not in yaml_file:
                                     self.logger.warning(
                                         f"Failed to load recipe: {fpath}"
                                     )
                                     self.logger.warning(
-                                        f"Missing required 'url' field."
+                                        f"Recipe must have a 'source' or 'url' field."
                                     )
                                     continue
                                 else:
-                                    recipe_class.url = yaml_file["url"]
+                                    source = yaml_file["source"]
+
+                                # Validate source structure
+                                has_uri = "uri" in source
+                                has_git = "git" in source
+                                has_none = "none" in source
+
+                                # Count how many source types are specified
+                                source_types = sum([has_uri, has_git, has_none])
+
+                                if source_types == 0:
+                                    self.logger.warning(
+                                        f"Failed to load recipe: {fpath}"
+                                    )
+                                    self.logger.warning(
+                                        f"Source field must specify one of: 'uri', 'git', or 'none'."
+                                    )
+                                    continue
+                                elif source_types > 1:
+                                    self.logger.warning(
+                                        f"Failed to load recipe: {fpath}"
+                                    )
+                                    self.logger.warning(
+                                        f"Source field can only specify one of: 'uri', 'git', or 'none'."
+                                    )
+                                    continue
+
+                                # Validate git source has tag or branch
+                                if has_git:
+                                    if "tag" not in source and "branch" not in source:
+                                        self.logger.warning(
+                                            f"Failed to load recipe: {fpath}"
+                                        )
+                                        self.logger.warning(
+                                            f"Git source must specify either 'tag' or 'branch'."
+                                        )
+                                        continue
+                                    if "tag" in source and "branch" in source:
+                                        self.logger.warning(
+                                            f"Failed to load recipe: {fpath}"
+                                        )
+                                        self.logger.warning(
+                                            f"Git source cannot specify both 'tag' and 'branch'."
+                                        )
+                                        continue
+
+                                recipe_class.source = source
 
                             if "archive_name_change" in yaml_file:
                                 recipe_class.archive_name_change = (
