@@ -251,16 +251,20 @@ class Mussels:
                                 recipe_class.is_collection = False
 
                                 # Check for source field with valid configuration
-                                if "source" not in yaml_file:
+                                if "source" not in yaml_file and "url" in yaml_file:
+                                    source = {
+                                        'uri': yaml_file['url']
+                                    }
+                                elif "source" not in yaml_file:
                                     self.logger.warning(
                                         f"Failed to load recipe: {fpath}"
                                     )
                                     self.logger.warning(
-                                        f"Recipe must have a 'source' field."
+                                        f"Recipe must have a 'source' or 'url' field."
                                     )
                                     continue
-
-                                source = yaml_file["source"]
+                                else:
+                                    source = yaml_file["source"]
 
                                 # Validate source structure
                                 has_uri = "uri" in source
