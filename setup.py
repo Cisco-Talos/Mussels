@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="mussels",
-    version="0.4.2",
-    author="Micah Snyder",
-    author_email="micasnyd@cisco.com",
-    copyright="Copyright (C) 2025 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
+    version="0.5.0",
+    author="The ClamAV Team",
+    author_email="clamav-bugs@external.cisco.com",
+    copyright="Copyright (C) 2026 Cisco Systems, Inc. and/or its affiliates. All rights reserved.",
     description="Mussels Dependency Build Automation Tool",
     long_description=long_description,
     long_description_content_type="text/markdown",

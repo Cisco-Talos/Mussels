@@ -8,6 +8,37 @@
 > - Fixed: 🐛
 > - Security: 🛡
 
+## Version 0.5.0
+
+➕ Support for downloading recipe source code using Git.
+
+  Added a new `source` field for recipe YAML files. `source` should contain one of:
+  - `uri`: This is equivalent to the legacy `url` field.
+  - `git`: A URL to clone a Git repository. May be either `git@` or `https://`.
+
+  If `git` is used, you must additionally specify one of:
+  - `branch`
+  - `tag`
+
+  For example:
+  ```yaml
+  source:
+    git: "https://github.com/Cisco-Talos/clamav.git"
+    branch: main
+  ```
+
+  Or, instead of this:
+  ```yaml
+  url: "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.1/clamav-1.5.1.tar.gz
+  ```
+  Do this:
+  ```yaml
+  source:
+    uri: "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.1/clamav-1.5.1.tar.gz
+  ```
+
+  Deprecated the `url` field in favor of using `source` with `uri`. `url` may be removed in a future release.
+
 ## Version 0.4.2
 
 🐛 Remove dependency on deprecated pkg_resources package to ensure compatibility with future Python versions.
