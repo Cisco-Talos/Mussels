@@ -487,7 +487,7 @@ class BaseRecipe(object):
                 self.logger.info(
                     f"Applying patches to {nvc_str(self.name, self.version)} ({self.target}) build directory ..."
                 )
-                for patchfile in os.listdir(self.patch_dir):
+                for patchfile in sorted(os.listdir(self.patch_dir)):
                     if patchfile.endswith(".diff") or patchfile.endswith(".patch"):
                         self.logger.info(f"Attempting to apply patch: {patchfile}")
                         pset = patch.fromfile(os.path.join(self.patch_dir, patchfile))
