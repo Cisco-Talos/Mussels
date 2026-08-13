@@ -45,6 +45,7 @@ import yaml
 import mussels.bookshelf
 import mussels.recipe
 import mussels.tool
+from mussels.utils.filesystem import remove_tree
 from mussels.utils.versions import (
     NVC,
     nvc_str,
@@ -1844,7 +1845,7 @@ class Mussels:
         )
 
         if os.path.exists(os.path.join(self.app_data_dir, "cache")):
-            shutil.rmtree(os.path.join(self.app_data_dir, "cache"))
+            remove_tree(os.path.join(self.app_data_dir, "cache"))
             self.logger.info(f"Cache directory cleared.")
         else:
             self.logger.info(f"No cache directory to clear.")
@@ -1858,7 +1859,7 @@ class Mussels:
         )
 
         if os.path.exists(os.path.join(self.install_dir)):
-            shutil.rmtree(os.path.join(self.install_dir))
+            remove_tree(os.path.join(self.install_dir))
             self.logger.info(f"Install directory cleared.")
         else:
             self.logger.info(f"No install directory to clear.")
@@ -1875,7 +1876,7 @@ class Mussels:
         self.logger.removeHandler(self.filehandler)
 
         if os.path.exists(os.path.join(self.app_data_dir, "logs")):
-            shutil.rmtree(os.path.join(self.app_data_dir, "logs"))
+            remove_tree(os.path.join(self.app_data_dir, "logs"))
             self.logger.info(f"Logs directory cleared.")
         else:
             self.logger.info(f"No logs directory to clear.")
@@ -1893,7 +1894,7 @@ class Mussels:
         )
 
         if os.path.exists(os.path.join(self.app_data_dir)):
-            shutil.rmtree(os.path.join(self.app_data_dir))
+            remove_tree(os.path.join(self.app_data_dir))
             self.logger.info(f"Mussels directory cleared.")
         else:
             self.logger.info(f"No Mussels directory to clear.")
